@@ -1,0 +1,66 @@
+<Window x:Class="ScreenTimeGuardian.ControlPanel.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="שומר זמן מסך" Height="720" Width="920"
+        FlowDirection="RightToLeft"
+        WindowStartupLocation="CenterScreen">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28">
+            <TextBlock Text="שומר זמן מסך" FontSize="30" FontWeight="Bold" />
+            <TextBlock Text="ניהול לוח זמנים, אתרים וחשבון Google מוגן" FontSize="15" Foreground="Gray" />
+
+            <GroupBox Header="חשבון Google מוגן" Margin="0,22,0,12" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="כתובת החשבון שייחסמו השירותים שלו בזמן החסימה:" />
+                    <TextBox x:Name="AccountEmailBox" FlowDirection="LeftToRight" />
+                    <TextBlock Text="שירותים מופרדים בפסיקים (לדוגמה: gmail, chat, drive):" />
+                    <TextBox x:Name="GoogleServicesBox" FlowDirection="LeftToRight" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="אתרים חסומים לכל המחשב" Margin="0,0,0,12" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="דומיין אחד בכל שורה. החסימה תחול על כל משתמשי המחשב וכל הדפדפנים." />
+                    <TextBox x:Name="BlockedDomainsBox" Height="120" AcceptsReturn="True" TextWrapping="NoWrap" FlowDirection="LeftToRight" />
+                    <CheckBox x:Name="EnforceWebsitesBox" Content="הפעל אכיפה בפועל (יש לבדוק תאימות לנטפרי לפני הפעלה)" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="לוח הזמנים" Margin="0,0,0,12" Padding="12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="ימים:" />
+                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="ScheduleDaysBox" FlowDirection="LeftToRight" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="התחלה:" />
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="ScheduleStartBox" FlowDirection="LeftToRight" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="סיום:" />
+                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="ScheduleEndBox" FlowDirection="LeftToRight" />
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="פורמט ימים:" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday" FlowDirection="LeftToRight" />
+                </Grid>
+            </GroupBox>
+
+            <GroupBox Header="מצבי דפדפן" Margin="0,0,0,12" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="Guest וגלישה פרטית יופעלו רק כאשר אין חסימה רלוונטית או כאשר התוסף מנוהל וזמין." />
+                    <TextBlock Text="אישור דפדפן הוא אישור להפעלת הדפדפן בלבד ואינו עוקף חסימת תוכן." />
+                </StackPanel>
+            </GroupBox>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button x:Name="SaveButton" Content="שמור הגדרות" Padding="18,8" Margin="8,0" Click="SaveButton_OnClick" />
+                <Button Content="טען מחדש" Padding="18,8" Margin="8,0" Click="ReloadButton_OnClick" />
+            </StackPanel>
+            <TextBlock x:Name="StatusText" Margin="0,16,0,0" Foreground="DarkGreen" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>

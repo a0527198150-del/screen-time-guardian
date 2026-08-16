@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "שומר זמן מסך",
+  "description": "זיהוי חשבון Google ואכיפת לוח הזמנים",
+  "version": "0.1.0",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "nativeMessaging",
+    "storage",
+    "tabs",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "https://mail.google.com/*",
+    "https://chat.google.com/*",
+    "https://calendar.google.com/*",
+    "https://drive.google.com/*",
+    "https://docs.google.com/*",
+    "https://meet.google.com/*",
+    "https://youtube.com/*",
+    "https://www.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mail.google.com/*",
+        "https://chat.google.com/*",
+        "https://calendar.google.com/*",
+        "https://drive.google.com/*",
+        "https://docs.google.com/*",
+        "https://meet.google.com/*",
+        "https://youtube.com/*",
+        "https://www.youtube.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_title": "שומר זמן מסך"
+  },
+  "incognito": "spanning",
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html", "blocked.css", "blocked.js"],
+      "matches": ["https://*.google.com/*", "https://google.com/*"]
+    }
+  ]
+}

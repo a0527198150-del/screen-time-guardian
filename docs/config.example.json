@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "websiteEnforcement": "AuditOnly",
+  "blockPrivateAndGuestWhenExtensionUnavailable": true,
+  "blockUnknownGoogleSessionsDuringAccountSchedules": true,
+  "guestModeAllowedWhenNoRelevantBlock": true,
+  "websites": [
+    {
+      "name": "example.test",
+      "domain": "example.test",
+      "windows": [
+        {
+          "enabled": true,
+          "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+          "start": "23:00",
+          "end": "07:00",
+          "allDay": false
+        }
+      ]
+    }
+  ],
+  "googleAccounts": [
+    {
+      "name": "חשבון לדוגמה",
+      "email": "replace-with-your-account@example.com",
+      "services": ["gmail", "chat"],
+      "windows": [
+        {
+          "enabled": true,
+          "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+          "start": "23:00",
+          "end": "07:00",
+          "allDay": false
+        }
+      ]
+    }
+  ],
+  "applications": [],
+  "approvedBrowsers": []
+}
