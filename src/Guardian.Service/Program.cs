@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ScreenTimeGuardian.Contracts;
+using ScreenTimeGuardian.Service;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWindowsService(options =>
