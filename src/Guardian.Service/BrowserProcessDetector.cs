@@ -110,7 +110,8 @@ public sealed class BrowserProcessDetector
 #pragma warning disable SYSLIB0057
         try
         {
-            using var certificate = X509Certificate2.CreateFromSignedFile(path);
+            using var signedFile = X509Certificate.CreateFromSignedFile(path);
+            using var certificate = new X509Certificate2(signedFile);
             var publisher = certificate.GetNameInfo(X509NameType.SimpleName, false);
             certificate.Verify();
             return new SignatureInfo(true, publisher);
