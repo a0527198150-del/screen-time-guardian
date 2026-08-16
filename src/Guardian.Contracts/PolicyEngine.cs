@@ -55,6 +55,8 @@ public sealed class PolicyEngine
                 .ToList(),
             BlockPrivateAndGuestWhenExtensionUnavailable = configuration.BlockPrivateAndGuestWhenExtensionUnavailable
                 && relevantExtensionBlock,
+            BlockPortableBrowsers = configuration.BlockPortableBrowsersDuringAnySchedule
+                && activeRuleIds.Count > 0,
             GuestModeAllowed = configuration.GuestModeAllowedWhenNoRelevantBlock && !relevantExtensionBlock,
             ActiveRuleIds = activeRuleIds
         };

@@ -99,10 +99,14 @@ public sealed class BrowserApproval
 
 public sealed class ConfigurationDocument
 {
-    public int SchemaVersion { get; set; } = 1;
+    public int SchemaVersion { get; set; } = 2;
     public WebsiteEnforcementMode WebsiteEnforcement { get; set; } = WebsiteEnforcementMode.AuditOnly;
     public bool BlockPrivateAndGuestWhenExtensionUnavailable { get; set; } = true;
     public bool BlockUnknownGoogleSessionsDuringAccountSchedules { get; set; } = true;
+    public bool BlockPortableBrowsersDuringAnySchedule { get; set; } = true;
+    public bool StrictPortableApplicationMode { get; set; }
+    public bool AutomaticUpdatesEnabled { get; set; }
+    public string UpdateManifestUrl { get; set; } = string.Empty;
     public bool GuestModeAllowedWhenNoRelevantBlock { get; set; } = true;
     public List<WebsiteRule> Websites { get; set; } = new();
     public List<GoogleAccountRule> GoogleAccounts { get; set; } = new();
@@ -128,6 +132,7 @@ public sealed class PolicySnapshot
     public List<string> BlockedApplications { get; set; } = new();
     public List<GoogleAccountPolicy> GoogleAccounts { get; set; } = new();
     public bool BlockPrivateAndGuestWhenExtensionUnavailable { get; set; }
+    public bool BlockPortableBrowsers { get; set; }
     public bool GuestModeAllowed { get; set; }
     public List<string> ActiveRuleIds { get; set; } = new();
 }
@@ -144,6 +149,15 @@ public sealed class AccountDecisionResponse
     public bool IdentityKnown { get; set; }
     public string Reason { get; set; } = string.Empty;
     public PolicySnapshot Policy { get; set; } = new();
+}
+
+public sealed class UpdateManifest
+{
+    public string Version { get; set; } = string.Empty;
+    public string PackageUrl { get; set; } = string.Empty;
+    public string Sha256 { get; set; } = string.Empty;
+    public string? SignatureUrl { get; set; }
+    public bool RequiresAdministrator { get; set; } = true;
 }
 
 public sealed class NativeMessage

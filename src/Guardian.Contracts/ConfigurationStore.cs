@@ -42,8 +42,9 @@ public sealed class ConfigurationStore
             try
             {
                 var json = File.ReadAllText(_path);
-                return JsonSerializer.Deserialize<ConfigurationDocument>(json, JsonOptions)
+                var configuration = JsonSerializer.Deserialize<ConfigurationDocument>(json, JsonOptions)
                     ?? ConfigurationDocument.Default;
+                return ConfigurationMigrator.Migrate(configuration);
             }
             catch (JsonException)
             {
@@ -68,8 +69,13 @@ public sealed class ConfigurationStore
                 Directory.CreateDirectory(directory);
             }
 
+            var migrated = ConfigurationMigrator.Migrate(configuration);
             var temporaryPath = _path + ".tmp";
-            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(configuration, JsonOptions));
+            if (File.Exists(_path))
+            {
+                File.Copy(_path, _path + ".bak", true);
+            }
+            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(migrated, JsonOptions));
             File.Move(temporaryPath, _path, true);
         }
     }

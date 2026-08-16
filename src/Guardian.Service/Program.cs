@@ -13,6 +13,9 @@ builder.Services.AddSingleton<ConfigurationStore>();
 builder.Services.AddSingleton<PolicyEngine>();
 builder.Services.AddSingleton<WindowsFirewallFqdnBlocker>();
 builder.Services.AddSingleton<ProcessBlocker>();
+builder.Services.AddSingleton<BrowserProcessDetector>();
+builder.Services.AddSingleton<PortableBrowserEnforcer>();
+builder.Services.AddSingleton<UpdateCoordinator>();
 builder.Services.AddSingleton<BrowserPolicySynchronizer>();
 builder.Services.AddHostedService<GuardianWorker>();
 

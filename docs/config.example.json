@@ -3,6 +3,10 @@
   "websiteEnforcement": "AuditOnly",
   "blockPrivateAndGuestWhenExtensionUnavailable": true,
   "blockUnknownGoogleSessionsDuringAccountSchedules": true,
+  "blockPortableBrowsersDuringAnySchedule": true,
+  "strictPortableApplicationMode": false,
+  "automaticUpdatesEnabled": false,
+  "updateManifestUrl": "",
   "guestModeAllowedWhenNoRelevantBlock": true,
   "websites": [
     {

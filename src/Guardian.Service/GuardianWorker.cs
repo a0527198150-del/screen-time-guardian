@@ -10,6 +10,8 @@ public sealed class GuardianWorker : BackgroundService
     private readonly PolicyEngine _engine;
     private readonly WindowsFirewallFqdnBlocker _websiteBlocker;
     private readonly ProcessBlocker _processBlocker;
+    private readonly PortableBrowserEnforcer _portableBrowserEnforcer;
+    private readonly UpdateCoordinator _updateCoordinator;
     private readonly BrowserPolicySynchronizer _browserPolicies;
     private readonly ILogger<GuardianWorker> _logger;
     private PolicySnapshot? _lastSnapshot;
@@ -19,6 +21,8 @@ public sealed class GuardianWorker : BackgroundService
         PolicyEngine engine,
         WindowsFirewallFqdnBlocker websiteBlocker,
         ProcessBlocker processBlocker,
+        PortableBrowserEnforcer portableBrowserEnforcer,
+        UpdateCoordinator updateCoordinator,
         BrowserPolicySynchronizer browserPolicies,
         ILogger<GuardianWorker> logger)
     {
@@ -26,6 +30,8 @@ public sealed class GuardianWorker : BackgroundService
         _engine = engine;
         _websiteBlocker = websiteBlocker;
         _processBlocker = processBlocker;
+        _portableBrowserEnforcer = portableBrowserEnforcer;
+        _updateCoordinator = updateCoordinator;
         _browserPolicies = browserPolicies;
         _logger = logger;
     }
@@ -47,6 +53,13 @@ public sealed class GuardianWorker : BackgroundService
                     stoppingToken);
 
                 await _processBlocker.ApplyAsync(snapshot.BlockedApplications, stoppingToken);
+                await _portableBrowserEnforcer.ApplyAsync(
+                    snapshot.BlockPortableBrowsers,
+                    configuration.ApprovedBrowsers,
+                    configuration.StrictPortableApplicationMode,
+                    stoppingToken);
+
+                await _updateCoordinator.CheckAsync(configuration, stoppingToken);
 
                 var policyChanged = _browserPolicies.ApplyGuestModePolicy(snapshot.GuestModeAllowed);
                 if (policyChanged)
@@ -73,7 +86,7 @@ public sealed class GuardianWorker : BackgroundService
                 _logger.LogError(exception, "Unexpected policy loop failure");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
     }
 
@@ -87,6 +100,7 @@ public sealed class GuardianWorker : BackgroundService
         return left.IsAnyBlockActive == right.IsAnyBlockActive
             && left.BlockAllWebsites == right.BlockAllWebsites
             && left.GuestModeAllowed == right.GuestModeAllowed
+            && left.BlockPortableBrowsers == right.BlockPortableBrowsers
             && left.BlockedDomains.SequenceEqual(right.BlockedDomains, StringComparer.OrdinalIgnoreCase)
             && left.BlockedApplications.SequenceEqual(right.BlockedApplications, StringComparer.OrdinalIgnoreCase)
             && left.ActiveRuleIds.SequenceEqual(right.ActiveRuleIds, StringComparer.OrdinalIgnoreCase);
