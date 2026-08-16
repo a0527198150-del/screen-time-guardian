@@ -19,7 +19,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore ScreenTimeGuardian.sln
+        run: dotnet restore ScreenTimeGuardian.sln --runtime win-x64
 
       - name: Publish service
         run: dotnet publish src/Guardian.Service/Guardian.Service.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Service --no-restore
