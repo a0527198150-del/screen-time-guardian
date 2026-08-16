@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using ScreenTimeGuardian.Contracts;
@@ -109,7 +110,7 @@ public sealed class BrowserProcessDetector
 #pragma warning disable SYSLIB0057
         try
         {
-            using var certificate = X509Certificate.CreateFromSignedFile(path);
+            using var certificate = X509Certificate2.CreateFromSignedFile(path);
             var publisher = certificate.GetNameInfo(X509NameType.SimpleName, false);
             certificate.Verify();
             return new SignatureInfo(true, publisher);
