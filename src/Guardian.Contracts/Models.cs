@@ -107,6 +107,7 @@ public sealed class ConfigurationDocument
     public bool StrictPortableApplicationMode { get; set; }
     public bool AutomaticUpdatesEnabled { get; set; }
     public string UpdateManifestUrl { get; set; } = string.Empty;
+    public ApplicationSecurity Security { get; set; } = new();
     public bool GuestModeAllowedWhenNoRelevantBlock { get; set; } = true;
     public List<WebsiteRule> Websites { get; set; } = new();
     public List<GoogleAccountRule> GoogleAccounts { get; set; } = new();

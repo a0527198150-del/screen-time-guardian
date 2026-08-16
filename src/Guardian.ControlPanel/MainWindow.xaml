@@ -9,6 +9,17 @@
             <TextBlock Text="שומר זמן מסך" FontSize="30" FontWeight="Bold" />
             <TextBlock Text="ניהול לוח זמנים, אתרים, אפליקציות ודפדפנים מאושרים" FontSize="15" Foreground="Gray" />
 
+            <GroupBox Header="סיסמת האפליקציה" Margin="0,22,0,12" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="הסיסמה הזו נפרדת מסיסמת Windows ומשמשת לניהול ההגדרות היומיומי." />
+                    <StackPanel Orientation="Horizontal">
+                        <PasswordBox x:Name="AppPasswordBox" Width="280" FlowDirection="LeftToRight" />
+                        <Button Content="אמת או הגדר סיסמה" Padding="14,6" Margin="10,0,0,0" Click="AuthenticateButton_OnClick" />
+                    </StackPanel>
+                    <TextBlock Text="בהפעלה הראשונה הסיסמה תוגדר. לאחר מכן היא תידרש לכל שינוי." Foreground="DarkOrange" />
+                </StackPanel>
+            </GroupBox>
+
             <GroupBox Header="חשבון Google מוגן" Margin="0,22,0,12" Padding="12">
                 <StackPanel>
                     <TextBlock Text="כתובת החשבון שייחסמו השירותים שלו בזמן החסימה:" />

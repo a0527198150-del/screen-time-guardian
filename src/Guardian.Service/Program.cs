@@ -18,5 +18,6 @@ builder.Services.AddSingleton<PortableBrowserEnforcer>();
 builder.Services.AddSingleton<UpdateCoordinator>();
 builder.Services.AddSingleton<BrowserPolicySynchronizer>();
 builder.Services.AddHostedService<GuardianWorker>();
+builder.Services.AddHostedService<GuardianCommandServer>();
 
 await builder.Build().RunAsync();

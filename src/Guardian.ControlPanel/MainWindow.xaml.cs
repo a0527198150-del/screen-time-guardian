@@ -6,19 +6,70 @@ namespace ScreenTimeGuardian.ControlPanel;
 
 public partial class MainWindow : Window
 {
-    private readonly ConfigurationStore _store = new();
+    private readonly GuardianPipeClient _pipeClient = new();
     private ConfigurationDocument _configuration = ConfigurationDocument.Default;
+    private string _applicationPassword = string.Empty;
+    private bool _authenticated;
 
     public MainWindow()
     {
         InitializeComponent();
-        LoadConfiguration();
+        LoadDefaultFields();
         DiscoverBrowsersButton_OnClick(this, new RoutedEventArgs());
+        StatusText.Text = "יש להזין את סיסמת האפליקציה ולאמת אותה מול שירות Windows.";
     }
 
-    private void LoadConfiguration()
+    private void LoadDefaultFields()
     {
-        _configuration = _store.Load();
+        AccountEmailBox.Text = string.Empty;
+        GoogleServicesBox.Text = "gmail, chat";
+        BlockedDomainsBox.Text = string.Empty;
+        BlockedApplicationsBox.Text = string.Empty;
+        EnforceWebsitesBox.IsChecked = false;
+        StrictPortableModeBox.IsChecked = false;
+        ScheduleDaysBox.Text = "Sunday, Monday, Tuesday, Wednesday, Thursday";
+        ScheduleStartBox.Text = "23:00";
+        ScheduleEndBox.Text = "07:00";
+        RefreshApprovedBrowserList();
+    }
+
+    private async void AuthenticateButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var password = AppPasswordBox.Password;
+            ApplicationPassword.Validate(password);
+
+            var response = await _pipeClient.GetConfigurationAsync(password);
+            if (!response.Ok && response.NeedsInitialization)
+            {
+                response = await _pipeClient.InitializePasswordAsync(password);
+            }
+
+            if (!response.Ok || response.Configuration is null)
+            {
+                throw new UnauthorizedAccessException(response.Error.Length == 0
+                    ? "אימות סיסמת האפליקציה נכשל."
+                    : response.Error);
+            }
+
+            _applicationPassword = password;
+            _authenticated = true;
+            _configuration = response.Configuration;
+            ApplyConfigurationToFields();
+            StatusText.Foreground = System.Windows.Media.Brushes.DarkGreen;
+            StatusText.Text = "האימות הצליח. אפשר לערוך ולשמור את ההגדרות.";
+        }
+        catch (Exception exception) when (exception is ArgumentException or UnauthorizedAccessException or IOException or TimeoutException)
+        {
+            _authenticated = false;
+            StatusText.Foreground = System.Windows.Media.Brushes.DarkRed;
+            StatusText.Text = exception.Message;
+        }
+    }
+
+    private void ApplyConfigurationToFields()
+    {
         var account = _configuration.GoogleAccounts.FirstOrDefault();
         var website = _configuration.Websites.FirstOrDefault();
         var application = _configuration.Applications.FirstOrDefault();
@@ -40,20 +91,13 @@ public partial class MainWindow : Window
         ScheduleStartBox.Text = window?.Start ?? "23:00";
         ScheduleEndBox.Text = window?.End ?? "07:00";
         RefreshApprovedBrowserList();
-        StatusText.Text = AdminGuard.IsAdministrator()
-            ? "ההגדרות נטענו."
-            : "ההגדרות נטענו. שמירה דורשת הרשאת מנהל Windows.";
     }
 
-    private void SaveButton_OnClick(object sender, RoutedEventArgs e)
+    private async void SaveButton_OnClick(object sender, RoutedEventArgs e)
     {
         try
         {
-            if (!AdminGuard.IsAdministrator())
-            {
-                throw new UnauthorizedAccessException("שמירת מדיניות דורשת חשבון מנהל Windows.");
-            }
-
+            EnsureAuthenticated();
             var days = ParseDays(ScheduleDaysBox.Text);
             if (days.Count == 0)
             {
@@ -128,11 +172,17 @@ public partial class MainWindow : Window
             _configuration.BlockPortableBrowsersDuringAnySchedule = true;
             _configuration.StrictPortableApplicationMode = StrictPortableModeBox.IsChecked == true;
             _configuration.GuestModeAllowedWhenNoRelevantBlock = true;
-            _store.Save(_configuration);
+
+            var response = await _pipeClient.SaveConfigurationAsync(_applicationPassword, _configuration);
+            if (!response.Ok)
+            {
+                throw new UnauthorizedAccessException(response.Error);
+            }
+
             StatusText.Foreground = System.Windows.Media.Brushes.DarkGreen;
-            StatusText.Text = "ההגדרות נשמרו. שירות המערכת יעדכן את המדיניות.";
+            StatusText.Text = "ההגדרות נשמרו באמצעות שירות Windows.";
         }
-        catch (Exception exception) when (exception is InvalidOperationException or UnauthorizedAccessException or IOException)
+        catch (Exception exception) when (exception is InvalidOperationException or UnauthorizedAccessException or IOException or TimeoutException)
         {
             StatusText.Foreground = System.Windows.Media.Brushes.DarkRed;
             StatusText.Text = exception.Message;
@@ -162,11 +212,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (!AdminGuard.IsAdministrator())
-            {
-                throw new UnauthorizedAccessException("הוספת אישור דפדפן דורשת חשבון מנהל Windows.");
-            }
-
+            EnsureAuthenticated();
             var path = BrowserPathBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(path) || !path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
@@ -208,19 +254,21 @@ public partial class MainWindow : Window
 
     private void RemoveBrowserButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!AdminGuard.IsAdministrator())
+        try
+        {
+            EnsureAuthenticated();
+            if (ApprovedBrowsersListBox.SelectedItem is BrowserApproval approval)
+            {
+                _configuration.ApprovedBrowsers.Remove(approval);
+                RefreshApprovedBrowserList();
+                StatusText.Foreground = System.Windows.Media.Brushes.DarkGreen;
+                StatusText.Text = "האישור הוסר. יש לשמור את ההגדרות.";
+            }
+        }
+        catch (UnauthorizedAccessException exception)
         {
             StatusText.Foreground = System.Windows.Media.Brushes.DarkRed;
-            StatusText.Text = "הסרת אישור דורשת חשבון מנהל Windows.";
-            return;
-        }
-
-        if (ApprovedBrowsersListBox.SelectedItem is BrowserApproval approval)
-        {
-            _configuration.ApprovedBrowsers.Remove(approval);
-            RefreshApprovedBrowserList();
-            StatusText.Foreground = System.Windows.Media.Brushes.DarkGreen;
-            StatusText.Text = "האישור הוסר. יש לשמור את ההגדרות.";
+            StatusText.Text = exception.Message;
         }
     }
 
@@ -230,10 +278,35 @@ public partial class MainWindow : Window
         ApprovedBrowsersListBox.ItemsSource = _configuration.ApprovedBrowsers;
     }
 
-    private void ReloadButton_OnClick(object sender, RoutedEventArgs e)
+    private async void ReloadButton_OnClick(object sender, RoutedEventArgs e)
     {
-        StatusText.Foreground = System.Windows.Media.Brushes.DarkGreen;
-        LoadConfiguration();
+        try
+        {
+            EnsureAuthenticated();
+            var response = await _pipeClient.GetConfigurationAsync(_applicationPassword);
+            if (!response.Ok || response.Configuration is null)
+            {
+                throw new UnauthorizedAccessException(response.Error);
+            }
+
+            _configuration = response.Configuration;
+            ApplyConfigurationToFields();
+            StatusText.Foreground = System.Windows.Media.Brushes.DarkGreen;
+            StatusText.Text = "ההגדרות נטענו מחדש.";
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException or TimeoutException)
+        {
+            StatusText.Foreground = System.Windows.Media.Brushes.DarkRed;
+            StatusText.Text = exception.Message;
+        }
+    }
+
+    private void EnsureAuthenticated()
+    {
+        if (!_authenticated || string.IsNullOrEmpty(_applicationPassword))
+        {
+            throw new UnauthorizedAccessException("יש לאמת קודם את סיסמת האפליקציה.");
+        }
     }
 
     private static List<DayOfWeek> ParseDays(string value)
