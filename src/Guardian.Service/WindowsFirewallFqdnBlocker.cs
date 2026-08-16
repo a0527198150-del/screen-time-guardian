@@ -77,7 +77,7 @@ public sealed class WindowsFirewallFqdnBlocker
         script.AppendLine("foreach ($item in $domains) {");
         script.AppendLine("  Remove-NetFirewallDynamicKeywordAddress -Id $item.Id -ErrorAction SilentlyContinue");
         script.AppendLine("  New-NetFirewallDynamicKeywordAddress -Id $item.Id -Keyword $item.Domain -AutoResolve $true | Out-Null");
-        script.AppendLine($"  New-NetFirewallRule -Name ('{RulePrefix}' + $item.Id.Trim('{}')) -DisplayName ('Screen Time Guardian: ' + $item.Domain) -Direction Outbound -Action Block -RemoteDynamicKeywordAddresses $item.Id | Out-Null");
+        script.AppendLine($"  New-NetFirewallRule -Name ('{RulePrefix}' + $item.Id.Trim('{{}}')) -DisplayName ('Screen Time Guardian: ' + $item.Domain) -Direction Outbound -Action Block -RemoteDynamicKeywordAddresses $item.Id | Out-Null");
         script.AppendLine("}");
 
         await RunPowerShellAsync(script.ToString(), cancellationToken);
