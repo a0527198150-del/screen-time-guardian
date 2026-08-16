@@ -1,4 +1,7 @@
 using System.IO.Pipes;
+using System.IO.Pipes.AccessControl;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -30,12 +33,7 @@ public sealed class GuardianCommandServer : BackgroundService
         {
             try
             {
-                await using var pipe = new NamedPipeServerStream(
-                    PipeNames.Control,
-                    PipeDirection.InOut,
-                    1,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
+                await using var pipe = CreatePipe();
                 await pipe.WaitForConnectionAsync(stoppingToken);
                 await HandleClientAsync(pipe, stoppingToken);
             }
@@ -52,6 +50,25 @@ public sealed class GuardianCommandServer : BackgroundService
                 _logger.LogError(exception, "Control pipe failed");
             }
         }
+    }
+
+    private static NamedPipeServerStream CreatePipe()
+    {
+        var security = new PipeSecurity();
+        var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+        var system = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+        security.AddAccessRule(new PipeAccessRule(users, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+        security.AddAccessRule(new PipeAccessRule(system, PipeAccessRights.FullControl, AccessControlType.Allow));
+
+        return NamedPipeServerStreamAcl.Create(
+            PipeNames.Control,
+            PipeDirection.InOut,
+            1,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous,
+            4096,
+            4096,
+            security);
     }
 
     private async Task HandleClientAsync(Stream pipe, CancellationToken cancellationToken)

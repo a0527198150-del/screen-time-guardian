@@ -8,5 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Guardian.Contracts\Guardian.Contracts.csproj" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+    <PackageReference Include="System.IO.Pipes.AccessControl" Version="8.0.0" />
   </ItemGroup>
 </Project>
