@@ -1,0 +1,55 @@
+name: package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore ScreenTimeGuardian.sln
+
+      - name: Publish service
+        run: dotnet publish src/Guardian.Service/Guardian.Service.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Service --no-restore
+
+      - name: Publish control panel
+        run: dotnet publish src/Guardian.ControlPanel/Guardian.ControlPanel.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/ControlPanel --no-restore
+
+      - name: Publish Native Host
+        run: dotnet publish src/Guardian.NativeHost/Guardian.NativeHost.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/NativeHost --no-restore
+
+      - name: Publish updater
+        run: dotnet publish src/Guardian.Updater/Guardian.Updater.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Updater --no-restore
+
+      - name: Package extension and deployment files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts/ScreenTimeGuardian/Extension | Out-Null
+          Copy-Item extension/* artifacts/ScreenTimeGuardian/Extension -Recurse -Force
+          Copy-Item policies/* artifacts/ScreenTimeGuardian/Policies -Recurse -Force
+          Copy-Item docs/* artifacts/ScreenTimeGuardian/Docs -Recurse -Force
+          Compress-Archive -Path artifacts/ScreenTimeGuardian/Extension/* -DestinationPath artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -Force
+
+      - name: Create deployment package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenTimeGuardian-${{ github.ref_name }}
+          path: artifacts/ScreenTimeGuardian.zip
+          if-no-files-found: error
