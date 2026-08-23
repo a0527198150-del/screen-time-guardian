@@ -18,19 +18,41 @@
 
 הפקודה תקפה רק לאחר פרסום התוסף במקור הפצה מנוהל. תיקיית `Load unpacked` מקומית אינה מקור תקף למדיניות force-install.
 
+### שלושה מצבי מדיניות תוספים
+
+הפרמטר `-ExtensionPolicy` שולט במה שקורה לתוספים אחרים:
+
+| מצב | התנהגות |
+|---|---|
+| `PermissionBased` (ברירת מחדל) | Guardian כפוי. תוספים אחרים מותרים, אבל הרשאות מסוכנות (proxy, VPN, webRequest, DNR, management, debugger, privacy) חסומות |
+| `Allowlist` | Guardian כפוי. כל השאר חסומים. אפשר לאשר תוספים ספציפיים ב־`-AllowedExtensionIds` |
+| `Strict` | Guardian כפוי. כל השאר חסומים |
+
+```powershell
+# מצב ברירת מחדל — תוספים אחרים מותרים, הרשאות מסוכנות חסומות
+.\Set-BrowserPolicies.ps1 -ExtensionId ... -ExtensionPolicy PermissionBased
+
+# אישור תוספים ספציפיים בלבד
+.\Set-BrowserPolicies.ps1 -ExtensionId ... -ExtensionPolicy Allowlist `
+    -AllowedExtensionIds cccccccccccccccccccccccccccccccc,dddddddddddddddddddddddddddddddd
+
+# חסימה מלאה
+.\Set-BrowserPolicies.ps1 -ExtensionId ... -ExtensionPolicy Strict
+```
+
 נכתב ל־`HKLM\SOFTWARE\Policies\Google\Chrome` ול־`HKLM\SOFTWARE\Policies\Microsoft\Edge`:
 
 | מדיניות | תוצאה |
 |---|---|
 | `ExtensionInstallForcelist` | התוסף מותקן אוטומטית ולא ניתן להסרה |
-| מדיניות Guardian ללא `ExtensionSettings` גלובלי | תוספים אחרים נשארים מותרים |
+| `ExtensionSettings` | תלוי במצב — `blocked_permissions`, wildcard block, או allowlist |
 | מדיניות פרטית/אורח דינמית | השירות משנה אותן רק בזמן חסימה פעילה |
 | `DeveloperToolsAvailability = 2` | DevTools חסום |
 הכל תחת HKLM ⇒ חל על כל המשתמשים, והסרה דורשת הרשאת מנהל. בהסרה, הסקריפט מוחק רק ערכי Guardian שזוהו לפי מזהה/סימון בעלות.
 
 **למה גלישה פרטית ומצב אורח עשויים להיחסם בזמן חסימה:** שניהם מסתירים איזה חשבון Google מחובר — וזה בדיוק מה שהתוסף צריך לראות כדי להחליט משהו.
 
-הסקריפט אינו חוסם תוספים אחרים. הוא כופה את התוסף של Guardian בלבד, ומשאיר מדיניות קיימת של תוכנות אחרות ללא שינוי.
+במצב `PermissionBased`, הסקריפט מונע מתוספים לבקש הרשאות מסוכנות (proxy, VPN, יירוט תעבורה, ניהול תוספים אחרים, דיבוג, פרטיות) — אבל מילון, מצב לילה ומתרגם עובדים כרגיל.
 
 ### שכבה 2 — חסימת הפעלה לפי שם קובץ (IFEO)
 
