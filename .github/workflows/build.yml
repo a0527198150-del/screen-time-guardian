@@ -17,6 +17,22 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - name: Check PowerShell BOM for Hebrew scripts
+        shell: pwsh
+        run: |
+          $errors = 0
+          Get-ChildItem -Recurse -Filter '*.ps1' | ForEach-Object {
+            $bytes = [System.IO.File]::ReadAllBytes($_.FullName)
+            $hasBOM = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+            $content = [System.Text.Encoding]::UTF8.GetString($bytes)
+            $hasHebrew = $content -match '[\u0590-\u05FF]'
+            if ($hasHebrew -and -not $hasBOM) {
+              Write-Error "$($_.FullName): Hebrew text without UTF-8 BOM. Windows PowerShell 5.1 will parse this as ANSI and break."
+              $errors++
+            }
+          }
+          if ($errors -gt 0) { throw "$errors Hebrew .ps1 files missing BOM" }
+          Write-Host 'All Hebrew .ps1 files have UTF-8 BOM.' -ForegroundColor Green
       - name: Restore
         run: dotnet restore ScreenTimeGuardian.sln
       - name: Build

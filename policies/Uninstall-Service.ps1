@@ -1,4 +1,4 @@
-<#
+﻿<#
     Complete removal. Run from an ELEVATED PowerShell window.
     Removes the service AND every firewall rule it created, so nothing is left
     blocking the machine after the software is gone.

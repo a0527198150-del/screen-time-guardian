@@ -1,4 +1,4 @@
-<#
+﻿<#
     Configures Chrome and Edge for Screen Time Guardian.
 
     Three extension policy modes (default is PermissionBased):

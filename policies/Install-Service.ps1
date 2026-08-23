@@ -1,4 +1,4 @@
-<#
+﻿<#
     Screen Time Guardian - installer.
     Run once from an ELEVATED PowerShell window (Run as administrator).
 

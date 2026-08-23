@@ -1,4 +1,4 @@
-<#
+﻿<#
     Screen Time Guardian – מתקין אחיד v0.4.6+
 
     לחיצה כפולה על Install.cmd = התקנה מלאה.

@@ -1,4 +1,4 @@
-<#
+﻿<#
     Panic switch. Stops ALL enforcement immediately without uninstalling anything.
     Safe to run at any time. Does not require the application password.
 #>

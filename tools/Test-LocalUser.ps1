@@ -1,4 +1,4 @@
-<#
+﻿<#
     Screen Time Guardian – בדיקת -LocalUser בחומת האש
     מפיק דוח טקסט על שולחן העבודה.
 

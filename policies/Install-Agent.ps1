@@ -1,4 +1,4 @@
-<#
+﻿<#
     Registers the user-session agent to start at logon for EVERY user.
     The agent shows the countdown warnings before a block begins; the service in
     session 0 cannot display anything to a logged in user.
