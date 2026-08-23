@@ -22,22 +22,22 @@ jobs:
         run: dotnet restore ScreenTimeGuardian.sln --runtime win-x64
 
       - name: Publish service
-        run: dotnet publish src/Guardian.Service/Guardian.Service.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Service --no-restore
+        run: dotnet publish src/Guardian.Service/Guardian.Service.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Service --no-restore
 
       - name: Publish control panel
-        run: dotnet publish src/Guardian.ControlPanel/Guardian.ControlPanel.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/ControlPanel --no-restore
+        run: dotnet publish src/Guardian.ControlPanel/Guardian.ControlPanel.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/ControlPanel --no-restore
 
       - name: Publish Native Host
-        run: dotnet publish src/Guardian.NativeHost/Guardian.NativeHost.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/NativeHost --no-restore
+        run: dotnet publish src/Guardian.NativeHost/Guardian.NativeHost.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/NativeHost --no-restore
 
       - name: Publish agent
-        run: dotnet publish src/Guardian.Agent/Guardian.Agent.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Agent --no-restore
+        run: dotnet publish src/Guardian.Agent/Guardian.Agent.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Agent --no-restore
 
       - name: Publish launch blocker into the service folder
-        run: dotnet publish src/Guardian.LaunchBlocker/Guardian.LaunchBlocker.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Service --no-restore
+        run: dotnet publish src/Guardian.LaunchBlocker/Guardian.LaunchBlocker.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Service --no-restore
 
       - name: Publish updater
-        run: dotnet publish src/Guardian.Updater/Guardian.Updater.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Updater --no-restore
+        run: dotnet publish src/Guardian.Updater/Guardian.Updater.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Updater --no-restore
 
       - name: Package extension and deployment files
         shell: pwsh
