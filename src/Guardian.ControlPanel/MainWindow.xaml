@@ -292,6 +292,14 @@
                                     <CheckBox x:Name="SvcYouTube" Content="YouTube" Tag="youtube" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
                                     <CheckBox x:Name="SvcPhotos" Content="Photos" Tag="photos" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
                                     <CheckBox x:Name="SvcSearch" Content="חיפוש Google" Tag="search" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
+                                    <CheckBox x:Name="SvcGemini" Content="Gemini" Tag="gemini" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
+                                    <CheckBox x:Name="SvcMaps" Content="Maps" Tag="maps" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
+                                    <CheckBox x:Name="SvcTranslate" Content="Translate" Tag="translate" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
+                                    <CheckBox x:Name="SvcKeep" Content="Keep" Tag="keep" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
+                                    <CheckBox x:Name="SvcNews" Content="News" Tag="news" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
+                                    <CheckBox x:Name="SvcFinance" Content="Finance" Tag="finance" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
+                                    <CheckBox x:Name="SvcGroups" Content="Groups" Tag="groups" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
+                                    <CheckBox x:Name="SvcOne" Content="Google One" Tag="one" Margin="0,4,14,4" Click="ServiceCheck_OnChanged" />
                                 </WrapPanel>
                             </GroupBox>
 
@@ -377,7 +385,7 @@
 
                         <GroupBox Header="שכבה 1 — כפיית התוסף (מבוצע בסקריפט, לא כאן)">
                             <TextBlock TextWrapping="Wrap"
-                                       Text="הרץ פעם אחת עם הרשאת מנהל: Set-BrowserPolicies.ps1 -ExtensionId &lt;מזהה&gt;. הפעולה כופה את התוסף על Chrome ועל Edge, חוסמת התקנת תוספים אחרים, ומבטלת גלישה פרטית ומצב אורח. חל על כל המשתמשים." />
+                                       Text="הרץ פעם אחת עם הרשאת מנהל: Set-BrowserPolicies.ps1 -ExtensionId &lt;מזהה&gt;. הפעולה כופה את התוסף של Guardian על Chrome ועל Edge, ומשאירה תוספים אחרים מותרים. גלישה פרטית ומצב אורח מנוהלים דינמית בזמן חסימה. חל על כל המשתמשים." />
                         </GroupBox>
 
                         <GroupBox Header="שכבה 2 — חסימת הפעלה של דפדפנים לא מאושרים">
@@ -404,6 +412,9 @@
 
                         <GroupBox Header="דפדפנים מאושרים">
                             <StackPanel>
+                                <CheckBox x:Name="AllowApprovedBrowsersWithoutExtensionBox"
+                                          Content="אפשר לדפדפנים ברשימה לפעול גם בלי תוסף"
+                                          Margin="0,0,0,8" />
                                 <ListBox x:Name="ApprovedBrowsersListBox" Height="120" />
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="זהה אוטומטית Chrome ו־Edge" Click="DetectBrowsersButton_OnClick" />
@@ -411,7 +422,7 @@
                                     <Button Content="הסר נבחר" Click="RemoveApprovedBrowserButton_OnClick" />
                                 </StackPanel>
                                 <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
-                                           Text="שים לב: הוספת דפדפן לרשימה הזו היא הקלה, ולכן היא כפופה לזמן הצינון." />
+                                           Text="האפשרות כבויה כברירת מחדל. הפעלה ושינוי הרשימה מחייבים אימות סיסמה בעת השמירה, ומאפשרים לדפדפן לעקוף את שכבת התוסף בלבד — לא כללי חסימה כלל־מחשבתיים." />
                             </StackPanel>
                         </GroupBox>
 
@@ -472,6 +483,11 @@
 
                         <GroupBox Header="מנגנוני בטיחות">
                             <StackPanel>
+                                <CheckBox x:Name="EnforceForAdministratorsBox"
+                                          Content="החל כללי חסימה גם על משתמשים עם הרשאת מנהל"
+                                          Margin="0,0,0,8" />
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="כבוי כברירת מחדל. כשהאפשרות כבויה, חוקי Firewall לא יחולו על חשבונות שנמצאים בקבוצת Administrators. חסימת IFEO לפי שם דפדפן לא מופעלת במצב הזה, משום שהיא כלל־מחשבית ואינה ניתנת להחרגה אמינה." />
                                 <TextBlock Style="{StaticResource Hint}"
                                            Text="השירות מזהה קריסה של ההפעלה הקודמת ונכנס אוטומטית למצב בטוח. הוא גם לא אוכף כלום בדקות הראשונות אחרי הפעלת המחשב, כך שתמיד אפשר להיכנס ולתקן." />
                                 <Grid Margin="0,8,0,0">
@@ -491,6 +507,21 @@
                                 </Grid>
                                 <TextBlock Style="{StaticResource Hint}" Margin="0,12,0,0"
                                            Text="התוכנה הזו לא סוגרת תהליכים בכוח. אין בה קוד שנוגע בתהליך רץ. כל האכיפה היא חוקי חומת אש ומפתחות רגיסטרי — פעולות שלא יכולות לערער את יציבות Windows." />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="עדכונים חתומים">
+                            <StackPanel>
+                                <CheckBox x:Name="AutomaticUpdatesBox"
+                                          Content="אפשר בדיקת עדכונים חתומים אוטומטית"
+                                          Margin="0,0,0,8" />
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="כבוי כברירת מחדל. ההפעלה תעבוד רק עם כתובת manifest ב־HTTPS, מפתח ציבורי RSA וחתימה תקינה. אין להדביק כאן מפתח פרטי או סיסמה." />
+                                <TextBlock Text="כתובת manifest (HTTPS):" Margin="0,8,0,0" />
+                                <TextBox x:Name="UpdateManifestUrlBox" FlowDirection="LeftToRight" />
+                                <TextBlock Text="מפתח ציבורי RSA בפורמט PEM:" Margin="0,8,0,0" />
+                                <TextBox x:Name="UpdatePublicKeyBox" Height="120" AcceptsReturn="True"
+                                         TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FlowDirection="LeftToRight" />
                             </StackPanel>
                         </GroupBox>
 

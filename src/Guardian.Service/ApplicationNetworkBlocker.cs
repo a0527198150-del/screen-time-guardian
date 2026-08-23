@@ -124,7 +124,17 @@ public sealed class ApplicationNetworkBlocker
         var script = new StringBuilder();
         script.AppendLine("$ErrorActionPreference = 'Stop'");
 
-        // Always start from a clean slate so removed rules disappear immediately.
+        // Resolve account scope before touching existing rules. If Windows cannot
+        // calculate the administrator/profile lists, PowerShell exits and the old
+        // rules remain intact instead of being removed first.
+        if (targets.Any(target => target.ExcludeAdministrators))
+        {
+            script.AppendLine("$guardianAdminSids = @(Get-LocalGroupMember -SID 'S-1-5-32-544' -ErrorAction Stop | ForEach-Object { $_.SID.Value })");
+            script.AppendLine("$guardianProfileSids = @(Get-CimInstance Win32_UserProfile -ErrorAction Stop | Where-Object { $_.SID -and $_.LocalPath } | ForEach-Object { $_.SID })");
+            script.AppendLine("$guardianNonAdminSids = @($guardianProfileSids | Where-Object { $guardianAdminSids -notcontains $_ })");
+        }
+
+        // Start from a clean slate only after all prerequisite queries succeeded.
         script.AppendLine(RemovalScript());
 
         foreach (var target in targets)
@@ -132,18 +142,38 @@ public sealed class ApplicationNetworkBlocker
             var ruleName = RulePrefix + StableId(target.Signature);
             var displayName = $"שומר זמן מסך: {Truncate(target.DisplayName, 60)}";
 
-            script.Append("New-NetFirewallRule -Name ").Append(PowerShellRunner.Quote(ruleName));
+            script.AppendLine("$guardianTargetSids = @()");
+            if (target.UserSids.Count > 0)
+            {
+                script.Append("$guardianTargetSids = @(").Append(string.Join(",", target.UserSids
+                    .Where(ConfigurationValidation.IsValidUserSid)
+                    .Select(PowerShellRunner.Quote))).AppendLine(")");
+                if (target.ExcludeAdministrators)
+                {
+                    script.AppendLine("$guardianTargetSids = @($guardianTargetSids | Where-Object { $guardianAdminSids -notcontains $_ })");
+                }
+            }
+            else if (target.ExcludeAdministrators)
+            {
+                script.AppendLine("$guardianTargetSids = $guardianNonAdminSids");
+            }
+
+            script.AppendLine("if ($guardianTargetSids.Count -gt 0 -or " +
+                              (target.UserSids.Count == 0 && !target.ExcludeAdministrators ? "$true" : "$false") +
+                              ") {");
+            script.Append("  New-NetFirewallRule -Name ").Append(PowerShellRunner.Quote(ruleName));
             script.Append(" -DisplayName ").Append(PowerShellRunner.Quote(displayName));
             script.Append(" -Description ").Append(PowerShellRunner.Quote("נוצר אוטומטית. מחיקה ידנית תבוטל בסבב הבא."));
             script.Append(" -Direction Outbound -Action Block -Enabled True -Profile Any");
             script.Append(" -Program ").Append(PowerShellRunner.Quote(target.ExecutablePath));
 
-            if (target.UserSids.Count > 0)
+            if (target.UserSids.Count > 0 || target.ExcludeAdministrators)
             {
-                script.Append(" -LocalUser ").Append(PowerShellRunner.Quote(BuildSddl(target.UserSids)));
+                script.Append(" -LocalUser ").Append("('D:' + (($guardianTargetSids | ForEach-Object { \"(A;;CC;;;$_)\" }) -join ''))");
             }
 
             script.AppendLine(" | Out-Null");
+            script.AppendLine("}");
         }
 
         return script.ToString();

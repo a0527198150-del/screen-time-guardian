@@ -20,6 +20,7 @@ builder.Services.AddSingleton<HiddenBrowserScanner>();
 builder.Services.AddSingleton<ChangeCoordinator>();
 builder.Services.AddSingleton<BrowserPolicySynchronizer>();
 builder.Services.AddHostedService<GuardianWorker>();
+builder.Services.AddHostedService<UpdateCoordinator>();
 builder.Services.AddHostedService<GuardianCommandServer>();
 
 await builder.Build().RunAsync();

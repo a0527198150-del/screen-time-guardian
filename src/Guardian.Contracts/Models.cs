@@ -58,6 +58,10 @@ public sealed class ScheduleWindow
                     ? ruleDate + end.ToTimeSpan()
                     : ruleDate.AddDays(1) + end.ToTimeSpan();
 
+            // Delaying the start must never move the end of a cross-midnight window
+            // backward past the delayed start. A one-second polling boundary is
+            // intentionally not promised; the service samples every 15 seconds.
+
             if (start == end && !AllDay)
             {
                 // Keep the legacy meaning of equal start/end: the rule covers the day.
@@ -192,12 +196,17 @@ public sealed class SafetySettings
 
 public sealed class ConfigurationDocument
 {
-    public int SchemaVersion { get; set; } = 4;
+    public int SchemaVersion { get; set; } = 5;
     public WebsiteEnforcementMode WebsiteEnforcement { get; set; } = WebsiteEnforcementMode.AuditOnly;
     public bool BlockUnknownGoogleSessionsDuringAccountSchedules { get; set; } = true;
     public bool GuestModeAllowedWhenNoRelevantBlock { get; set; } = true;
+    /// <summary>When true, scheduled enforcement also includes users in the local Administrators group.</summary>
+    public bool EnforceForAdministrators { get; set; }
+
+    /// <summary>Enables the signed update polling path. Disabled by default.</summary>
     public bool AutomaticUpdatesEnabled { get; set; }
     public string UpdateManifestUrl { get; set; } = string.Empty;
+    public string UpdatePublicKeyPem { get; set; } = string.Empty;
 
     public ApplicationSecurity Security { get; set; } = new();
     public SafetySettings Safety { get; set; } = new();
@@ -222,7 +231,10 @@ public sealed class NetworkBlockTarget
     public string DisplayName { get; set; } = string.Empty;
     public List<string> UserSids { get; set; } = new();
 
-    public string Signature => $"{ExecutablePath.ToLowerInvariant()}|{string.Join(",", UserSids.OrderBy(sid => sid, StringComparer.Ordinal))}";
+    /// <summary>When true, machine-wide rules are materialized only for non-admin users.</summary>
+    public bool ExcludeAdministrators { get; set; }
+
+    public string Signature => $"{ExecutablePath.ToLowerInvariant()}|{string.Join(",", UserSids.OrderBy(sid => sid, StringComparer.Ordinal))}|{ExcludeAdministrators}";
 }
 
 public sealed class GoogleAccountPolicy
@@ -265,6 +277,7 @@ public sealed class UpdateManifest
     public string PackageUrl { get; set; } = string.Empty;
     public string Sha256 { get; set; } = string.Empty;
     public string? SignatureUrl { get; set; }
+    public string Signature { get; set; } = string.Empty;
     public bool RequiresAdministrator { get; set; } = true;
 }
 
@@ -296,7 +309,10 @@ public sealed class BrowserLockdownSettings
     /// <summary>Minutes between disk scans.</summary>
     public int ScanIntervalMinutes { get; set; } = 10;
 
-    /// <summary>Full paths of browsers that are allowed. Everything else is treated as unapproved.</summary>
+    /// <summary>Allow the listed browsers to run without the Guardian extension. Disabled by default.</summary>
+    public bool AllowApprovedBrowsersWithoutExtension { get; set; }
+
+    /// <summary>Full paths used only when AllowApprovedBrowsersWithoutExtension is enabled.</summary>
     public List<string> ApprovedBrowserPaths { get; set; } = new();
 
     /// <summary>Extra executable names to deny by name, on top of the built-in list.</summary>

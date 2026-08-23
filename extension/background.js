@@ -154,11 +154,23 @@ const SERVICE_HOSTS = {
   meet: ['meet.google.com'],
   photos: ['photos.google.com'],
   search: ['www.google.com'],
-  youtube: ['www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtube.com']
+  youtube: ['www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtube.com'],
+  gemini: ['gemini.google.com'],
+  maps: ['maps.google.com', 'www.google.com/maps'],
+  translate: ['translate.google.com'],
+  keep: ['keep.google.com'],
+  news: ['news.google.com'],
+  finance: ['www.google.com/finance'],
+  groups: ['groups.google.com'],
+  one: ['one.google.com']
 };
 
 function blockedUrlFor(reason) {
   return chrome.runtime.getURL('blocked.html') + '?reason=' + encodeURIComponent(reason);
+}
+
+function urlFilterForHost(host) {
+  return host.includes('/') ? `||${host}` : `||${host}/`;
 }
 
 function normalizeOrigin(value) {
@@ -263,7 +275,7 @@ async function syncRules() {
           id: nextId++,
           priority: 1,
           action: { type: 'redirect', redirect: { url: blockedUrlFor(`${host} חסום עבור ${email} לפי לוח הזמנים.`) } },
-          condition: { urlFilter: `||${host}/`, resourceTypes: ['main_frame'] }
+          condition: { urlFilter: urlFilterForHost(host), resourceTypes: ['main_frame', 'sub_frame'] }
         });
       }
 
@@ -279,7 +291,7 @@ async function syncRules() {
           id: nextId++,
           priority: 1,
           action: { type: 'redirect', redirect: { url: blockedUrlFor(`${host} חסום עבור ${email} לפי לוח הזמנים.`) } },
-          condition: { urlFilter: `||${host}/`, resourceTypes: ['main_frame'] }
+          condition: { urlFilter: urlFilterForHost(host), resourceTypes: ['main_frame', 'sub_frame'] }
         });
       }
     }

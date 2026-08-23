@@ -39,11 +39,17 @@ public sealed class BrowserPolicySynchronizer
     /// Called on every policy cycle. <paramref name="anyBlockActive"/> is true whenever
     /// any rule is currently in force, whatever kind it is.
     /// </summary>
-    public void ApplyPrivateBrowsingPolicy(bool anyBlockActive, bool enforcementAllowed)
+    public void ApplyPrivateBrowsingPolicy(
+        bool anyBlockActive,
+        bool enforcementAllowed,
+        bool enforceForAdministrators)
     {
         // When enforcement is off entirely (safe mode, grace period), leave the browsers
         // fully open. A disabled service must not hold restrictions in place.
-        var allowPrivateBrowsing = !enforcementAllowed || !anyBlockActive;
+        // These are machine-wide registry policies and cannot exclude administrators.
+        // Keep them open when administrators are excluded rather than applying a
+        // restriction to a user who was explicitly opted out.
+        var allowPrivateBrowsing = !enforcementAllowed || !enforceForAdministrators || !anyBlockActive;
 
         if (_lastPrivateBrowsingAllowed == allowPrivateBrowsing)
         {

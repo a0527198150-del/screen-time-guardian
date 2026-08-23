@@ -47,34 +47,50 @@ public sealed class BrowserLaunchBlocker
         AppContext.BaseDirectory,
         "ScreenTimeGuardian.LaunchBlocker.exe");
 
-    public void Apply(BrowserLockdownSettings settings, SafetySettings safety, bool enforcementAllowed)
+    public void Apply(
+        BrowserLockdownSettings settings,
+        SafetySettings safety,
+        bool enforcementAllowed,
+        bool enforceForAdministrators)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
         var desired = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        if (enforcementAllowed && settings.BlockUnapprovedBrowserLaunch)
+        if (enforcementAllowed && enforceForAdministrators && settings.BlockUnapprovedBrowserLaunch)
         {
             if (!File.Exists(StubPath))
             {
                 _logger.LogError(
                     "Launch blocking is enabled but the stub is missing at {Path}. " +
-                    "Refusing to write any IFEO entries - a dangling Debugger value would make applications unlaunchable.",
+                    "Removing owned IFEO entries instead of leaving dangling Debugger values.",
                     StubPath);
+                RemoveOwnedEntries(except: new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+                _applied.Clear();
+                ActiveDenyCount = 0;
+                _everApplied = true;
                 return;
             }
 
-            var approvedNames = settings.ApprovedBrowserPaths
-                .Select(path => Path.GetFileName(path))
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var approvedNames = settings.AllowApprovedBrowsersWithoutExtension
+                ? settings.ApprovedBrowserPaths
+                    .Select(Path.GetFileName)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var stem in BrowserIdentification.KnownBrowserExecutables
                          .Concat(settings.ExtraBlockedBrowserNames))
             {
                 var fileName = Path.GetFileNameWithoutExtension(stem) + ".exe";
 
-                if (!BrowserIdentification.CanDenyByName(fileName) || approvedNames.Contains(fileName))
+                // IFEO is keyed only by executable name, not by full path. When an
+                // administrator approves a browser path, skip that executable name as
+                // well so the approved browser can actually launch without the
+                // extension. This is intentionally a global name-level exception:
+                // Windows cannot express a safe path-specific IFEO exception.
+                if (!BrowserIdentification.CanDenyByName(fileName)
+                    || approvedNames.Contains(fileName))
                 {
                     continue;
                 }

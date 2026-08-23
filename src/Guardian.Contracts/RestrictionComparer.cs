@@ -28,7 +28,8 @@ public static class RestrictionComparer
 
         // Lowering the cooling off delay is itself a loosening change; otherwise it could
         // be set to zero instantly and the whole mechanism would be pointless.
-        if (proposed.ChangeControl.CoolingOffHours < current.ChangeControl.CoolingOffHours)
+        if (proposed.ChangeControl.CoolingOffHours < current.ChangeControl.CoolingOffHours
+            || (current.EnforceForAdministrators && !proposed.EnforceForAdministrators))
         {
             return ChangeDirection.Loosening;
         }
@@ -97,6 +98,18 @@ public static class RestrictionComparer
             }
 
             builder.Append($"מוסיף חסימה של {added.Count} פריטים ({Sample(added)})");
+        }
+
+        if (proposed.EnforceForAdministrators != current.EnforceForAdministrators)
+        {
+            if (builder.Length > 0)
+            {
+                builder.Append("; ");
+            }
+
+            builder.Append(proposed.EnforceForAdministrators
+                ? "כולל משתמשים עם הרשאת מנהל"
+                : "מחריג משתמשים עם הרשאת מנהל");
         }
 
         if (proposed.ChangeControl.CoolingOffHours != current.ChangeControl.CoolingOffHours)
@@ -191,6 +204,15 @@ public static class RestrictionComparer
         }
 
         if (proposed.ScanIntervalMinutes > current.ScanIntervalMinutes)
+        {
+            return true;
+        }
+
+        // Enabling the approval switch with paths is a relaxation even when the paths
+        // were already present in the saved list.
+        if (!current.AllowApprovedBrowsersWithoutExtension
+            && proposed.AllowApprovedBrowsersWithoutExtension
+            && proposed.ApprovedBrowserPaths.Count > 0)
         {
             return true;
         }

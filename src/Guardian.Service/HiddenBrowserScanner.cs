@@ -35,7 +35,10 @@ public sealed class HiddenBrowserScanner
 
     private sealed record CacheEntry(long Length, DateTime WriteUtc, string? BrowserName);
 
-    public IReadOnlyList<NetworkBlockTarget> Scan(BrowserLockdownSettings settings, bool enforcementAllowed)
+    public IReadOnlyList<NetworkBlockTarget> Scan(
+        BrowserLockdownSettings settings,
+        bool enforcementAllowed,
+        bool enforceForAdministrators)
     {
         if (!enforcementAllowed || !settings.ScanForHiddenBrowsers)
         {
@@ -50,10 +53,12 @@ public sealed class HiddenBrowserScanner
         }
 
         _lastScan = DateTimeOffset.UtcNow;
+        var approved = settings.AllowApprovedBrowsersWithoutExtension
+            ? settings.ApprovedBrowserPaths
+                .Concat(BrowserIdentification.DefaultApprovedPaths())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        var approved = settings.ApprovedBrowserPaths
-            .Concat(BrowserIdentification.DefaultApprovedPaths())
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var found = new List<NetworkBlockTarget>();
         var budget = MaximumFilesPerScan;
@@ -65,7 +70,7 @@ public sealed class HiddenBrowserScanner
                 break;
             }
 
-            ScanFolder(folder, 0, approved, found, ref budget);
+            ScanFolder(folder, 0, approved, found, enforceForAdministrators, ref budget);
         }
 
         if (found.Count > 0)
@@ -117,6 +122,7 @@ public sealed class HiddenBrowserScanner
         int depth,
         IReadOnlySet<string> approved,
         List<NetworkBlockTarget> found,
+        bool enforceForAdministrators,
         ref int budget)
     {
         if (depth > MaximumDepth || budget <= 0)
@@ -146,7 +152,8 @@ public sealed class HiddenBrowserScanner
             {
                 ExecutablePath = file,
                 DisplayName = $"דפדפן לא מאושר: {name}",
-                UserSids = new List<string>()
+                UserSids = new List<string>(),
+                ExcludeAdministrators = !enforceForAdministrators
             });
         }
 
@@ -157,7 +164,7 @@ public sealed class HiddenBrowserScanner
                 return;
             }
 
-            ScanFolder(child, depth + 1, approved, found, ref budget);
+            ScanFolder(child, depth + 1, approved, found, enforceForAdministrators, ref budget);
         }
     }
 

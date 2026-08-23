@@ -16,6 +16,13 @@ const SERVICE_BY_HOST = {
   'slides.google.com': 'docs',
   'meet.google.com': 'meet',
   'photos.google.com': 'photos',
+  'gemini.google.com': 'gemini',
+  'maps.google.com': 'maps',
+  'translate.google.com': 'translate',
+  'keep.google.com': 'keep',
+  'news.google.com': 'news',
+  'groups.google.com': 'groups',
+  'one.google.com': 'one',
   'www.google.com': 'search',
   'youtube.com': 'youtube',
   'www.youtube.com': 'youtube',
@@ -30,7 +37,13 @@ let lastCheck = 0;
 let timer;
 
 function currentService() {
-  return SERVICE_BY_HOST[location.hostname] || 'google';
+  const host = location.hostname;
+  const path = location.pathname.toLowerCase();
+  if (host === 'www.google.com' || host === 'google.com') {
+    if (path.startsWith('/maps')) return 'maps';
+    if (path.startsWith('/finance')) return 'finance';
+  }
+  return SERVICE_BY_HOST[host] || 'google';
 }
 
 function currentOrigin() {

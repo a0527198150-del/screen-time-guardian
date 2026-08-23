@@ -31,7 +31,8 @@ public sealed class PolicyEngine
                 {
                     ExecutablePath = target.ExecutablePath,
                     DisplayName = string.IsNullOrWhiteSpace(target.DisplayName) ? rule.Name : target.DisplayName,
-                    UserSids = rule.AppliesToUserSids.ToList()
+                    UserSids = rule.AppliesToUserSids.ToList(),
+                    ExcludeAdministrators = !configuration.EnforceForAdministrators
                 });
             }
         }
@@ -69,27 +70,15 @@ public sealed class PolicyEngine
     }
 
     /// <summary>
-    /// Merges duplicate executables. If one rule blocks it for everyone and another blocks
-    /// it for a specific user, the machine wide block wins.
+    /// Removes exact duplicate targets without merging different user scopes. A target
+    /// for all non-admin users cannot safely be merged with a target for one named user:
+    /// collapsing those scopes would silently broaden a firewall rule.
     /// </summary>
     private static List<NetworkBlockTarget> Consolidate(IEnumerable<NetworkBlockTarget> targets)
     {
         return targets
-            .GroupBy(target => target.ExecutablePath, StringComparer.OrdinalIgnoreCase)
-            .Select(group =>
-            {
-                var machineWide = group.Any(target => target.UserSids.Count == 0);
-                return new NetworkBlockTarget
-                {
-                    ExecutablePath = group.Key,
-                    DisplayName = group.First().DisplayName,
-                    UserSids = machineWide
-                        ? new List<string>()
-                        : group.SelectMany(target => target.UserSids)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToList()
-                };
-            })
+            .GroupBy(target => target.Signature, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
             .ToList();
     }
 

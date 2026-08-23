@@ -1,8 +1,21 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "websiteEnforcement": "AuditOnly",
   "blockUnknownGoogleSessionsDuringAccountSchedules": true,
   "guestModeAllowedWhenNoRelevantBlock": true,
+  "enforceForAdministrators": false,
+  "automaticUpdatesEnabled": false,
+  "updateManifestUrl": "",
+  "updatePublicKeyPem": "",
+  "browserLockdown": {
+    "blockUnapprovedBrowserLaunch": false,
+    "scanForHiddenBrowsers": false,
+    "scanIntervalMinutes": 10,
+    "allowApprovedBrowsersWithoutExtension": false,
+    "approvedBrowserPaths": [],
+    "extraBlockedBrowserNames": [],
+    "extraScanFolders": []
+  },
   "safety": {
     "bootGraceSeconds": 120,
     "serviceGraceSeconds": 30,
@@ -38,7 +51,7 @@
       "name": "my@gmail.com",
       "email": "my@gmail.com",
       "enabled": true,
-      "services": ["gmail", "youtube"],
+      "services": ["gmail", "youtube", "gemini", "drive"],
       "sites": ["https://example-forum.com"],
       "windows": [
         {

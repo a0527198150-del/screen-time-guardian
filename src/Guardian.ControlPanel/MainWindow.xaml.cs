@@ -179,6 +179,11 @@ public partial class MainWindow : Window
 
             BlockBrowserLaunchBox.IsChecked = _configuration.BrowserLockdown.BlockUnapprovedBrowserLaunch;
             ScanHiddenBrowsersBox.IsChecked = _configuration.BrowserLockdown.ScanForHiddenBrowsers;
+            AllowApprovedBrowsersWithoutExtensionBox.IsChecked = _configuration.BrowserLockdown.AllowApprovedBrowsersWithoutExtension;
+            EnforceForAdministratorsBox.IsChecked = _configuration.EnforceForAdministrators;
+            AutomaticUpdatesBox.IsChecked = _configuration.AutomaticUpdatesEnabled;
+            UpdateManifestUrlBox.Text = _configuration.UpdateManifestUrl;
+            UpdatePublicKeyBox.Text = _configuration.UpdatePublicKeyPem;
             ScanIntervalBox.Text = _configuration.BrowserLockdown.ScanIntervalMinutes.ToString();
             CoolingOffBox.Text = _configuration.ChangeControl.CoolingOffHours.ToString();
             WebsiteDelayBox.Text = "0";
@@ -221,6 +226,11 @@ public partial class MainWindow : Window
 
         _configuration.BrowserLockdown.BlockUnapprovedBrowserLaunch = BlockBrowserLaunchBox.IsChecked == true;
         _configuration.BrowserLockdown.ScanForHiddenBrowsers = ScanHiddenBrowsersBox.IsChecked == true;
+        _configuration.BrowserLockdown.AllowApprovedBrowsersWithoutExtension = AllowApprovedBrowsersWithoutExtensionBox.IsChecked == true;
+        _configuration.EnforceForAdministrators = EnforceForAdministratorsBox.IsChecked == true;
+        _configuration.AutomaticUpdatesEnabled = AutomaticUpdatesBox.IsChecked == true;
+        _configuration.UpdateManifestUrl = UpdateManifestUrlBox.Text.Trim();
+        _configuration.UpdatePublicKeyPem = UpdatePublicKeyBox.Text.Trim();
         _configuration.BrowserLockdown.ScanIntervalMinutes = ParseInt(ScanIntervalBox.Text, 10, "תדירות סריקה");
         _configuration.BrowserLockdown.ApprovedBrowserPaths = _approvedBrowsers.ToList();
         _configuration.ChangeControl.CoolingOffHours = ParseInt(CoolingOffBox.Text, 0, "שעות המתנה להקלה");
@@ -1041,6 +1051,16 @@ public partial class MainWindow : Window
 
     private void DetectBrowsersButton_OnClick(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            EnsureAuthenticated();
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            SetStatus(exception.Message, true);
+            return;
+        }
+
         var added = 0;
         foreach (var path in BrowserIdentification.DefaultApprovedPaths())
         {
@@ -1060,6 +1080,16 @@ public partial class MainWindow : Window
 
     private void AddApprovedBrowserButton_OnClick(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            EnsureAuthenticated();
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            SetStatus(exception.Message, true);
+            return;
+        }
+
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = "בחר קובץ הפעלה של דפדפן מאושר",
@@ -1085,6 +1115,16 @@ public partial class MainWindow : Window
 
     private void RemoveApprovedBrowserButton_OnClick(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            EnsureAuthenticated();
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            SetStatus(exception.Message, true);
+            return;
+        }
+
         if (ApprovedBrowsersListBox.SelectedItem is string path)
         {
             _approvedBrowsers.Remove(path);

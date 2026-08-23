@@ -6,9 +6,9 @@ namespace ScreenTimeGuardian.Service;
 
 public sealed class GuardianWorker : BackgroundService
 {
-    // Run frequently enough for short activation delays while keeping the policy
-    // evaluation independent from the control-panel lifetime.
-    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(1);
+    // Policy changes are intentionally sampled every 15 seconds. Activation delays
+    // shorter than this are not promised to be sub-second precise.
+    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(15);
 
     private readonly ConfigurationStore _store;
     private readonly PolicyEngine _engine;
@@ -114,10 +114,17 @@ public sealed class GuardianWorker : BackgroundService
 
         // Unapproved browsers found on disk are blocked around the clock, not on a
         // schedule: an escape hatch is an escape hatch at any hour.
-        var hiddenBrowsers = _browserScanner.Scan(configuration.BrowserLockdown, safety.EnforcementAllowed);
+        var hiddenBrowsers = _browserScanner.Scan(
+            configuration.BrowserLockdown,
+            safety.EnforcementAllowed,
+            configuration.EnforceForAdministrators);
         var allNetworkBlocks = snapshot.NetworkBlocks.Concat(hiddenBrowsers).ToList();
 
-        _launchBlocker.Apply(configuration.BrowserLockdown, configuration.Safety, safety.EnforcementAllowed);
+        _launchBlocker.Apply(
+            configuration.BrowserLockdown,
+            configuration.Safety,
+            safety.EnforcementAllowed,
+            configuration.EnforceForAdministrators);
 
         await _networkBlocker.ApplyAsync(
             allNetworkBlocks,
@@ -126,14 +133,19 @@ public sealed class GuardianWorker : BackgroundService
             cancellationToken);
 
         await _websiteBlocker.ApplyAsync(
-            safety.EnforcementAllowed ? configuration.WebsiteEnforcement : WebsiteEnforcementMode.Disabled,
+            safety.EnforcementAllowed && configuration.EnforceForAdministrators
+                ? configuration.WebsiteEnforcement
+                : WebsiteEnforcementMode.Disabled,
             snapshot.BlockedDomains,
             configuration.Safety,
             cancellationToken);
 
         // Incognito and guest mode follow the schedule: closed while a block runs,
         // open the rest of the time.
-        _browserPolicies.ApplyPrivateBrowsingPolicy(snapshot.IsAnyBlockActive, safety.EnforcementAllowed);
+        _browserPolicies.ApplyPrivateBrowsingPolicy(
+            snapshot.IsAnyBlockActive,
+            safety.EnforcementAllowed,
+            configuration.EnforceForAdministrators);
 
         _status.Update(new GuardianStatus
         {
@@ -201,7 +213,7 @@ public sealed class GuardianWorker : BackgroundService
 
 public sealed class ServiceStatusHolder
 {
-    public const string Version = "0.4.5";
+    public const string Version = "0.4.6";
 
     private GuardianStatus _status = new() { Version = Version };
 

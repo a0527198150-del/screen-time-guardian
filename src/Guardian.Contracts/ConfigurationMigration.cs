@@ -2,7 +2,7 @@ namespace ScreenTimeGuardian.Contracts;
 
 public static class ConfigurationMigrator
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     public static ConfigurationDocument Migrate(ConfigurationDocument configuration)
     {
@@ -52,9 +52,39 @@ public static class ConfigurationMigrator
         configuration.Safety.MaxActionsPerMinute = Math.Clamp(configuration.Safety.MaxActionsPerMinute, 1, 200);
         configuration.ChangeControl.CoolingOffHours = Math.Clamp(configuration.ChangeControl.CoolingOffHours, 0, 720);
         configuration.BrowserLockdown.ScanIntervalMinutes = Math.Clamp(configuration.BrowserLockdown.ScanIntervalMinutes, 1, 1440);
+        configuration.UpdateManifestUrl = configuration.UpdateManifestUrl?.Trim() ?? string.Empty;
+        configuration.UpdatePublicKeyPem = configuration.UpdatePublicKeyPem?.Trim() ?? string.Empty;
+        if (!ConfigurationValidation.IsValidHttpsUrl(configuration.UpdateManifestUrl)
+            || !ConfigurationValidation.IsValidRsaPublicKeyPem(configuration.UpdatePublicKeyPem))
+        {
+            configuration.UpdateManifestUrl = string.Empty;
+            configuration.AutomaticUpdatesEnabled = false;
+        }
         configuration.BrowserLockdown.ApprovedBrowserPaths ??= new List<string>();
+        configuration.BrowserLockdown.ApprovedBrowserPaths = configuration.BrowserLockdown.ApprovedBrowserPaths
+            .Select(path => path.Trim())
+            .Where(path => path.Length > 0
+                && Path.IsPathFullyQualified(path)
+                && path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                && File.Exists(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(100)
+            .ToList();
         configuration.BrowserLockdown.ExtraBlockedBrowserNames ??= new List<string>();
+        configuration.BrowserLockdown.ExtraBlockedBrowserNames = configuration.BrowserLockdown.ExtraBlockedBrowserNames
+            .Select(Path.GetFileNameWithoutExtension)
+            .Where(name => !string.IsNullOrWhiteSpace(name)
+                && BrowserIdentification.CanDenyByName(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(100)
+            .ToList();
         configuration.BrowserLockdown.ExtraScanFolders ??= new List<string>();
+        configuration.BrowserLockdown.ExtraScanFolders = configuration.BrowserLockdown.ExtraScanFolders
+            .Select(path => path.Trim())
+            .Where(path => path.Length > 0 && Path.IsPathFullyQualified(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(50)
+            .ToList();
 
         foreach (var rule in configuration.Applications)
         {

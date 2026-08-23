@@ -1,4 +1,4 @@
-# מסירת גרסה 0.4.5
+# מסירת גרסה 0.4.6
 
 הקוד כבר נמצא ב־`main`. אין להעלות קובצי ZIP לתוך הריפו ואין לבצע מחיקות ידניות דרך GitHub. שינויים נמסרים באמצעות commit ו־push, וה־workflow בודק אותם אוטומטית.
 
@@ -12,7 +12,7 @@
 ## יצירת חבילת התקנה
 
 1. פתח את GitHub Actions ובחר `package`.
-2. הפעל את ה־workflow על `main` או צור תגית `v0.4.5`.
+2. הפעל את ה־workflow על `main` או צור תגית `v0.4.6`.
 3. הורד את artifact בשם `ScreenTimeGuardian-*`.
 4. ודא שהחבילה כוללת את התיקיות `Service`, `ControlPanel`, `NativeHost`, `Agent`, `Updater`, `Extension`, `Policies`, `Docs`, ובתוך `NativeHost` גם את `NativeHost.manifest.json`.
 

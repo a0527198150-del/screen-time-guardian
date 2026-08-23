@@ -2,12 +2,10 @@
   "manifest_version": 3,
   "name": "שומר זמן מסך",
   "description": "זיהוי חשבון Google, גילוי אתרים שנכנסים אליהם דרך Google, ואכיפת לוח זמנים",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "minimum_chrome_version": "120",
   "permissions": [
     "nativeMessaging",
-    "storage",
-    "tabs",
     "alarms",
     "webNavigation",
     "declarativeNetRequest"
@@ -16,10 +14,14 @@
     "https://accounts.google.com/*",
     "https://*.google.com/*",
     "https://*.youtube.com/*",
-    "https://youtube.com/*"
-  ],
-  "optional_host_permissions": [
-    "https://*/*"
+    "https://youtube.com/*",
+    "https://gemini.google.com/*",
+    "https://maps.google.com/*",
+    "https://translate.google.com/*",
+    "https://keep.google.com/*",
+    "https://news.google.com/*",
+    "https://groups.google.com/*",
+    "https://one.google.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -30,7 +32,14 @@
       "matches": [
         "https://*.google.com/*",
         "https://*.youtube.com/*",
-        "https://youtube.com/*"
+        "https://youtube.com/*",
+        "https://gemini.google.com/*",
+        "https://maps.google.com/*",
+        "https://translate.google.com/*",
+        "https://keep.google.com/*",
+        "https://news.google.com/*",
+        "https://groups.google.com/*",
+        "https://one.google.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_start",
