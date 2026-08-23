@@ -255,8 +255,9 @@ if ($existingService -and $existingService.Status -ne 'Stopped') {
 }
 
 # ---- 3. Copy files ----------------------------------------------------------
-if ((Resolve-Path $SourceFolder).Path.TrimEnd('\') -eq
-    (Resolve-Path $InstallRoot).Path.TrimEnd('\')) {
+$sourceFull = [System.IO.Path]::GetFullPath($SourceFolder).TrimEnd('\')
+$targetFull = [System.IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
+if ($sourceFull -eq $targetFull) {
     Green 'הקבצים כבר נמצאים בתיקיית היעד. מדלג על העתקה.'
 }
 else {
