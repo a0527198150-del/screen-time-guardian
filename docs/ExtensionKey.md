@@ -3,7 +3,7 @@
 ## מזהה התוסף הקבוע
 
 ```
-gmbljenejiabkeokeedhpbjddkgpnmnc
+kflejjfoelhfageecelnboegbeoabgge
 ```
 
 זהו המזהה הנגזר מהמפתח הציבורי. הוא לא ישתנה כל עוד המפתח הפרטי נשמר.
@@ -39,7 +39,7 @@ chrome://extensions ← Developer mode ← Load unpacked ← תיקיית Extens
 המזהה שמוצג חייב להיות:
 
 ```
-gmbljenejiabkeokeedhpbjddkgpnmnc
+kflejjfoelhfageecelnboegbeoabgge
 ```
 
 אם המזהה שונה — המפתח הציבורי לא נקלט נכון, ותקן את שדה `"key"`.
@@ -47,7 +47,7 @@ gmbljenejiabkeokeedhpbjddkgpnmnc
 ## רישום Native Host
 
 ```powershell
-.\Register-NativeHost.ps1 -ExtensionId 'gmbljenejiabkeokeedhpbjddkgpnmnc' -EdgeExtensionId 'gmbljenejiabkeokeedhpbjddkgpnmnc'
+.\Register-NativeHost.ps1 -ExtensionId 'kflejjfoelhfageecelnboegbeoabgge' -EdgeExtensionId 'kflejjfoelhfageecelnboegbeoabgge'
 ```
 
 ## גיבוי
