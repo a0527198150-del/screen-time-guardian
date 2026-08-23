@@ -51,7 +51,7 @@ public sealed class UpdateInstaller
 {
     // SHA-256 detects corruption but does not prove who published the package.
     // Keep updates disabled until a publisher public key is embedded and verified.
-    private const bool SignedUpdatesEnabled = false;
+    private static readonly bool SignedUpdatesEnabled = false;
 
     public void Apply(UpdateArguments options)
     {
