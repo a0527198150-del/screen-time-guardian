@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxN7bWJeCcJ29XUezNDe7/MafcEn8f50EeZzjug5/rO+reWg2FaP3gJ7yNHnhRJyUJUf9TZO8ECvmH0r0STuQTOCMmfCIzfuHEF+78BVOaicXB2ljW6s4DleeWrvs8KBensUyNjWysHmM70pqJuWgeRYGnlREFL7faagHxbgEy7Ki7ioS7/friFFJaWYgAluOhY3NhPj8k0f1fMBlXikrnreOxBZD3sZp5J/b8YxRCo5z79yOjo641qbffUEFFI8lTCCdjdCtQ1/xpMFzIA0IpTxvg6RWMDbZ1E3bKBpq55DJ+2Ab4zqke0EzRzg2uMfOEAdIKVtF2eAA3IkGdx2U0wIDAQAB",
   "name": "שומר זמן מסך",
   "description": "זיהוי חשבון Google, גילוי אתרים שנכנסים אליהם דרך Google, ואכיפת לוח זמנים",
   "version": "0.4.6",
