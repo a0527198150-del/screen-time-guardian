@@ -33,7 +33,8 @@ public static class RestrictionComparer
             return ChangeDirection.Loosening;
         }
 
-        if (IsLockdownWeaker(current.BrowserLockdown, proposed.BrowserLockdown))
+        if (IsLockdownWeaker(current.BrowserLockdown, proposed.BrowserLockdown)
+            || IsScheduleDelayWeaker(current, proposed))
         {
             return ChangeDirection.Loosening;
         }
@@ -160,6 +161,22 @@ public static class RestrictionComparer
 
         return set;
     }
+
+    private static bool IsScheduleDelayWeaker(ConfigurationDocument current, ConfigurationDocument proposed)
+    {
+        var currentDelays = AllWindows(current)
+            .ToDictionary(window => window.Id, window => window.ActivationDelaySeconds);
+
+        return AllWindows(proposed).Any(window =>
+            currentDelays.TryGetValue(window.Id, out var previous)
+            && window.ActivationDelaySeconds > previous)
+            || currentDelays.Keys.Except(AllWindows(proposed).Select(window => window.Id), StringComparer.OrdinalIgnoreCase).Any();
+    }
+
+    private static IEnumerable<ScheduleWindow> AllWindows(ConfigurationDocument configuration) =>
+        configuration.Applications.SelectMany(rule => rule.Windows)
+            .Concat(configuration.Websites.SelectMany(rule => rule.Windows))
+            .Concat(configuration.GoogleAccounts.SelectMany(rule => rule.Windows));
 
     private static bool IsLockdownWeaker(BrowserLockdownSettings current, BrowserLockdownSettings proposed)
     {

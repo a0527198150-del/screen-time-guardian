@@ -46,6 +46,7 @@ jobs:
           Copy-Item extension/* artifacts/ScreenTimeGuardian/Extension/ -Recurse -Force
           Copy-Item policies/* artifacts/ScreenTimeGuardian/Policies/ -Recurse -Force
           Copy-Item docs/* artifacts/ScreenTimeGuardian/Docs/ -Recurse -Force
+          Copy-Item src/Guardian.NativeHost/NativeHost.manifest.json artifacts/ScreenTimeGuardian/NativeHost/NativeHost.manifest.json -Force
           Compress-Archive -Path artifacts/ScreenTimeGuardian/Extension/* -DestinationPath artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -Force
 
       - name: Create deployment package

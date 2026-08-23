@@ -34,7 +34,7 @@ public static class ApplicationPassword
 
     public static bool Verify(string password, ApplicationSecurity security)
     {
-        if (!security.IsConfigured || string.IsNullOrEmpty(password))
+        if (!security.IsConfigured || string.IsNullOrEmpty(password) || password.Length > 256)
         {
             return false;
         }
@@ -43,6 +43,11 @@ public static class ApplicationPassword
         {
             var salt = Convert.FromBase64String(security.Salt);
             var expected = Convert.FromBase64String(security.PasswordHash);
+            if (salt.Length != SaltBytes || expected.Length != HashBytes)
+            {
+                return false;
+            }
+
             var actual = Derive(password, salt, security.Iterations);
             return CryptographicOperations.FixedTimeEquals(actual, expected);
         }
@@ -54,9 +59,9 @@ public static class ApplicationPassword
 
     public static void Validate(string password)
     {
-        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8 || password.Length > 256)
         {
-            throw new ArgumentException("סיסמת האפליקציה חייבת להכיל לפחות 8 תווים.", nameof(password));
+            throw new ArgumentException("סיסמת האפליקציה חייבת להכיל בין 8 ל־256 תווים.", nameof(password));
         }
     }
 
@@ -65,7 +70,7 @@ public static class ApplicationPassword
         return Rfc2898DeriveBytes.Pbkdf2(
             password,
             salt,
-            Math.Max(iterations, 100_000),
+            Math.Clamp(iterations, 100_000, 1_000_000),
             HashAlgorithmName.SHA256,
             HashBytes);
     }

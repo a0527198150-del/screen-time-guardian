@@ -6,10 +6,9 @@ namespace ScreenTimeGuardian.Service;
 
 public sealed class GuardianWorker : BackgroundService
 {
-    // The old loop ran every second and did per-process certificate chain building
-    // inside it. Fifteen seconds is far more than enough for minute-level schedules
-    // and costs effectively nothing.
-    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(15);
+    // Run frequently enough for short activation delays while keeping the policy
+    // evaluation independent from the control-panel lifetime.
+    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(1);
 
     private readonly ConfigurationStore _store;
     private readonly PolicyEngine _engine;
@@ -202,7 +201,7 @@ public sealed class GuardianWorker : BackgroundService
 
 public sealed class ServiceStatusHolder
 {
-    public const string Version = "0.4.3";
+    public const string Version = "0.4.4";
 
     private GuardianStatus _status = new() { Version = Version };
 

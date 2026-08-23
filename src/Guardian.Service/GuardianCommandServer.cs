@@ -18,6 +18,7 @@ public sealed class GuardianCommandServer : BackgroundService
     };
 
     private const int MaxFailedAttempts = 5;
+    private const int MaxRequestCharacters = 256_000;
     private static readonly TimeSpan LockoutWindow = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan DiscoveryThrottle = TimeSpan.FromSeconds(2);
 
@@ -101,7 +102,12 @@ public sealed class GuardianCommandServer : BackgroundService
         string? requestJson;
         try
         {
-            requestJson = await reader.ReadLineAsync(readTimeout.Token);
+            requestJson = await ReadBoundedLineAsync(reader, MaxRequestCharacters, readTimeout.Token);
+        }
+        catch (InvalidDataException)
+        {
+            await writer.WriteLineAsync(JsonSerializer.Serialize(Error("הפקודה גדולה מדי."), JsonOptions));
+            return;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -133,6 +139,41 @@ public sealed class GuardianCommandServer : BackgroundService
         }
 
         await writer.WriteLineAsync(JsonSerializer.Serialize(response, JsonOptions));
+    }
+
+    private static async Task<string?> ReadBoundedLineAsync(
+        TextReader reader,
+        int maximumCharacters,
+        CancellationToken cancellationToken)
+    {
+        var builder = new StringBuilder(Math.Min(maximumCharacters, 8192));
+        var buffer = new char[4096];
+
+        while (true)
+        {
+            var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken);
+            if (read == 0)
+            {
+                return builder.Length == 0 ? null : builder.ToString();
+            }
+
+            var newlineIndex = Array.IndexOf(buffer, '\\n', 0, read);
+            var charactersToAppend = newlineIndex >= 0 ? newlineIndex : read;
+            if (builder.Length + charactersToAppend > maximumCharacters)
+            {
+                throw new InvalidDataException("Request exceeds the configured size limit.");
+            }
+
+            if (charactersToAppend > 0)
+            {
+                builder.Append(buffer, 0, charactersToAppend);
+            }
+
+            if (newlineIndex >= 0)
+            {
+                return builder.ToString().TrimEnd('\\r');
+            }
+        }
     }
 
     private GuardianCommandResponse ExecuteCommand(GuardianCommand request)

@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$ExtensionId,
-    [string]$NativeHostPath = 'C:\Program Files\ScreenTimeGuardian\ScreenTimeGuardian.NativeHost.exe'
+    [string]$NativeHostPath = 'C:\Program Files\ScreenTimeGuardian\NativeHost\ScreenTimeGuardian.NativeHost.exe'
 )
 
 Set-StrictMode -Version Latest
@@ -11,10 +11,15 @@ if ($ExtensionId -notmatch '^[a-z]{32}$') {
     throw 'ExtensionId must be the final 32-character Chrome extension id.'
 }
 
+if (-not (Test-Path -LiteralPath $NativeHostPath -PathType Leaf)) {
+    throw "Native host executable was not found: $NativeHostPath"
+}
+
+$resolvedNativeHostPath = (Resolve-Path -LiteralPath $NativeHostPath).Path
 $manifest = @{
     name = 'com.screentimeguardian.host'
     description = 'Screen Time Guardian policy bridge'
-    path = $NativeHostPath
+    path = $resolvedNativeHostPath
     type = 'stdio'
     allowed_origins = @("chrome-extension://$ExtensionId/")
 } | ConvertTo-Json -Depth 4

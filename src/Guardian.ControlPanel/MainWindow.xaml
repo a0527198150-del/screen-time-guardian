@@ -3,45 +3,103 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="שומר זמן מסך" Height="880" Width="1180"
         FlowDirection="RightToLeft"
+        FontFamily="Segoe UI"
+        Background="#F8F9FA"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
+        <SolidColorBrush x:Key="GoogleBlue" Color="#1A73E8" />
+        <SolidColorBrush x:Key="GoogleBlueDark" Color="#1557B0" />
+        <SolidColorBrush x:Key="Ink" Color="#202124" />
+        <SolidColorBrush x:Key="MutedInk" Color="#5F6368" />
+        <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="SurfaceAlt" Color="#F1F3F4" />
+        <SolidColorBrush x:Key="BorderLine" Color="#DADCE0" />
         <Style TargetType="Button">
-            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Padding" Value="14,7" />
             <Setter Property="Margin" Value="0,3,6,3" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource GoogleBlue}" />
+            <Setter Property="BorderBrush" Value="{StaticResource GoogleBlue}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style TargetType="TextBox">
-            <Setter Property="Margin" Value="0,2" />
-            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="Margin" Value="0,3" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
+        </Style>
+        <Style TargetType="PasswordBox">
+            <Setter Property="Margin" Value="0,3" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
         </Style>
         <Style TargetType="GroupBox">
-            <Setter Property="Padding" Value="10" />
-            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
+            <Setter Property="Padding" Value="4" />
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="16,9" />
+            <Setter Property="Foreground" Value="{StaticResource MutedInk}" />
+            <Setter Property="FontSize" Value="13" />
         </Style>
         <Style x:Key="Hint" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="Gray" />
+            <Setter Property="Foreground" Value="{StaticResource MutedInk}" />
             <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="LineHeight" Value="20" />
         </Style>
     </Window.Resources>
 
-    <DockPanel Margin="16">
+    <DockPanel Margin="20">
 
         <!-- Login bar -->
-        <Border DockPanel.Dock="Top" Background="#F3F4F6" Padding="12" CornerRadius="6" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="סיסמת האפליקציה:" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <PasswordBox x:Name="AppPasswordBox" Width="240" FlowDirection="LeftToRight" VerticalAlignment="Center" />
-                <Button Content="אמת / הגדר" Click="AuthenticateButton_OnClick" />
-                <Button Content="טען מחדש" Click="ReloadButton_OnClick" />
-                <Button x:Name="SaveButton" Content="שמור הכל" FontWeight="Bold" Click="SaveButton_OnClick" />
-                <TextBlock x:Name="HeaderStatusText" VerticalAlignment="Center" Margin="16,0,0,0"
-                           Foreground="DimGray" TextWrapping="Wrap" MaxWidth="420" />
-            </StackPanel>
+        <Border DockPanel.Dock="Top" Background="{StaticResource Surface}" BorderBrush="{StaticResource BorderLine}"
+                BorderThickness="1" Padding="16" CornerRadius="8" Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="240" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="שומר זמן מסך" FontSize="18" FontWeight="SemiBold"
+                           Foreground="{StaticResource GoogleBlue}" VerticalAlignment="Center" Margin="0,0,22,0" />
+                <PasswordBox Grid.Column="1" x:Name="AppPasswordBox" FlowDirection="LeftToRight" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Content="אמת / הגדר" Style="{StaticResource PrimaryButton}" Click="AuthenticateButton_OnClick" />
+                <Button Grid.Column="3" Content="טען מחדש" Click="ReloadButton_OnClick" />
+                <Button Grid.Column="4" x:Name="SaveButton" Content="שמור הכל" Style="{StaticResource PrimaryButton}" Click="SaveButton_OnClick" />
+                <TextBlock Grid.Column="5" x:Name="HeaderStatusText" VerticalAlignment="Center" Margin="16,0,0,0"
+                           Foreground="{StaticResource MutedInk}" TextWrapping="Wrap" MaxWidth="420" />
+            </Grid>
         </Border>
 
         <!-- Status bar -->
-        <Border DockPanel.Dock="Bottom" Padding="8,6" Margin="0,10,0,0" Background="#F9FAFB" CornerRadius="4">
-            <TextBlock x:Name="StatusText" TextWrapping="Wrap" Foreground="DarkGreen" />
+        <Border DockPanel.Dock="Bottom" Padding="12,9" Margin="0,14,0,0" Background="{StaticResource SurfaceAlt}"
+                BorderBrush="{StaticResource BorderLine}" BorderThickness="1" CornerRadius="6">
+            <TextBlock x:Name="StatusText" TextWrapping="Wrap" Foreground="#137333" />
         </Border>
 
         <TabControl x:Name="MainTabs">
@@ -168,9 +226,21 @@
                                             <TextBox Grid.Row="1" Grid.Column="1" x:Name="WindowEndBox" FlowDirection="LeftToRight"
                                                      LostFocus="WindowField_OnChanged" />
                                         </Grid>
-                                        <CheckBox x:Name="WindowEnabledBox" Content="החלון פעיל" Margin="0,10,0,0" Click="WindowField_OnChanged" />
+                                        <Grid Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="130" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox Grid.Column="0" x:Name="WindowEnabledBox" Content="החלון פעיל"
+                                                      VerticalAlignment="Center" Click="WindowField_OnChanged" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="השהיית אכיפה (שניות):" FontSize="12" />
+                                                <TextBox x:Name="ActivationDelayBox" FlowDirection="LeftToRight"
+                                                         LostFocus="WindowField_OnChanged" />
+                                            </StackPanel>
+                                        </Grid>
                                         <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
-                                                   Text="פורמט שעה HH:mm. אם שעת הסיום קטנה משעת ההתחלה החלון חוצה חצות, והיום שמסומן הוא היום שבו הוא מתחיל." />
+                                                   Text="ההשהיה מתחילה כשהחלון נכנס לתוקף. ברירת המחדל 0 = חסימה מיידית. הטווח המאושר הוא 0 עד 86400 שניות. פורמט שעה HH:mm; אם הסיום קטן מההתחלה החלון חוצה חצות." />
                                     </StackPanel>
                                 </Grid>
                             </GroupBox>
@@ -240,12 +310,20 @@
 
                             <GroupBox Header="לוח זמנים לחשבון">
                                 <StackPanel>
-                                    <ListBox x:Name="AccountWindowsListBox" Height="120" />
+                                    <ListBox x:Name="AccountWindowsListBox" Height="120"
+                                             SelectionChanged="AccountWindowsListBox_OnSelectionChanged" />
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="העתק לוח זמנים מכלל אפליקציות נבחר" Click="CopyScheduleButton_OnClick" />
                                         <Button Content="חלון 'כל היום, כל השבוע'" Click="AddAlwaysWindowButton_OnClick" />
                                         <Button Content="מחק חלון" Click="RemoveAccountWindowButton_OnClick" />
                                     </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <TextBlock Text="השהיית אכיפה לחלון הנבחר (שניות):" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <TextBox x:Name="AccountWindowDelayBox" Width="100" FlowDirection="LeftToRight"
+                                                 LostFocus="AccountWindowDelayBox_OnLostFocus" />
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                                               Text="0 = חסימה מיידית. ההשהיה נשמרת בחלון הזמן עצמו, גם כשההגדרה מופעלת בלי לוח הבקרה." />
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>
@@ -278,9 +356,14 @@
                             <Button Content="הסר נבחר" Click="RemoveDomainButton_OnClick" />
                             <Button Content="חלון 'כל היום, כל השבוע'" Click="AddDomainAlwaysWindowButton_OnClick" />
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="השהיית אכיפה לאתר שנבחר (שניות):" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox x:Name="WebsiteDelayBox" Width="100" FlowDirection="LeftToRight"
+                                     LostFocus="WebsiteDelayBox_OnLostFocus" />
+                        </StackPanel>
                         <CheckBox x:Name="EnforceWebsitesBox" Content="הפעל אכיפה בפועל (ללא סימון — מצב האזנה בלבד)" Margin="0,10,0,0" />
                     </StackPanel>
-                    <ListBox x:Name="DomainsListBox" />
+                    <ListBox x:Name="DomainsListBox" SelectionChanged="DomainsListBox_OnSelectionChanged" />
                 </DockPanel>
             </TabItem>
 

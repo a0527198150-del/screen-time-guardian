@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "websiteEnforcement": "AuditOnly",
   "blockUnknownGoogleSessionsDuringAccountSchedules": true,
   "guestModeAllowedWhenNoRelevantBlock": true,
@@ -26,7 +26,8 @@
           "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
           "start": "23:00",
           "end": "07:00",
-          "allDay": false
+          "allDay": false,
+          "activationDelaySeconds": 0
         }
       ]
     }
@@ -45,7 +46,8 @@
           "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
           "start": "23:00",
           "end": "07:00",
-          "allDay": false
+          "allDay": false,
+          "activationDelaySeconds": 0
         }
       ]
     }

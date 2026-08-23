@@ -18,6 +18,12 @@ public sealed class ScheduleWindow
     public string End { get; set; } = "07:00";
     public bool AllDay { get; set; }
 
+    /// <summary>
+    /// Seconds between the scheduled start and the beginning of enforcement.
+    /// Zero preserves the original immediate behaviour.
+    /// </summary>
+    public int ActivationDelaySeconds { get; set; }
+
     public bool Contains(DateTimeOffset now)
     {
         if (!Enabled || Days.Count == 0)
@@ -26,31 +32,46 @@ public sealed class ScheduleWindow
         }
 
         var local = now.LocalDateTime;
-        if (AllDay)
-        {
-            return Days.Contains(local.DayOfWeek);
-        }
-
-        if (!TimeOnly.TryParse(Start, out var start) || !TimeOnly.TryParse(End, out var end))
+        var start = default(TimeOnly);
+        var end = default(TimeOnly);
+        if (!AllDay
+            && (!TimeOnly.TryParse(Start, out start) || !TimeOnly.TryParse(End, out end)))
         {
             return false;
         }
 
-        var time = TimeOnly.FromDateTime(local);
-        if (start < end)
+        var delay = TimeSpan.FromSeconds(Math.Clamp(ActivationDelaySeconds, 0, 86_400));
+        for (var dayOffset = -1; dayOffset <= 0; dayOffset++)
         {
-            return Days.Contains(local.DayOfWeek) && time >= start && time < end;
+            var ruleDate = local.Date.AddDays(dayOffset);
+            if (!Days.Contains(ruleDate.DayOfWeek))
+            {
+                continue;
+            }
+
+            var effectiveStart = AllDay
+                ? ruleDate + delay
+                : ruleDate + start.ToTimeSpan() + delay;
+            var effectiveEnd = AllDay
+                ? ruleDate.AddDays(1)
+                : start < end
+                    ? ruleDate + end.ToTimeSpan()
+                    : ruleDate.AddDays(1) + end.ToTimeSpan();
+
+            if (start == end && !AllDay)
+            {
+                // Keep the legacy meaning of equal start/end: the rule covers the day.
+                effectiveStart = ruleDate + delay;
+                effectiveEnd = ruleDate.AddDays(1);
+            }
+
+            if (effectiveStart < effectiveEnd && local >= effectiveStart && local < effectiveEnd)
+            {
+                return true;
+            }
         }
 
-        if (start > end)
-        {
-            // Window crosses midnight: the day marked in the rule is the day it STARTS on.
-            var previousDay = local.Date.AddDays(-1).DayOfWeek;
-            return (Days.Contains(local.DayOfWeek) && time >= start)
-                || (Days.Contains(previousDay) && time < end);
-        }
-
-        return Days.Contains(local.DayOfWeek);
+        return false;
     }
 
     public string Describe()
@@ -59,8 +80,9 @@ public sealed class ScheduleWindow
             ? "ללא ימים"
             : string.Join(", ", Days.OrderBy(day => (int)day).Select(HebrewDays.Name));
         var time = AllDay ? "כל היום" : $"{Start}–{End}";
+        var delay = ActivationDelaySeconds > 0 ? $" · השהיה {ActivationDelaySeconds} שנ׳" : string.Empty;
         var state = Enabled ? string.Empty : " (מושבת)";
-        return $"{days} · {time}{state}";
+        return $"{days} · {time}{delay}{state}";
     }
 
     public override string ToString() => Describe();
@@ -170,7 +192,7 @@ public sealed class SafetySettings
 
 public sealed class ConfigurationDocument
 {
-    public int SchemaVersion { get; set; } = 3;
+    public int SchemaVersion { get; set; } = 4;
     public WebsiteEnforcementMode WebsiteEnforcement { get; set; } = WebsiteEnforcementMode.AuditOnly;
     public bool BlockUnknownGoogleSessionsDuringAccountSchedules { get; set; } = true;
     public bool GuestModeAllowedWhenNoRelevantBlock { get; set; } = true;

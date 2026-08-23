@@ -31,14 +31,27 @@ public static partial class ConfigurationValidation
     {
         return Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri)
             && uri.Scheme == Uri.UriSchemeHttps
+            && string.IsNullOrWhiteSpace(uri.UserInfo)
+            && uri.Port == -1
+            && string.IsNullOrWhiteSpace(uri.Query)
+            && string.IsNullOrWhiteSpace(uri.Fragment)
             && !string.IsNullOrWhiteSpace(uri.Host);
     }
 
     public static string NormalizeOrigin(string value)
     {
-        return Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri)
-            ? $"{uri.Scheme}://{uri.Host}".ToLowerInvariant()
-            : string.Empty;
+        if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps
+            || !string.IsNullOrWhiteSpace(uri.UserInfo)
+            || uri.Port != -1
+            || !string.IsNullOrWhiteSpace(uri.Query)
+            || !string.IsNullOrWhiteSpace(uri.Fragment)
+            || string.IsNullOrWhiteSpace(uri.Host))
+        {
+            return string.Empty;
+        }
+
+        return $"{uri.Scheme}://{uri.Host}".ToLowerInvariant();
     }
 
     public static bool IsValidUserSid(string value)

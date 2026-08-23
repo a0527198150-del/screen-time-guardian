@@ -155,6 +155,11 @@ function blockedUrlFor(reason) {
   return chrome.runtime.getURL('blocked.html') + '?reason=' + encodeURIComponent(reason);
 }
 
+function isGoogleHostname(hostname) {
+  const host = String(hostname || '').toLowerCase().replace(/\.$/, '');
+  return host === 'google.com' || host.endsWith('.google.com');
+}
+
 /**
  * Rebuilds the dynamic block rules from the policy plus the accounts signed in RIGHT NOW.
  * If you are not signed in with a restricted account, no rules exist and nothing is blocked -
@@ -250,7 +255,7 @@ async function inspectGoogleAuth(url) {
   let origin = '';
   try {
     const target = new URL(redirectUri);
-    if (target.protocol === 'https:' && !target.hostname.endsWith('google.com')) {
+    if (target.protocol === 'https:' && !isGoogleHostname(target.hostname)) {
       origin = `${target.protocol}//${target.hostname}`;
     }
   } catch (error) {

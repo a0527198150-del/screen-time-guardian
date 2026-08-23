@@ -50,6 +50,7 @@ public partial class MainWindow : Window
     private ApplicationRule? SelectedRule => RulesListBox.SelectedItem as ApplicationRule;
     private ScheduleWindow? SelectedWindow => WindowsListBox.SelectedItem as ScheduleWindow;
     private GoogleAccountRule? SelectedAccount => AccountsListBox.SelectedItem as GoogleAccountRule;
+    private ScheduleWindow? SelectedAccountWindow => AccountWindowsListBox.SelectedItem as ScheduleWindow;
 
     // ==================== authentication ====================
 
@@ -180,6 +181,8 @@ public partial class MainWindow : Window
             ScanHiddenBrowsersBox.IsChecked = _configuration.BrowserLockdown.ScanForHiddenBrowsers;
             ScanIntervalBox.Text = _configuration.BrowserLockdown.ScanIntervalMinutes.ToString();
             CoolingOffBox.Text = _configuration.ChangeControl.CoolingOffHours.ToString();
+            WebsiteDelayBox.Text = "0";
+            AccountWindowDelayBox.Text = "0";
 
             _approvedBrowsers.Clear();
             foreach (var path in _configuration.BrowserLockdown.ApprovedBrowserPaths)
@@ -530,6 +533,7 @@ public partial class MainWindow : Window
             WindowStartBox.Text = window.Start;
             WindowEndBox.Text = window.End;
             WindowEnabledBox.IsChecked = window.Enabled;
+            ActivationDelayBox.Text = window.ActivationDelaySeconds.ToString();
         }
         finally
         {
@@ -556,6 +560,14 @@ public partial class MainWindow : Window
         window.Days = days;
         window.AllDay = AllDayBox.IsChecked == true;
         window.Enabled = WindowEnabledBox.IsChecked == true;
+        if (!int.TryParse(ActivationDelayBox.Text.Trim(), out var activationDelay)
+            || activationDelay is < 0 or > 86_400)
+        {
+            SetStatus("השהיית האכיפה חייבת להיות מספר בין 0 ל־86400 שניות.", true);
+            return;
+        }
+
+        window.ActivationDelaySeconds = activationDelay;
 
         if (!window.AllDay)
         {
@@ -772,6 +784,34 @@ public partial class MainWindow : Window
         var window = AlwaysWindow();
         account.Windows.Add(window);
         _accountWindows.Add(window);
+        AccountWindowsListBox.SelectedItem = window;
+    }
+
+    private void AccountWindowsListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressEvents)
+        {
+            return;
+        }
+
+        AccountWindowDelayBox.Text = SelectedAccountWindow?.ActivationDelaySeconds.ToString() ?? "0";
+    }
+
+    private void AccountWindowDelayBox_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_suppressEvents || SelectedAccountWindow is not { } window)
+        {
+            return;
+        }
+
+        if (!int.TryParse(AccountWindowDelayBox.Text.Trim(), out var delay) || delay is < 0 or > 86_400)
+        {
+            SetStatus("השהיית החשבון חייבת להיות מספר בין 0 ל־86400 שניות.", true);
+            return;
+        }
+
+        window.ActivationDelaySeconds = delay;
+        AccountWindowsListBox.Items.Refresh();
     }
 
     private void RemoveAccountWindowButton_OnClick(object sender, RoutedEventArgs e)
@@ -805,6 +845,7 @@ public partial class MainWindow : Window
             _accountWindows.Add(window);
         }
 
+        AccountWindowsListBox.SelectedItem = _accountWindows.FirstOrDefault();
         SetStatus($"לוח הזמנים של '{rule.Name}' הועתק לחשבון {account.Email}.", false);
     }
 
@@ -863,11 +904,44 @@ public partial class MainWindow : Window
         NewDomainBox.Text = string.Empty;
     }
 
+    private void DomainsListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressEvents || DomainsListBox.SelectedItem is not WebsiteRule rule)
+        {
+            WebsiteDelayBox.Text = "0";
+            return;
+        }
+
+        WebsiteDelayBox.Text = rule.Windows.FirstOrDefault()?.ActivationDelaySeconds.ToString() ?? "0";
+    }
+
+    private void WebsiteDelayBox_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_suppressEvents || DomainsListBox.SelectedItem is not WebsiteRule rule)
+        {
+            return;
+        }
+
+        if (!int.TryParse(WebsiteDelayBox.Text.Trim(), out var delay) || delay is < 0 or > 86_400)
+        {
+            SetStatus("השהיית האתר חייבת להיות מספר בין 0 ל־86400 שניות.", true);
+            return;
+        }
+
+        foreach (var window in rule.Windows)
+        {
+            window.ActivationDelaySeconds = delay;
+        }
+
+        DomainsListBox.Items.Refresh();
+    }
+
     private void RemoveDomainButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (DomainsListBox.SelectedItem is WebsiteRule rule)
         {
             _domains.Remove(rule);
+            WebsiteDelayBox.Text = "0";
         }
     }
 
@@ -878,7 +952,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        rule.Windows.Add(AlwaysWindow());
+        var window = AlwaysWindow();
+        if (int.TryParse(WebsiteDelayBox.Text.Trim(), out var delay) && delay is >= 0 and <= 86_400)
+        {
+            window.ActivationDelaySeconds = delay;
+        }
+
+        rule.Windows.Add(window);
         SetStatus($"נוסף חלון 'כל הזמן' ל־{rule.Domain}.", false);
     }
 
@@ -1057,17 +1137,18 @@ public partial class MainWindow : Window
         Days = source.Days.ToList(),
         Start = source.Start,
         End = source.End,
-        AllDay = source.AllDay
+        AllDay = source.AllDay,
+        ActivationDelaySeconds = source.ActivationDelaySeconds
     };
 
     private static int ParseInt(string value, int fallback, string fieldName)
     {
-        if (int.TryParse(value.Trim(), out var parsed))
+        if (int.TryParse(value.Trim(), out var parsed) && parsed >= 0)
         {
             return parsed;
         }
 
-        throw new InvalidOperationException($"הערך בשדה '{fieldName}' אינו מספר תקין.");
+        throw new InvalidOperationException($"הערך בשדה '{fieldName}' חייב להיות מספר שלם אי־שלילי.");
     }
 
     private void EnsureAuthenticated()
