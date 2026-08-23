@@ -1,7 +1,7 @@
 {
   "name": "com.screentimeguardian.host",
   "description": "Screen Time Guardian policy bridge",
-  "path": "C:\\Program Files\\ScreenTimeGuardian\\ScreenTimeGuardian.NativeHost.exe",
+  "path": "C:\\Program Files\\ScreenTimeGuardian\\NativeHost\\ScreenTimeGuardian.NativeHost.exe",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://EXTENSION_ID_PLACEHOLDER/"

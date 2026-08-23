@@ -1,17 +1,18 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>הגישה נחסמה</title>
-  <link rel="stylesheet" href="blocked.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>נחסם — שומר זמן מסך</title>
+  <link rel="stylesheet" href="blocked.css" />
 </head>
 <body>
   <main class="card">
-    <div class="lock">🔒</div>
-    <h1>הגישה נחסמה</h1>
-    <p id="message">הגישה לשירות זה חסומה כרגע לפי לוח הזמנים.</p>
-    <p class="hint">חשבון Google אחר שאינו מוגן יכול להמשיך לעבוד לפי ההגדרות.</p>
+    <div class="badge">שומר זמן מסך</div>
+    <h1>הגישה חסומה כרגע</h1>
+    <p id="reason">הגישה נחסמה לפי לוח הזמנים.</p>
+    <p class="muted" id="clock"></p>
+    <p class="muted small">אם זו חסימה שגויה, אפשר לשנות את לוח הזמנים בלוח הבקרה של האפליקציה.</p>
   </main>
   <script src="blocked.js"></script>
 </body>

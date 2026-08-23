@@ -6,60 +6,91 @@ public sealed class PolicyEngine
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var activeWebsites = configuration.Websites
-            .Where(rule => rule.IsActive(now))
-            .ToList();
-        var activeAccounts = configuration.GoogleAccounts
-            .Where(rule => rule.IsActive(now))
-            .ToList();
-        var activeApplications = configuration.Applications
-            .Where(rule => rule.IsActive(now))
-            .ToList();
+        var activeWebsites = configuration.Websites.Where(rule => rule.IsActive(now)).ToList();
+        var activeAccounts = configuration.GoogleAccounts.Where(rule => rule.IsActive(now)).ToList();
+        var activeApplications = configuration.Applications.Where(rule => rule.IsActive(now)).ToList();
 
-        var activeRuleIds = activeWebsites
-            .Select(rule => rule.Id)
+        var activeRuleIds = activeWebsites.Select(rule => rule.Id)
             .Concat(activeAccounts.Select(rule => rule.Id))
             .Concat(activeApplications.Select(rule => rule.Id))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var relevantExtensionBlock = activeWebsites.Count > 0 || activeAccounts.Count > 0;
+        var networkBlocks = new List<NetworkBlockTarget>();
+
+        foreach (var rule in activeApplications)
+        {
+            foreach (var target in rule.Targets)
+            {
+                if (ProtectedPaths.IsProtectedPath(target.ExecutablePath))
+                {
+                    continue;
+                }
+
+                networkBlocks.Add(new NetworkBlockTarget
+                {
+                    ExecutablePath = target.ExecutablePath,
+                    DisplayName = string.IsNullOrWhiteSpace(target.DisplayName) ? rule.Name : target.DisplayName,
+                    UserSids = rule.AppliesToUserSids.ToList()
+                });
+            }
+        }
+
+        var relevantExtensionBlock = activeAccounts.Count > 0;
 
         return new PolicySnapshot
         {
             GeneratedAtUtc = now.ToUniversalTime(),
             IsAnyBlockActive = activeRuleIds.Count > 0,
-            BlockAllWebsites = activeWebsites.Count > 0,
             BlockedDomains = activeWebsites
                 .Select(rule => NormalizeDomain(rule.Domain))
                 .Where(domain => domain.Length > 0)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList(),
-            BlockedApplications = activeApplications
-                .SelectMany(rule => rule.ExecutableNames)
-                .Select(name => Path.GetFileNameWithoutExtension(name.Trim()))
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList(),
+            NetworkBlocks = Consolidate(networkBlocks),
             GoogleAccounts = activeAccounts
                 .GroupBy(rule => rule.Email.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Select(group => new GoogleAccountPolicy
                 {
                     Email = group.Key,
                     Services = group.SelectMany(rule => rule.Services)
-                        .Select(service => service.Trim().ToLowerInvariant())
-                        .Where(service => service.Length > 0)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList(),
+                    Sites = group.SelectMany(rule => rule.Sites)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .ToList()
                 })
                 .ToList(),
-            BlockPrivateAndGuestWhenExtensionUnavailable = configuration.BlockPrivateAndGuestWhenExtensionUnavailable
+            BlockUnknownGoogleSessions = configuration.BlockUnknownGoogleSessionsDuringAccountSchedules
                 && relevantExtensionBlock,
-            BlockPortableBrowsers = configuration.BlockPortableBrowsersDuringAnySchedule
-                && activeRuleIds.Count > 0,
             GuestModeAllowed = configuration.GuestModeAllowedWhenNoRelevantBlock && !relevantExtensionBlock,
             ActiveRuleIds = activeRuleIds
         };
+    }
+
+    /// <summary>
+    /// Merges duplicate executables. If one rule blocks it for everyone and another blocks
+    /// it for a specific user, the machine wide block wins.
+    /// </summary>
+    private static List<NetworkBlockTarget> Consolidate(IEnumerable<NetworkBlockTarget> targets)
+    {
+        return targets
+            .GroupBy(target => target.ExecutablePath, StringComparer.OrdinalIgnoreCase)
+            .Select(group =>
+            {
+                var machineWide = group.Any(target => target.UserSids.Count == 0);
+                return new NetworkBlockTarget
+                {
+                    ExecutablePath = group.Key,
+                    DisplayName = group.First().DisplayName,
+                    UserSids = machineWide
+                        ? new List<string>()
+                        : group.SelectMany(target => target.UserSids)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToList()
+                };
+            })
+            .ToList();
     }
 
     public AccountDecisionResponse Decide(
@@ -70,33 +101,57 @@ public sealed class PolicyEngine
         ArgumentNullException.ThrowIfNull(request);
 
         var policy = Evaluate(configuration, now);
-        var normalizedEmail = request.Email.Trim();
-        var normalizedService = request.Service.Trim().ToLowerInvariant();
+        var email = request.Email.Trim();
+        var service = request.Service.Trim().ToLowerInvariant();
+        var origin = ConfigurationValidation.NormalizeOrigin(request.Origin ?? string.Empty);
 
-        if (string.IsNullOrWhiteSpace(normalizedEmail))
+        if (string.IsNullOrWhiteSpace(email))
         {
             return new AccountDecisionResponse
             {
-                Blocked = policy.BlockPrivateAndGuestWhenExtensionUnavailable
-                    && configuration.BlockUnknownGoogleSessionsDuringAccountSchedules,
+                Blocked = policy.BlockUnknownGoogleSessions,
                 IdentityKnown = false,
-                Reason = "לא ניתן לאמת את חשבון Google.",
+                Reason = "לא ניתן לזהות באיזה חשבון Google אתה מחובר.",
                 Policy = policy
             };
         }
 
         var account = policy.GoogleAccounts.FirstOrDefault(item =>
-            string.Equals(item.Email, normalizedEmail, StringComparison.OrdinalIgnoreCase));
+            string.Equals(item.Email, email, StringComparison.OrdinalIgnoreCase));
 
-        var blocked = account is not null
-            && (account.Services.Count == 0
-                || account.Services.Contains(normalizedService, StringComparer.OrdinalIgnoreCase));
+        if (account is null)
+        {
+            return new AccountDecisionResponse
+            {
+                Blocked = false,
+                IdentityKnown = true,
+                Reason = "החשבון אינו חסום כרגע.",
+                Policy = policy
+            };
+        }
+
+        // A site rule beats a service rule: it is the more specific statement.
+        if (origin.Length > 0 && account.Sites.Contains(origin, StringComparer.OrdinalIgnoreCase))
+        {
+            return new AccountDecisionResponse
+            {
+                Blocked = true,
+                IdentityKnown = true,
+                Reason = $"האתר {origin} חסום עבור {email} לפי לוח הזמנים.",
+                Policy = policy
+            };
+        }
+
+        var blocked = service.Length > 0
+            && account.Services.Contains(service, StringComparer.OrdinalIgnoreCase);
 
         return new AccountDecisionResponse
         {
             Blocked = blocked,
             IdentityKnown = true,
-            Reason = blocked ? "החשבון חסום לפי לוח הזמנים." : "החשבון אינו חסום.",
+            Reason = blocked
+                ? $"השירות {service} חסום עבור {email} לפי לוח הזמנים."
+                : "החשבון אינו חסום כרגע.",
             Policy = policy
         };
     }

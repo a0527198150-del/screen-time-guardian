@@ -11,11 +11,13 @@ builder.Services.AddWindowsService(options =>
 
 builder.Services.AddSingleton<ConfigurationStore>();
 builder.Services.AddSingleton<PolicyEngine>();
+builder.Services.AddSingleton<SafetyEnvelope>();
+builder.Services.AddSingleton<ServiceStatusHolder>();
+builder.Services.AddSingleton<ApplicationNetworkBlocker>();
 builder.Services.AddSingleton<WindowsFirewallFqdnBlocker>();
-builder.Services.AddSingleton<ProcessBlocker>();
-builder.Services.AddSingleton<BrowserProcessDetector>();
-builder.Services.AddSingleton<PortableBrowserEnforcer>();
-builder.Services.AddSingleton<UpdateCoordinator>();
+builder.Services.AddSingleton<BrowserLaunchBlocker>();
+builder.Services.AddSingleton<HiddenBrowserScanner>();
+builder.Services.AddSingleton<ChangeCoordinator>();
 builder.Services.AddSingleton<BrowserPolicySynchronizer>();
 builder.Services.AddHostedService<GuardianWorker>();
 builder.Services.AddHostedService<GuardianCommandServer>();

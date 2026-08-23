@@ -49,6 +49,52 @@ public sealed class GuardianPipeClient
         }, cancellationToken);
     }
 
+    public async Task<GuardianCommandResponse> GetStatusAsync(
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendAsync(new GuardianCommand
+        {
+            Type = "getStatus",
+            Password = password
+        }, cancellationToken);
+    }
+
+    public async Task<GuardianCommandResponse> ClearSafeModeAsync(
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendAsync(new GuardianCommand
+        {
+            Type = "clearSafeMode",
+            Password = password
+        }, cancellationToken);
+    }
+
+    public async Task<GuardianCommandResponse> ChangePasswordAsync(
+        string password,
+        string newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendAsync(new GuardianCommand
+        {
+            Type = "changePassword",
+            Password = password,
+            NewPassword = newPassword
+        }, cancellationToken);
+    }
+
+    public async Task<GuardianCommandResponse> CancelPendingChangeAsync(
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendAsync(new GuardianCommand
+        {
+            Type = "cancelPendingChange",
+            Password = password
+        }, cancellationToken);
+    }
+
     private static async Task<GuardianCommandResponse> SendAsync(
         GuardianCommand command,
         CancellationToken cancellationToken)

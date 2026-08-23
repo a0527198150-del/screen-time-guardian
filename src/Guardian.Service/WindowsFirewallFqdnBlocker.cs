@@ -1,24 +1,40 @@
-using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using ScreenTimeGuardian.Contracts;
 
 namespace ScreenTimeGuardian.Service;
 
 /// <summary>
-/// First enforcement adapter for machine-wide website blocking.
-/// It uses Windows Firewall dynamic FQDN keywords and never changes DNS configuration.
-/// The service must run elevated for Enforced mode.
+/// Machine wide website blocking through Windows Firewall dynamic FQDN keywords.
+/// DNS configuration is never touched, so Netfree keeps working unchanged.
+///
+/// Note: this blocks a domain for EVERY user on the machine. Account specific blocking
+/// (for example "my Gmail but not my brothers'") is handled by the browser extension,
+/// which is the only component that knows which Google account is signed in.
 /// </summary>
 public sealed class WindowsFirewallFqdnBlocker
 {
     private const string RulePrefix = "STG-Website-";
+
+    private readonly SafetyEnvelope _safety;
+    private readonly ILogger<WindowsFirewallFqdnBlocker> _logger;
     private readonly SemaphoreSlim _gate = new(1, 1);
+
     private HashSet<string> _lastDomains = new(StringComparer.OrdinalIgnoreCase);
     private WebsiteEnforcementMode _lastMode = WebsiteEnforcementMode.Disabled;
+    private bool _everApplied;
+
+    public WindowsFirewallFqdnBlocker(SafetyEnvelope safety, ILogger<WindowsFirewallFqdnBlocker> logger)
+    {
+        _safety = safety;
+        _logger = logger;
+    }
 
     public async Task ApplyAsync(
         WebsiteEnforcementMode mode,
         IReadOnlyCollection<string> domains,
+        SafetySettings settings,
         CancellationToken cancellationToken)
     {
         var normalized = domains
@@ -29,27 +45,30 @@ public sealed class WindowsFirewallFqdnBlocker
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (mode == _lastMode && normalized.SetEquals(_lastDomains))
+            if (_everApplied && mode == _lastMode && normalized.SetEquals(_lastDomains))
             {
                 return;
             }
 
-            if (mode == WebsiteEnforcementMode.Disabled)
+            if (!_safety.RegisterAction(settings, $"עדכון {normalized.Count} חוקי חסימת אתרים"))
             {
-                await RemoveManagedRulesAsync(cancellationToken);
+                return;
             }
-            else if (mode == WebsiteEnforcementMode.AuditOnly)
+
+            var script = mode == WebsiteEnforcementMode.Enforced && normalized.Count > 0
+                ? BuildApplyScript(normalized)
+                : RemovalScript();
+
+            var result = await PowerShellRunner.RunAsync(script, TimeSpan.FromSeconds(90), _logger, cancellationToken);
+            if (!result.Ok)
             {
-                // Audit mode deliberately does not modify Windows Firewall.
-                await RemoveManagedRulesAsync(cancellationToken);
-            }
-            else
-            {
-                await ReplaceManagedRulesAsync(normalized, cancellationToken);
+                _logger.LogError("Website firewall policy failed: {Error}", result.Error);
+                return;
             }
 
             _lastMode = mode;
             _lastDomains = normalized;
+            _everApplied = true;
         }
         finally
         {
@@ -57,75 +76,66 @@ public sealed class WindowsFirewallFqdnBlocker
         }
     }
 
-    private static async Task ReplaceManagedRulesAsync(
-        IEnumerable<string> domains,
-        CancellationToken cancellationToken)
+    public async Task RemoveAllAsync(CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await PowerShellRunner.RunAsync(RemovalScript(), TimeSpan.FromSeconds(60), _logger, cancellationToken);
+            _lastDomains.Clear();
+            _lastMode = WebsiteEnforcementMode.Disabled;
+            _everApplied = true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private static string RemovalScript()
+    {
+        var script = new StringBuilder();
+        script.AppendLine("$ErrorActionPreference = 'SilentlyContinue'");
+        script.AppendLine($"Get-NetFirewallRule -Name '{RulePrefix}*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue");
+        return script.ToString();
+    }
+
+    private static string BuildApplyScript(IEnumerable<string> domains)
     {
         var script = new StringBuilder();
         script.AppendLine("$ErrorActionPreference = 'Stop'");
-        script.AppendLine($"Get-NetFirewallRule -Name '{RulePrefix}*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule");
-        script.AppendLine("$domains = @(");
+        script.AppendLine(RemovalScript());
 
         foreach (var domain in domains)
         {
-            var escapedDomain = domain.Replace("'", "''", StringComparison.Ordinal);
-            var safeId = StableGuid(domain).ToString("B");
-            script.AppendLine($"  @{{ Domain = '{escapedDomain}'; Id = '{safeId}' }},");
+            var id = StableGuid(domain).ToString("B");
+            var ruleName = RulePrefix + StableGuid(domain).ToString("N")[..16];
+
+            script.Append("Remove-NetFirewallDynamicKeywordAddress -Id ")
+                .Append(PowerShellRunner.Quote(id))
+                .AppendLine(" -ErrorAction SilentlyContinue");
+
+            script.Append("New-NetFirewallDynamicKeywordAddress -Id ")
+                .Append(PowerShellRunner.Quote(id))
+                .Append(" -Keyword ")
+                .Append(PowerShellRunner.Quote(domain))
+                .AppendLine(" -AutoResolve $true | Out-Null");
+
+            script.Append("New-NetFirewallRule -Name ")
+                .Append(PowerShellRunner.Quote(ruleName))
+                .Append(" -DisplayName ")
+                .Append(PowerShellRunner.Quote("שומר זמן מסך: " + domain))
+                .Append(" -Direction Outbound -Action Block -Enabled True -Profile Any -RemoteDynamicKeywordAddresses ")
+                .Append(PowerShellRunner.Quote(id))
+                .AppendLine(" | Out-Null");
         }
 
-        script.AppendLine(");");
-        script.AppendLine("foreach ($item in $domains) {");
-        script.AppendLine("  Remove-NetFirewallDynamicKeywordAddress -Id $item.Id -ErrorAction SilentlyContinue");
-        script.AppendLine("  New-NetFirewallDynamicKeywordAddress -Id $item.Id -Keyword $item.Domain -AutoResolve $true | Out-Null");
-        script.AppendLine($"  New-NetFirewallRule -Name ('{RulePrefix}' + $item.Id.Trim('{{}}')) -DisplayName ('Screen Time Guardian: ' + $item.Domain) -Direction Outbound -Action Block -RemoteDynamicKeywordAddresses $item.Id | Out-Null");
-        script.AppendLine("}");
-
-        await RunPowerShellAsync(script.ToString(), cancellationToken);
-    }
-
-    private static async Task RemoveManagedRulesAsync(CancellationToken cancellationToken)
-    {
-        var script = $"Get-NetFirewallRule -Name '{RulePrefix}*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule";
-        await RunPowerShellAsync(script, cancellationToken);
-    }
-
-    private static async Task RunPowerShellAsync(string script, CancellationToken cancellationToken)
-    {
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            }
-        };
-        process.StartInfo.ArgumentList.Add("-NoProfile");
-        process.StartInfo.ArgumentList.Add("-NonInteractive");
-        process.StartInfo.ArgumentList.Add("-ExecutionPolicy");
-        process.StartInfo.ArgumentList.Add("Bypass");
-        process.StartInfo.ArgumentList.Add("-Command");
-        process.StartInfo.ArgumentList.Add(script);
-
-        if (!process.Start())
-        {
-            throw new InvalidOperationException("Unable to start PowerShell for firewall policy");
-        }
-
-        await process.WaitForExitAsync(cancellationToken);
-        if (process.ExitCode != 0)
-        {
-            var error = await process.StandardError.ReadToEndAsync(cancellationToken);
-            throw new InvalidOperationException($"Windows Firewall policy failed: {error}");
-        }
+        return script.ToString();
     }
 
     private static Guid StableGuid(string value)
     {
-        var bytes = System.Security.Cryptography.SHA256.HashData(
-            Encoding.UTF8.GetBytes("screen-time-guardian:" + value.ToLowerInvariant()));
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes("screen-time-guardian:" + value.ToLowerInvariant()));
         return new Guid(bytes[..16]);
     }
 }

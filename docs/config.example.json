@@ -1,17 +1,25 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "websiteEnforcement": "AuditOnly",
-  "blockPrivateAndGuestWhenExtensionUnavailable": true,
   "blockUnknownGoogleSessionsDuringAccountSchedules": true,
-  "blockPortableBrowsersDuringAnySchedule": true,
-  "strictPortableApplicationMode": false,
-  "automaticUpdatesEnabled": false,
-  "updateManifestUrl": "",
   "guestModeAllowedWhenNoRelevantBlock": true,
-  "websites": [
+  "safety": {
+    "bootGraceSeconds": 120,
+    "serviceGraceSeconds": 30,
+    "maxActionsPerMinute": 20
+  },
+  "applications": [
     {
-      "name": "example.test",
-      "domain": "example.test",
+      "id": "example-rule-1",
+      "name": "משחקים בלילה",
+      "enabled": true,
+      "appliesToUserSids": ["S-1-5-21-0000000000-0000000000-0000000000-1001"],
+      "targets": [
+        {
+          "displayName": "Steam",
+          "executablePath": "C:\\Program Files (x86)\\Steam\\steam.exe"
+        }
+      ],
       "windows": [
         {
           "enabled": true,
@@ -25,9 +33,12 @@
   ],
   "googleAccounts": [
     {
-      "name": "חשבון לדוגמה",
-      "email": "replace-with-your-account@example.com",
-      "services": ["gmail", "chat"],
+      "id": "example-account-1",
+      "name": "my@gmail.com",
+      "email": "my@gmail.com",
+      "enabled": true,
+      "services": ["gmail", "youtube"],
+      "sites": ["https://example-forum.com"],
       "windows": [
         {
           "enabled": true,
@@ -39,6 +50,6 @@
       ]
     }
   ],
-  "applications": [],
-  "approvedBrowsers": []
+  "websites": [],
+  "discoveredSites": []
 }

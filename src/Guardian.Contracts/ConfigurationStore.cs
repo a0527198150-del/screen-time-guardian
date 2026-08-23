@@ -10,11 +10,23 @@ public static class ConfigPaths
         "ScreenTimeGuardian");
 
     public static string ConfigurationFile => Path.Combine(RootDirectory, "config.json");
+
+    /// <summary>Service owned state. Only SYSTEM and Administrators may write here.</summary>
+    public static string RuntimeDirectory => Path.Combine(RootDirectory, "runtime");
+
+    /// <summary>Written on service start, deleted on clean stop. Its presence at start means the last run ended badly.</summary>
+    public static string BootMarkerFile => Path.Combine(RuntimeDirectory, "boot.marker");
+
+    /// <summary>Set automatically when the safety envelope trips. Enforcement stays off until cleared.</summary>
+    public static string SafeModeFlagFile => Path.Combine(RuntimeDirectory, "safemode.flag");
+
+    /// <summary>Manual panic switch. An administrator can create this file to disable all enforcement instantly.</summary>
+    public static string ManualKillSwitchFile => Path.Combine(RootDirectory, "SAFEMODE");
 }
 
 public sealed class ConfigurationStore
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
         Converters = { new JsonStringEnumConverter() }
@@ -25,9 +37,7 @@ public sealed class ConfigurationStore
 
     public ConfigurationStore(string? path = null)
     {
-        _path = string.IsNullOrWhiteSpace(path)
-            ? ConfigPaths.ConfigurationFile
-            : path;
+        _path = string.IsNullOrWhiteSpace(path) ? ConfigPaths.ConfigurationFile : path;
     }
 
     public ConfigurationDocument Load()
@@ -75,8 +85,16 @@ public sealed class ConfigurationStore
             {
                 File.Copy(_path, _path + ".bak", true);
             }
+
             File.WriteAllText(temporaryPath, JsonSerializer.Serialize(migrated, JsonOptions));
             File.Move(temporaryPath, _path, true);
         }
+    }
+
+    /// <summary>Deep copy through JSON. Used so a response can never mutate the live document.</summary>
+    public static ConfigurationDocument Clone(ConfigurationDocument source)
+    {
+        var json = JsonSerializer.Serialize(source, JsonOptions);
+        return JsonSerializer.Deserialize<ConfigurationDocument>(json, JsonOptions) ?? ConfigurationDocument.Default;
     }
 }

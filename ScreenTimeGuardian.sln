@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.ControlPanel", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.Updater", "src\Guardian.Updater\Guardian.Updater.csproj", "{E1A2B5C4-F6D7-48E9-9012-A3B4C5D6E7F8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.Agent", "src\Guardian.Agent\Guardian.Agent.csproj", "{F3B7C1D2-4E5A-4B6C-9D8E-1A2B3C4D5E6F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guardian.LaunchBlocker", "src\Guardian.LaunchBlocker\Guardian.LaunchBlocker.csproj", "{A4C8D2E3-5F6B-4C7D-8E9F-2B3C4D5E6F70}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +42,14 @@ Global
 		{E1A2B5C4-F6D7-48E9-9012-A3B4C5D6E7F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1A2B5C4-F6D7-48E9-9012-A3B4C5D6E7F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1A2B5C4-F6D7-48E9-9012-A3B4C5D6E7F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3B7C1D2-4E5A-4B6C-9D8E-1A2B3C4D5E6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3B7C1D2-4E5A-4B6C-9D8E-1A2B3C4D5E6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3B7C1D2-4E5A-4B6C-9D8E-1A2B3C4D5E6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3B7C1D2-4E5A-4B6C-9D8E-1A2B3C4D5E6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4C8D2E3-5F6B-4C7D-8E9F-2B3C4D5E6F70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4C8D2E3-5F6B-4C7D-8E9F-2B3C4D5E6F70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4C8D2E3-5F6B-4C7D-8E9F-2B3C4D5E6F70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4C8D2E3-5F6B-4C7D-8E9F-2B3C4D5E6F70}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

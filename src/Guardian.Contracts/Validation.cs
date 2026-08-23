@@ -26,4 +26,24 @@ public static partial class ConfigurationValidation
             return false;
         }
     }
+
+    public static bool IsValidOrigin(string value)
+    {
+        return Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri)
+            && uri.Scheme == Uri.UriSchemeHttps
+            && !string.IsNullOrWhiteSpace(uri.Host);
+    }
+
+    public static string NormalizeOrigin(string value)
+    {
+        return Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri)
+            ? $"{uri.Scheme}://{uri.Host}".ToLowerInvariant()
+            : string.Empty;
+    }
+
+    public static bool IsValidUserSid(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.StartsWith("S-1-", StringComparison.OrdinalIgnoreCase) && trimmed.Length is > 8 and < 200;
+    }
 }

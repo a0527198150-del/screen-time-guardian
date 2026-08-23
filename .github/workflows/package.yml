@@ -30,6 +30,12 @@ jobs:
       - name: Publish Native Host
         run: dotnet publish src/Guardian.NativeHost/Guardian.NativeHost.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/NativeHost --no-restore
 
+      - name: Publish agent
+        run: dotnet publish src/Guardian.Agent/Guardian.Agent.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Agent --no-restore
+
+      - name: Publish launch blocker into the service folder
+        run: dotnet publish src/Guardian.LaunchBlocker/Guardian.LaunchBlocker.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Service --no-restore
+
       - name: Publish updater
         run: dotnet publish src/Guardian.Updater/Guardian.Updater.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/ScreenTimeGuardian/Updater --no-restore
 
@@ -45,7 +51,7 @@ jobs:
       - name: Create deployment package
         shell: pwsh
         run: |
-          Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
+          Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Agent, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4

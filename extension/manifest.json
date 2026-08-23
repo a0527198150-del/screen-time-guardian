@@ -1,24 +1,25 @@
 {
   "manifest_version": 3,
   "name": "שומר זמן מסך",
-  "description": "זיהוי חשבון Google ואכיפת לוח הזמנים",
-  "version": "0.1.0",
+  "description": "זיהוי חשבון Google, גילוי אתרים שנכנסים אליהם דרך Google, ואכיפת לוח זמנים",
+  "version": "0.3.0",
   "minimum_chrome_version": "120",
   "permissions": [
     "nativeMessaging",
     "storage",
     "tabs",
-    "webNavigation"
+    "alarms",
+    "webNavigation",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
-    "https://mail.google.com/*",
-    "https://chat.google.com/*",
-    "https://calendar.google.com/*",
-    "https://drive.google.com/*",
-    "https://docs.google.com/*",
-    "https://meet.google.com/*",
-    "https://youtube.com/*",
-    "https://www.youtube.com/*"
+    "https://accounts.google.com/*",
+    "https://*.google.com/*",
+    "https://*.youtube.com/*",
+    "https://youtube.com/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -27,17 +28,13 @@
   "content_scripts": [
     {
       "matches": [
-        "https://mail.google.com/*",
-        "https://chat.google.com/*",
-        "https://calendar.google.com/*",
-        "https://drive.google.com/*",
-        "https://docs.google.com/*",
-        "https://meet.google.com/*",
-        "https://youtube.com/*",
-        "https://www.youtube.com/*"
+        "https://*.google.com/*",
+        "https://*.youtube.com/*",
+        "https://youtube.com/*"
       ],
       "js": ["content.js"],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": false
     }
   ],
   "action": {
@@ -47,7 +44,7 @@
   "web_accessible_resources": [
     {
       "resources": ["blocked.html", "blocked.css", "blocked.js"],
-      "matches": ["https://*.google.com/*", "https://google.com/*"]
+      "matches": ["<all_urls>"]
     }
   ]
 }

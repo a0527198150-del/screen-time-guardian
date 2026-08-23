@@ -10,8 +10,7 @@ public sealed class ApplicationSecurity
     public int Iterations { get; set; } = 210_000;
 
     [JsonIgnore]
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(Salt)
-        && !string.IsNullOrWhiteSpace(PasswordHash);
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(Salt) && !string.IsNullOrWhiteSpace(PasswordHash);
 }
 
 public static class ApplicationPassword
@@ -78,6 +77,21 @@ public sealed class GuardianCommand
     public string Password { get; set; } = string.Empty;
     public string NewPassword { get; set; } = string.Empty;
     public ConfigurationDocument? Configuration { get; set; }
+    public string Origin { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
+public sealed class GuardianStatus
+{
+    public bool EnforcementActive { get; set; }
+    public bool SafeMode { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public int ActiveNetworkBlocks { get; set; }
+    public int BlockedBrowserLaunches { get; set; }
+    public int HiddenBrowsersFound { get; set; }
+    public string PendingChangeSummary { get; set; } = string.Empty;
+    public DateTimeOffset ServiceStartedUtc { get; set; }
+    public string Version { get; set; } = string.Empty;
 }
 
 public sealed class GuardianCommandResponse
@@ -86,4 +100,9 @@ public sealed class GuardianCommandResponse
     public bool NeedsInitialization { get; set; }
     public string Error { get; set; } = string.Empty;
     public ConfigurationDocument? Configuration { get; set; }
+    public GuardianStatus? Status { get; set; }
+    public List<UpcomingEvent> Upcoming { get; set; } = new();
+
+    /// <summary>Set when a change was queued instead of applied, so the UI can explain why.</summary>
+    public string Notice { get; set; } = string.Empty;
 }
