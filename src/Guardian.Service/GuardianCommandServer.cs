@@ -157,7 +157,7 @@ public sealed class GuardianCommandServer : BackgroundService
                 return builder.Length == 0 ? null : builder.ToString();
             }
 
-            var newlineIndex = Array.IndexOf(buffer, '\\n', 0, read);
+            var newlineIndex = Array.IndexOf(buffer, '\n', 0, read);
             var charactersToAppend = newlineIndex >= 0 ? newlineIndex : read;
             if (builder.Length + charactersToAppend > maximumCharacters)
             {
@@ -171,7 +171,7 @@ public sealed class GuardianCommandServer : BackgroundService
 
             if (newlineIndex >= 0)
             {
-                return builder.ToString().TrimEnd('\\r');
+                return builder.ToString().TrimEnd('\r');
             }
         }
     }
