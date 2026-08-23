@@ -53,7 +53,7 @@ public static partial class ConfigurationValidation
             rsa.ImportFromPem(value);
             return rsa.KeySize >= 2048;
         }
-        catch (ArgumentException or CryptographicException)
+        catch (Exception exception) when (exception is ArgumentException or CryptographicException)
         {
             return false;
         }

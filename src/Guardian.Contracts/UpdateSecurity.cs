@@ -34,7 +34,7 @@ public static class UpdateSecurity
                 HashAlgorithmName.SHA256,
                 RSASignaturePadding.Pkcs1);
         }
-        catch (FormatException or CryptographicException)
+        catch (Exception exception) when (exception is FormatException or CryptographicException)
         {
             return false;
         }
