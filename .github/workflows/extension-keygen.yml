@@ -1,0 +1,99 @@
+name: extension-keygen
+
+on:
+  workflow_dispatch:
+    inputs:
+      regenerate:
+        description: 'הקלד YES כדי לאשר יצירת מפתח חדש (פעולה זו מחליפה את המפתח הקיים)'
+        required: true
+        default: 'NO'
+
+jobs:
+  keygen:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate confirmation
+        shell: pwsh
+        run: |
+          if ('${{ github.event.inputs.regenerate }}' -ne 'YES') {
+            Write-Host ''
+            Write-Host 'מפתח לא נוצר.' -ForegroundColor Yellow
+            Write-Host 'כדי ליצור מפתח חדש, הקש YES בשדה regenerate.' -ForegroundColor Yellow
+            exit 0
+          }
+
+      - name: Generate RSA 2048 key pair
+        shell: pwsh
+        run: |
+          $rsa = [System.Security.Cryptography.RSA]::Create(2048)
+          $privatePem = $rsa.ExportRSAPrivateKeyPem()
+          $pubDer = $rsa.ExportSubjectPublicKeyInfo()
+          $pubB64 = [Convert]::ToBase64String($pubDer)
+
+          # Compute extension ID: SHA-256 of public key DER, first 16 bytes,
+          # each hex digit 0-f mapped to a-p.
+          $sha = [System.Security.Cryptography.SHA256]::Create().ComputeHash($pubDer)
+          $id = -join ($sha[0..15] | ForEach-Object {
+              [char]([int]'a' + ($_ -shr 4))
+              [char]([int]'a' + ($_ -band 0x0f))
+          })
+
+          "EXTENSION_ID=$id" >> $env:GITHUB_ENV
+          "PUBLIC_KEY=$pubB64" >> $env:GITHUB_ENV
+          "PRIVATE_KEY=$privatePem" >> $env:GITHUB_ENV
+
+      - name: Show results
+        shell: pwsh
+        run: |
+          Write-Host ''
+          Write-Host '========================================' -ForegroundColor Green
+          Write-Host '  נוצר מפתח חדש' -ForegroundColor Green
+          Write-Host '========================================' -ForegroundColor Green
+          Write-Host ''
+          Write-Host "Extension ID : $env:EXTENSION_ID" -ForegroundColor Cyan
+          Write-Host ''
+          Write-Host '--- מפתח ציבורי (העתק ל-manifest.json כשדה "key") ---' -ForegroundColor Yellow
+          Write-Host $env:PUBLIC_KEY
+          Write-Host '--- סוף מפתח ציבורי ---' -ForegroundColor Yellow
+          Write-Host ''
+          Write-Host '--- מפתח פרטי (שמור במקום בטוח! אל תעלה ל-GitHub!) ---' -ForegroundColor Red
+          Write-Host $env:PRIVATE_KEY
+          Write-Host '--- סוף מפתח פרטי ---' -ForegroundColor Red
+          Write-Host ''
+          Write-Host '========================================' -ForegroundColor Green
+          Write-Host '  מה לעשות עכשיו:' -ForegroundColor Green
+          Write-Host '========================================' -ForegroundColor Green
+          Write-Host ''
+          Write-Host '1. העתק את המפתח הציבורי (הטקסט בין הקווים הצהובים)' -ForegroundColor White
+          Write-Host '   אל extension/manifest.json כשדה "key" חדש:' -ForegroundColor White
+          Write-Host '   {' -ForegroundColor Gray
+          Write-Host '     "manifest_version": 3,' -ForegroundColor Gray
+          Write-Host '     "key": "<המפתח הציבורי>",' -ForegroundColor Gray
+          Write-Host '     "name": "שומר זמן מסך",' -ForegroundColor Gray
+          Write-Host '     ...' -ForegroundColor Gray
+          Write-Host '   }' -ForegroundColor Gray
+          Write-Host ''
+          Write-Host '2. העתק את המפתח הפרטי (הטקסט בקווים האדומים)' -ForegroundColor White
+          Write-Host '   ← Settings ← Secrets and variables ← Actions ← New secret' -ForegroundColor White
+          Write-Host '   שם הסוד: EXTENSION_PRIVATE_KEY' -ForegroundColor White
+          Write-Host ''
+          Write-Host '3. שמור את המפתח הפרטי במקום בטוח מחוץ ל-GitHub' -ForegroundColor White
+          Write-Host '   אובדן = מזהה התוסף משתנה = הכל נשבר' -ForegroundColor Red
+          Write-Host ''
+          Write-Host "4. המזהה הקבוע: $env:EXTENSION_ID" -ForegroundColor Cyan
+          Write-Host '   זה המזהה שתשתמש בו ב-Register-NativeHost.ps1 וב-Set-BrowserPolicies.ps1' -ForegroundColor White
+          Write-Host ''
+          Write-Host '5. אמת במחשב Windows:' -ForegroundColor White
+          Write-Host '   chrome://extensions ← Developer mode ← Load unpacked ← Extension' -ForegroundColor White
+          Write-Host '   המזהה המוצג חייב להיות זהה למזהה שלמעלה.' -ForegroundColor White
+
+      - name: Warning about secret storage
+        shell: pwsh
+        run: |
+          Write-Host ''
+          Write-Host '!! שים לב:' -ForegroundColor Red
+          Write-Host 'המפתח הפרטי הודפס למעלה אך לא נשמר אוטומטית.' -ForegroundColor Red
+          Write-Host 'העתק אותו עכשיו. הוא לא יופיע שוב.' -ForegroundColor Red
+          Write-Host 'בהרצה הבאה ייווצר מפתח חדש.' -ForegroundColor Red

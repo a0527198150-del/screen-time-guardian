@@ -42,23 +42,32 @@ jobs:
       - name: Package extension and deployment files
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs | Out-Null
+          New-Item -ItemType Directory -Force -Path artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/Tools | Out-Null
           Copy-Item extension/* artifacts/ScreenTimeGuardian/Extension/ -Recurse -Force
           Copy-Item policies/* artifacts/ScreenTimeGuardian/Policies/ -Recurse -Force
           Copy-Item docs/* artifacts/ScreenTimeGuardian/Docs/ -Recurse -Force
+          Copy-Item tools/* artifacts/ScreenTimeGuardian/Tools/ -Recurse -Force
           Copy-Item src/Guardian.NativeHost/NativeHost.manifest.json artifacts/ScreenTimeGuardian/NativeHost/NativeHost.manifest.json -Force
+
+          # Copy one-click installer files to the ROOT of the package
+          Copy-Item installer/* artifacts/ScreenTimeGuardian/ -Force
+
           Compress-Archive -Path artifacts/ScreenTimeGuardian/Extension/* -DestinationPath artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -Force
 
       - name: Create deployment package
         shell: pwsh
         run: |
-          Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Agent, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
+          Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Agent, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/Tools, artifacts/ScreenTimeGuardian/Setup.ps1, artifacts/ScreenTimeGuardian/Install.cmd, artifacts/ScreenTimeGuardian/Uninstall.cmd, artifacts/ScreenTimeGuardian/Emergency-Stop.cmd, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
 
       - name: Verify package contents
         shell: pwsh
         run: |
           $package = 'artifacts/ScreenTimeGuardian.zip'
           $required = @(
+            'Setup.ps1',
+            'Install.cmd',
+            'Uninstall.cmd',
+            'Emergency-Stop.cmd',
             'Service/',
             'ControlPanel/',
             'NativeHost/',
@@ -68,6 +77,9 @@ jobs:
             'Policies/Install-Service.ps1',
             'Policies/Register-NativeHost.ps1',
             'Docs/TrialRunGuide.md',
+            'Docs/ExtensionSetup.md',
+            'Tools/Test-LocalUser.cmd',
+            'Tools/Test-LocalUser.ps1',
             'NativeHost/NativeHost.manifest.json'
           )
           Add-Type -AssemblyName System.IO.Compression
