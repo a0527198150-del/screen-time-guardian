@@ -1,0 +1,93 @@
+name: extension-package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  crx-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Package CRX
+        run: |
+          cd extension
+          npm init -y > /dev/null 2>&1
+          npm install crx3 --save-dev > /dev/null 2>&1
+
+          # Write private key from secret
+          mkdir -p ../keys
+          echo "${{ secrets.EXTENSION_PRIVATE_KEY }}" > ../keys/extension.pem
+
+          # Read version from manifest
+          VERSION=$(node -p "require('./manifest.json').version")
+
+          npx crx3 pack \
+            --zipPath "../artifacts/extension.crx" \
+            --keyPath "../keys/extension.pem" \
+            --crxPath "../artifacts/extension.crx3"
+
+          # Also save the raw extension folder
+          mkdir -p ../artifacts/extension
+          cp -r ./* ../artifacts/extension/
+
+          # Write update.xml
+          EXT_ID=$(node -p "
+            const crypto = require('crypto');
+            const fs = require('fs');
+            const pem = fs.readFileSync('../keys/extension.pem', 'utf8');
+            const rsa = crypto.createPrivateKey(pem);
+            const pubDer = rsa.export({ type: 'spki', format: 'der' });
+            const sha = crypto.createHash('sha256').update(pubDer).digest();
+            const id = [...sha.subarray(0,16)].map(b => {
+              return String.fromCharCode('a'.charCodeAt(0) + (b >> 4)) +
+                     String.fromCharCode('a'.charCodeAt(0) + (b & 0x0f))
+            }).join('');
+            process.stdout.write(id);
+          ")
+
+          cat > ../artifacts/update.xml << XEOF
+          <?xml version='1.0' encoding='UTF-8'?>
+          <gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>
+            <app appid='${EXT_ID}'>
+              <updatecheck codebase='https://a0527198150-del.github.io/screen-time-guardian/extension.crx'
+                           version='${VERSION}' />
+            </app>
+          </gupdate>
+          XEOF
+
+          mkdir -p ../artifacts/gh-pages
+          cp ../artifacts/extension.crx ../artifacts/gh-pages/extension.crx
+          cp ../artifacts/update.xml ../artifacts/gh-pages/update.xml
+
+          echo "EXT_ID=$EXT_ID" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Upload CRX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenTimeGuardian.Extension-${{ env.VERSION }}
+          path: artifacts/extension.crx
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: artifacts/gh-pages
+          publish_branch: gh-pages
+          force_orphan: true
+
+      - name: Summary
+        run: |
+          echo "## Extension packaged" >> $GITHUB_STEP_SUMMARY
+          echo "**Extension ID:** ${{ env.EXT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Update URL:** https://a0527198150-del.github.io/screen-time-guardian/update.xml" >> $GITHUB_STEP_SUMMARY
