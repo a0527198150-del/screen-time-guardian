@@ -5,5 +5,7 @@ if %errorLevel% neq 0 (
     powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
     exit /b
 )
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Setup.ps1" -EmergencyStop -SourceFolder "%~dp0"
+set "SOURCE=%~dp0"
+if "%SOURCE:~-1%"=="\" set "SOURCE=%SOURCE:~0,-1%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SOURCE%\Setup.ps1" -EmergencyStop -SourceFolder "%SOURCE%"
 pause
