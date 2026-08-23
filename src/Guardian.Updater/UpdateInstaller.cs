@@ -265,7 +265,7 @@ public sealed class UpdateInstaller
                 Directory.Delete(directory, recursive: true);
             }
         }
-        catch (IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // Best effort cleanup only.
         }

@@ -75,7 +75,8 @@ public sealed class BrowserLaunchBlocker
             var approvedNames = settings.AllowApprovedBrowsersWithoutExtension
                 ? settings.ApprovedBrowserPaths
                     .Select(Path.GetFileName)
-                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .OfType<string>()
+                    .Where(name => name.Length > 0)
                     .ToHashSet(StringComparer.OrdinalIgnoreCase)
                 : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

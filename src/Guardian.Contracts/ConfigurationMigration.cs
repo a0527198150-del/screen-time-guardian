@@ -73,7 +73,8 @@ public static class ConfigurationMigrator
         configuration.BrowserLockdown.ExtraBlockedBrowserNames ??= new List<string>();
         configuration.BrowserLockdown.ExtraBlockedBrowserNames = configuration.BrowserLockdown.ExtraBlockedBrowserNames
             .Select(Path.GetFileNameWithoutExtension)
-            .Where(name => !string.IsNullOrWhiteSpace(name)
+            .OfType<string>()
+            .Where(name => name.Length > 0
                 && BrowserIdentification.CanDenyByName(name))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(100)
