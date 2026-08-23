@@ -9,8 +9,14 @@
 ### שכבה 1 — כפיית התוסף על Chrome ועל Edge
 
 ```powershell
-.\Set-BrowserPolicies.ps1 -ExtensionId <מזהה-התוסף>
+.\Set-BrowserPolicies.ps1 `
+  -ExtensionId '<מזהה Chrome>' `
+  -EdgeExtensionId '<מזהה Edge>' `
+  -UpdateUrl 'https://שרת-הפצה.example/chrome/update.xml' `
+  -EdgeUpdateUrl 'https://שרת-הפצה.example/edge/update.xml'
 ```
+
+הפקודה תקפה רק לאחר פרסום התוסף במקור הפצה מנוהל. תיקיית `Load unpacked` מקומית אינה מקור תקף למדיניות force-install.
 
 נכתב ל־`HKLM\SOFTWARE\Policies\Google\Chrome` ול־`HKLM\SOFTWARE\Policies\Microsoft\Edge`:
 
@@ -18,10 +24,8 @@
 |---|---|
 | `ExtensionInstallForcelist` | התוסף מותקן אוטומטית ולא ניתן להסרה |
 | `ExtensionSettings` עם `"*": blocked` | אי אפשר להתקין שום תוסף אחר |
-| `IncognitoModeAvailability = 1` | גלישה פרטית מבוטלת |
-| `BrowserGuestModeEnabled = 0` | מצב אורח מבוטל |
+| מדיניות פרטית/אורח דינמית | השירות משנה אותן רק בזמן חסימה פעילה |
 | `DeveloperToolsAvailability = 2` | DevTools חסום |
-
 הכל תחת HKLM ⇒ חל על כל המשתמשים, והסרה דורשת הרשאת מנהל.
 
 **למה גלישה פרטית ומצב אורח חייבים ליפול:** שניהם מסתירים איזה חשבון Google מחובר — וזה בדיוק מה שהתוסף צריך לראות כדי להחליט משהו.

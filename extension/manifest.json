@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "שומר זמן מסך",
   "description": "זיהוי חשבון Google, גילוי אתרים שנכנסים אליהם דרך Google, ואכיפת לוח זמנים",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "minimum_chrome_version": "120",
   "permissions": [
     "nativeMessaging",

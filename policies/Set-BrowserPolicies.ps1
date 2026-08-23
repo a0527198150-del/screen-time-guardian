@@ -4,7 +4,7 @@
     What this achieves:
       * the Screen Time Guardian extension is force installed and CANNOT be removed;
       * no other extension can be installed;
-      * incognito and guest browsing are disabled, since both hide the session from us;
+      * private and guest browsing are controlled dynamically while a block is active;
       * developer tools are disabled, so the extension cannot be tampered with;
       * these settings apply to EVERY user account on the machine.
 
@@ -14,12 +14,13 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ExtensionId,
 
-    # Where update.xml is hosted. For a self hosted extension this must be reachable
-    # over HTTPS. For a store published extension use the store update URL instead.
-    [string]$UpdateUrl = 'https://clients2.google.com/service/update2/crx',
+    # Explicit update URLs are required when applying policy. They are not needed
+    # when -Remove is used.
+    [string]$UpdateUrl,
 
     [string]$EdgeExtensionId,
-    [string]$EdgeUpdateUrl = 'https://edge.microsoft.com/extensionwebstorebase/v1/crx',
+
+    [string]$EdgeUpdateUrl,
 
     [switch]$AllowDeveloperTools,
     [switch]$Remove
@@ -34,7 +35,28 @@ if (-not ([Security.Principal.WindowsPrincipal]::new($identity)).IsInRole(
     throw 'יש להריץ סקריפט זה מחלון PowerShell עם הרשאות מנהל.'
 }
 
-if (-not $EdgeExtensionId) { $EdgeExtensionId = $ExtensionId }
+if ($Remove) {
+    if ($ExtensionId -notmatch '^[a-z]{32}$' -or ($EdgeExtensionId -and $EdgeExtensionId -notmatch '^[a-z]{32}$')) {
+        throw 'בעת הסרה יש לספק מזהי תוסף תקינים.'
+    }
+}
+else {
+    if ($ExtensionId -notmatch '^[a-z]{32}$' -or $EdgeExtensionId -notmatch '^[a-z]{32}$') {
+        throw 'בעת החלה יש לספק מזהי Chrome ו־Edge תקינים בני 32 אותיות קטנות.'
+    }
+
+    foreach ($url in @($UpdateUrl, $EdgeUpdateUrl)) {
+        $parsed = $null
+        if (-not [Uri]::TryCreate($url, [UriKind]::Absolute, [ref]$parsed)
+            -or $parsed.Scheme -ne 'https'
+            -or -not [string]::IsNullOrWhiteSpace($parsed.UserInfo)
+            -or $parsed.Port -ne -1
+            -or -not [string]::IsNullOrWhiteSpace($parsed.Query)
+            -or -not [string]::IsNullOrWhiteSpace($parsed.Fragment)) {
+            throw "כתובת העדכון חייבת להיות HTTPS ללא פרטי משתמש, port, query או fragment: $url"
+        }
+    }
+}
 
 $browsers = @(
     @{ Name = 'Chrome'; Root = 'HKLM:\SOFTWARE\Policies\Google\Chrome'; Id = $ExtensionId;     Update = $UpdateUrl }

@@ -54,6 +54,36 @@ jobs:
         run: |
           Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Agent, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
 
+      - name: Verify package contents
+        shell: pwsh
+        run: |
+          $package = 'artifacts/ScreenTimeGuardian.zip'
+          $required = @(
+            'Service/',
+            'ControlPanel/',
+            'NativeHost/',
+            'Agent/',
+            'Updater/',
+            'Extension/manifest.json',
+            'Policies/Install-Service.ps1',
+            'Policies/Register-NativeHost.ps1',
+            'Docs/TrialRunGuide.md',
+            'NativeHost/NativeHost.manifest.json'
+          )
+          Add-Type -AssemblyName System.IO.Compression
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $package))
+          try {
+            $names = @($archive.Entries | ForEach-Object { $_.FullName })
+            foreach ($item in $required) {
+              if (-not ($names -contains $item) -and -not ($names | Where-Object { $_.StartsWith($item) })) {
+                throw "Missing required package entry: $item"
+              }
+            }
+          }
+          finally {
+            $archive.Dispose()
+          }
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:

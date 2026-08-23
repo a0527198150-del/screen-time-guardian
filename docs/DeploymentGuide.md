@@ -1,4 +1,4 @@
-# מדריך התקנה — גרסה 0.4.4
+# מדריך התקנה — גרסה 0.4.5
 
 ## לפני הכל — הסרת גרסה ישנה
 
@@ -23,25 +23,33 @@ cd 'C:\Program Files\ScreenTimeGuardian\Policies'
 .\Install-Service.ps1 -ServiceExecutable '..\Service\ScreenTimeGuardian.Service.exe' -StartAfterInstall
 ```
 
-4. להשלים את התקנת התוסף לפי הסעיף הבא, לקבל את מזהה התוסף, ואז להריץ את `Register-NativeHost.ps1 -ExtensionId <מזהה-התוסף>` כמנהל.
+4. להשלים את התקנת התוסף לפי הסעיף הבא, לקבל מזהי Chrome ו־Edge, ואז להריץ את `Register-NativeHost.ps1` עם שני המזהים כמנהל.
 5. לפתוח את `ControlPanel\ScreenTimeGuardian.ControlPanel.exe` ולהגדיר סיסמת ניהול.
 
 > הסיסמה נקבעת בהפעלה הראשונה, ומי שקובע אותה שולט בהגדרות. **אבא צריך לקבוע אותה, לא אתה** — אחרת אין למנגנון שום כוח מולך.
 
 ## התקנת התוסף
 
-עד שתוגדר פריסה מנוהלת, טעינה ידנית:
+לבדיקה בלבד, עד שתוגדר פריסה מנוהלת, אפשר לבצע טעינה ידנית. טעינה ידנית אינה הגנה מפני הסרה ואינה מתאימה לייצור:
 
 1. Chrome ← `chrome://extensions` ← להפעיל Developer mode.
 2. Load unpacked ← לבחור את תיקיית `Extension`.
 3. להעתיק את מזהה התוסף שנוצר.
-4. להריץ `Register-NativeHost.ps1 -ExtensionId <מזהה-התוסף>` כמנהל. הסקריפט יוצר את קובץ ה־Native Host עם `allowed_origins` הנכון ומרשום אותו ל־Chrome ול־Edge.
-5. להריץ `Set-BrowserPolicies.ps1 -ExtensionId <מזהה-התוסף>` כמנהל כדי לכפות את התוסף ולחסום עקיפות כמו תוספים לא מורשים ו־Developer Tools.
-6. להריץ `Install-Agent.ps1 -AgentExecutable '..\Agent\ScreenTimeGuardian.Agent.exe' כמנהל כדי להפעיל התראות לפני חסימה.
+4. להריץ את הרישום עם שני המזהים:
 
-קובץ הייחוס `NativeHost\NativeHost.manifest.json` נמצא בחבילה, אך אין לערוך אותו ידנית במקום להשתמש בסקריפט.
+```powershell
+.\Register-NativeHost.ps1 -ExtensionId '<מזהה Chrome>' -EdgeExtensionId '<מזהה Edge>'
+```
+
+הסקריפט יוצר את קובץ ה־Native Host עם `allowed_origins` עבור שני הדפדפנים.
+5. אין להריץ `Set-BrowserPolicies.ps1` עם תוסף מקומי. פריסה מנוהלת דורשת תוסף שפורסם וכתובות עדכון HTTPS אמיתיות. ראו את הפרק המתאים ב־`TrialRunGuide.md`.
+6. להריץ `Install-Agent.ps1 -AgentExecutable '..\Agent\ScreenTimeGuardian.Agent.exe'` כמנהל כדי להפעיל התראות לפני חסימה.
+
+קובץ הייחוס `NativeHost\NativeHost.manifest.json` נמצא בחבילה, אך אין לערוך אותו ידנית. יש להשתמש בסקריפט כדי לכתוב את מזהי Chrome ו־Edge בפועל.
 
 ## בדיקה ראשונה — לפני שסומכים על זה
+
+למדריך מלא בעברית, כולל פקודות, נקודות עצירה, בדיקת חירום ובדיקת השהיה, ראו `docs/TrialRunGuide.md`.
 
 לכל חלון זמן יש שדה **השהיית אכיפה (שניות)**. השאר אותו על `0` בבדיקה הראשונה. אם בוחרים ערך גדול מאפס, האפליקציה או האתר עדיין זמינים בתחילת החלון; השירות יתחיל את ניתוק הרשת רק לאחר מספר השניות שנקבע. ההשהיה נשמרת בתצורה ונאכפת גם כאשר לוח הבקרה סגור. באתרי מחשב אפשר לקבוע אותה לכל חלונות האתר, ובחשבונות Google לכל חלון חשבון בנפרד.
 

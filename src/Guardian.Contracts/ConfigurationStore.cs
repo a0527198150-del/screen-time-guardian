@@ -46,7 +46,7 @@ public sealed class ConfigurationStore
         {
             if (!File.Exists(_path))
             {
-                return ConfigurationDocument.Default;
+                return LoadBackupOrDefault();
             }
 
             try
@@ -58,12 +58,36 @@ public sealed class ConfigurationStore
             }
             catch (JsonException)
             {
-                return ConfigurationDocument.Default;
+                return LoadBackupOrDefault();
             }
             catch (IOException)
             {
-                return ConfigurationDocument.Default;
+                return LoadBackupOrDefault();
             }
+        }
+    }
+
+    private ConfigurationDocument LoadBackupOrDefault()
+    {
+        var backupPath = _path + ".bak";
+        if (!File.Exists(backupPath))
+        {
+            return ConfigurationDocument.Default;
+        }
+
+        try
+        {
+            var backupJson = File.ReadAllText(backupPath);
+            var backup = JsonSerializer.Deserialize<ConfigurationDocument>(backupJson, JsonOptions);
+            return backup is null ? ConfigurationDocument.Default : ConfigurationMigrator.Migrate(backup);
+        }
+        catch (JsonException)
+        {
+            return ConfigurationDocument.Default;
+        }
+        catch (IOException)
+        {
+            return ConfigurationDocument.Default;
         }
     }
 

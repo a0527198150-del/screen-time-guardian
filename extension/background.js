@@ -17,7 +17,7 @@ let nativePort = null;
 let nativeSeq = 0;
 const pending = new Map();
 
-let accountCache = { at: 0, emails: [], primary: '' };
+let accountCache = { at: 0, emails: [], primary: '', available: false };
 let policyCache = { at: 0, policy: null };
 
 // ---------------------------------------------------------------- native host
@@ -101,6 +101,7 @@ async function readSignedInAccounts() {
   }
 
   const emails = [];
+  let available = false;
   try {
     const response = await fetch(
       'https://accounts.google.com/ListAccounts?gpsia=1&source=ChromiumBrowser&json=standard',
@@ -116,12 +117,13 @@ async function readSignedInAccounts() {
         const candidate = Array.isArray(row) ? row.find((v) => typeof v === 'string' && v.includes('@')) : null;
         if (candidate) emails.push(candidate.toLowerCase());
       }
+      available = true;
     }
   } catch (error) {
     console.debug('ListAccounts failed', error);
   }
 
-  accountCache = { at: now, emails, primary: emails[0] || '' };
+  accountCache = { at: now, emails, primary: emails[0] || '', available };
   return accountCache;
 }
 
@@ -132,9 +134,13 @@ async function getPolicy(force = false) {
   }
 
   const response = await callNative({ type: 'getPolicy' });
-  const policy = response && response.ok && response.policy ? response.policy : null;
-  policyCache = { at: now, policy };
-  return policy;
+  if (response && response.ok && response.policy) {
+    policyCache = { at: now, policy: response.policy };
+  }
+
+  // Keep the last valid snapshot when the service is temporarily unavailable.
+  // Clearing it here would also clear declarativeNetRequest rules on the next sync.
+  return policyCache.policy;
 }
 
 // ---------------------------------------------------------------- blocking rules
@@ -155,6 +161,57 @@ function blockedUrlFor(reason) {
   return chrome.runtime.getURL('blocked.html') + '?reason=' + encodeURIComponent(reason);
 }
 
+function normalizeOrigin(value) {
+  try {
+    const uri = new URL(String(value || '').trim());
+    if (uri.protocol !== 'https:' || uri.username || uri.password || uri.port || uri.search || uri.hash || !uri.hostname) {
+      return '';
+    }
+    return `https://${uri.hostname.toLowerCase()}`;
+  } catch (error) {
+    return '';
+  }
+}
+
+function evaluateCachedPolicy(policy, email, service, origin) {
+  if (!policy) {
+    return { blocked: false, identityKnown: false, reason: 'שירות המדיניות אינו זמין.' };
+  }
+
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedService = String(service || '').trim().toLowerCase();
+  const normalizedOrigin = normalizeOrigin(origin);
+  const account = Array.isArray(policy.googleAccounts)
+    ? policy.googleAccounts.find(item => String(item.email || '').toLowerCase() === normalizedEmail)
+    : null;
+
+  if (!normalizedEmail) {
+    return {
+      blocked: policy.blockUnknownGoogleSessions === true,
+      identityKnown: false,
+      reason: 'לא ניתן לזהות את חשבון Google בזמן שהשירות אינו זמין.'
+    };
+  }
+
+  if (!account) {
+    return { blocked: false, identityKnown: true, reason: 'החשבון אינו חסום כרגע.' };
+  }
+
+  const siteBlocked = normalizedOrigin && Array.isArray(account.sites)
+    && account.sites.some(site => normalizeOrigin(site) === normalizedOrigin);
+  const serviceBlocked = Array.isArray(account.services)
+    && account.services.some(item => String(item).toLowerCase() === normalizedService);
+  const blocked = Boolean(siteBlocked || serviceBlocked);
+
+  return {
+    blocked,
+    identityKnown: true,
+    reason: blocked
+      ? 'הגישה נחסמה לפי המדיניות האחרונה הידועה.'
+      : 'החשבון אינו חסום כרגע.'
+  };
+}
+
 function isGoogleHostname(hostname) {
   const host = String(hostname || '').toLowerCase().replace(/\.$/, '');
   return host === 'google.com' || host.endsWith('.google.com');
@@ -167,7 +224,20 @@ function isGoogleHostname(hostname) {
  */
 async function syncRules() {
   const policy = await getPolicy();
+  if (!policy) {
+    // No valid snapshot has ever been received. Preserve any existing rules rather
+    // than replacing them with an empty set during a service outage.
+    console.warn('Policy unavailable; keeping existing declarative rules');
+    return;
+  }
+
   const accounts = await readSignedInAccounts();
+  if (!accounts.available) {
+    // An empty result caused by a failed Google request is not evidence that the
+    // browser has no accounts. Keep the last rules until identity can be read again.
+    console.warn('Google account list unavailable; keeping existing declarative rules');
+    return;
+  }
 
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
   const removeRuleIds = existing.map((rule) => rule.id);
@@ -304,9 +374,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
 
     if (!response || response.ok === false) {
-      // Fail OPEN when the service simply is not reachable. The previous version
-      // failed closed here, which blocked normal browsing whenever the host was down.
-      sendResponse({ blocked: false, identityKnown: false, reason: 'שירות המדיניות אינו זמין.' });
+      const cachedDecision = evaluateCachedPolicy(
+        policyCache.policy,
+        email,
+        message.service || '',
+        message.origin || ''
+      );
+      sendResponse(cachedDecision);
       return;
     }
 

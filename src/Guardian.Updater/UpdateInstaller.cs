@@ -12,10 +12,16 @@ public sealed record UpdateArguments(
 {
     public static UpdateArguments Parse(string[] args)
     {
-        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        for (var index = 0; index < args.Length - 1; index += 2)
+        if (args.Length == 0 || args.Length % 2 != 0)
         {
-            if (!args[index].StartsWith("--", StringComparison.Ordinal))
+            throw new ArgumentException("Invalid updater arguments.");
+        }
+
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        for (var index = 0; index < args.Length; index += 2)
+        {
+            if (!args[index].StartsWith("--", StringComparison.Ordinal)
+                || string.IsNullOrWhiteSpace(args[index + 1]))
             {
                 throw new ArgumentException("Invalid updater arguments.");
             }
@@ -43,8 +49,18 @@ public sealed record UpdateArguments(
 
 public sealed class UpdateInstaller
 {
+    // SHA-256 detects corruption but does not prove who published the package.
+    // Keep updates disabled until a publisher public key is embedded and verified.
+    private const bool SignedUpdatesEnabled = false;
+
     public void Apply(UpdateArguments options)
     {
+        if (!SignedUpdatesEnabled)
+        {
+            throw new InvalidOperationException(
+                "עדכונים אוטומטיים מושבתים: יש להטמיע ולאמת חתימת מפרסם לפני הפעלה.");
+        }
+
         if (!File.Exists(options.PackagePath))
         {
             throw new FileNotFoundException("Update package not found.", options.PackagePath);
@@ -58,12 +74,22 @@ public sealed class UpdateInstaller
 
         var stagingDirectory = Path.Combine(Path.GetTempPath(), "ScreenTimeGuardian-update-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(stagingDirectory);
-        ZipFile.ExtractToDirectory(options.PackagePath, stagingDirectory);
+        try
+        {
+            ValidateArchiveEntries(options.PackagePath, stagingDirectory);
+            ZipFile.ExtractToDirectory(options.PackagePath, stagingDirectory);
 
-        StopService(options.ServiceName);
-        CopyDirectory(stagingDirectory, options.InstallDirectory);
-        StartService(options.ServiceName);
-        Directory.Delete(stagingDirectory, recursive: true);
+            StopService(options.ServiceName);
+            CopyDirectory(stagingDirectory, options.InstallDirectory);
+            StartService(options.ServiceName);
+        }
+        finally
+        {
+            if (Directory.Exists(stagingDirectory))
+            {
+                Directory.Delete(stagingDirectory, recursive: true);
+            }
+        }
     }
 
     private static void StopService(string serviceName)
@@ -91,6 +117,20 @@ public sealed class UpdateInstaller
         if (process.ExitCode != 0 && action == "start")
         {
             throw new InvalidOperationException(process.StandardError.ReadToEnd());
+        }
+    }
+
+    private static void ValidateArchiveEntries(string packagePath, string stagingDirectory)
+    {
+        var root = Path.GetFullPath(stagingDirectory + Path.DirectorySeparatorChar);
+        using var archive = ZipFile.OpenRead(packagePath);
+        foreach (var entry in archive.Entries)
+        {
+            var target = Path.GetFullPath(Path.Combine(stagingDirectory, entry.FullName));
+            if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Update package contains an unsafe path.");
+            }
         }
     }
 

@@ -1,4 +1,4 @@
-# מסירת גרסה 0.4.4
+# מסירת גרסה 0.4.5
 
 הקוד כבר נמצא ב־`main`. אין להעלות קובצי ZIP לתוך הריפו ואין לבצע מחיקות ידניות דרך GitHub. שינויים נמסרים באמצעות commit ו־push, וה־workflow בודק אותם אוטומטית.
 
@@ -12,7 +12,7 @@
 ## יצירת חבילת התקנה
 
 1. פתח את GitHub Actions ובחר `package`.
-2. הפעל את ה־workflow על `main` או צור תגית `v0.4.4`.
+2. הפעל את ה־workflow על `main` או צור תגית `v0.4.5`.
 3. הורד את artifact בשם `ScreenTimeGuardian-*`.
 4. ודא שהחבילה כוללת את התיקיות `Service`, `ControlPanel`, `NativeHost`, `Agent`, `Updater`, `Extension`, `Policies`, `Docs`, ובתוך `NativeHost` גם את `NativeHost.manifest.json`.
 
@@ -31,13 +31,13 @@ cd 'C:\Program Files\ScreenTimeGuardian\Policies'
 5. רשום את ה־Native Host:
 
 ```powershell
-.\Register-NativeHost.ps1 -ExtensionId <מזהה-התוסף>
+.\Register-NativeHost.ps1 -ExtensionId '<מזהה Chrome>' -EdgeExtensionId '<מזהה Edge>'
 ```
 
 6. הפעל את מדיניות הדפדפן ואת סוכן ההתראות כמנהל:
 
 ```powershell
-.\Set-BrowserPolicies.ps1 -ExtensionId <מזהה-התוסף>
+.\Set-BrowserPolicies.ps1 -ExtensionId '<מזהה Chrome>' -EdgeExtensionId '<מזהה Edge>' -UpdateUrl 'https://שרת-הפצה.example/chrome/update.xml' -EdgeUpdateUrl 'https://שרת-הפצה.example/edge/update.xml'
 .\Install-Agent.ps1 -AgentExecutable '..\Agent\ScreenTimeGuardian.Agent.exe'
 ```
 
