@@ -6,7 +6,17 @@ using ScreenTimeGuardian.Contracts;
 
 namespace ScreenTimeGuardian.ControlPanel;
 
-/// <summary>Keyboard and pointer editor for a seven-day, twenty-four-hour schedule.</summary>
+/// <summary>
+/// Keyboard and pointer editor for a seven-day, twenty-four-hour schedule.
+///
+/// RTL note: The parent Window sets FlowDirection="RightToLeft", which causes
+/// WPF to mirror all rendering automatically. The x-coordinates used here are
+/// in LOGICAL space — x=0 is the left side of the control's logical coordinate
+/// system, which WPF renders on the RIGHT side of the screen in RTL mode.
+/// We draw days left-to-right (Sunday on the left logically), and WPF mirrors
+/// them so Sunday appears on the right visually — which is the correct Hebrew
+/// order. No manual x-reversal is needed.
+/// </summary>
 public sealed class WeekGrid : FrameworkElement
 {
     private static readonly DayOfWeek[] Days =
@@ -93,26 +103,28 @@ public sealed class WeekGrid : FrameworkElement
 
         // Brushes
         var freeBrush = new SolidColorBrush(Color.FromRgb(241, 245, 249));   // #F1F5F9
-        var blockedBrush = new SolidColorBrush(Color.FromRgb(13, 148, 136));  // Teal #0D9488
+        var blockedBrush = new SolidColorBrush(Color.FromRgb(14, 124, 134)); // Teal #0E7C86
         var borderPen = new Pen(new SolidColorBrush(Color.FromRgb(226, 232, 240)), 1.0);
-        var inkBrush = new SolidColorBrush(Color.FromRgb(26, 26, 46));        // Ink #1A1A2E
-        var mutedBrush = new SolidColorBrush(Color.FromRgb(100, 116, 139));   // MutedInk #64748B
-        var headerTypeface = new Typeface("Assistant");
-        var hourTypeface = new Typeface("Assistant");
+        var inkBrush = new SolidColorBrush(Color.FromRgb(21, 33, 61));       // Ink #15213D
+        var mutedBrush = new SolidColorBrush(Color.FromRgb(83, 97, 122));    // MutedInk #53617A
+        var headerTypeface = new Typeface("Assistant, Segoe UI");
+        var hourTypeface = new Typeface("Assistant, Segoe UI");
 
-        // Day headers — drawn right-to-left so יום ראשון is on the right.
-        for (var visualIndex = 0; visualIndex < Days.Length; visualIndex++)
+        // Day headers — logical x goes left to right (Sunday=0 to Saturday=6).
+        // WPF mirrors the entire control in RTL mode, so Sunday ends up on the
+        // right side of the screen automatically.
+        for (var dayIndex = 0; dayIndex < Days.Length; dayIndex++)
         {
-            var day = Days[visualIndex];
-            var x = gridLeft + (Days.Length - 1 - visualIndex) * cellWidth;
+            var day = Days[dayIndex];
+            var x = gridLeft + dayIndex * cellWidth;
             var label = new FormattedText(HebrewDays.Name(day), CultureInfo.CurrentCulture,
-                FlowDirection.RightToLeft, headerTypeface, 13, inkBrush, 1.0);
+                FlowDirection.LeftToRight, headerTypeface, 13, inkBrush, 1.0);
             label.TextAlignment = TextAlignment.Center;
             label.MaxTextWidth = cellWidth;
             drawingContext.DrawText(label, new Point(x, 6));
         }
 
-        // Hour labels on the left, always LTR.
+        // Hour labels — always LTR regardless of parent FlowDirection.
         for (var hour = 0; hour < 24; hour++)
         {
             var y = gridTop + hour * cellHeight;
@@ -122,10 +134,10 @@ public sealed class WeekGrid : FrameworkElement
         }
 
         // Cells
-        for (var visualIndex = 0; visualIndex < Days.Length; visualIndex++)
+        for (var dayIndex = 0; dayIndex < Days.Length; dayIndex++)
         {
-            var day = Days[visualIndex];
-            var x = gridLeft + (Days.Length - 1 - visualIndex) * cellWidth;
+            var day = Days[dayIndex];
+            var x = gridLeft + dayIndex * cellWidth;
             for (var hour = 0; hour < 24; hour++)
             {
                 var y = gridTop + hour * cellHeight;
@@ -186,10 +198,12 @@ public sealed class WeekGrid : FrameworkElement
 
         if (cellWidth <= 0 || cellHeight <= 0 || point.X < gridLeft || point.Y < gridTop) return null;
 
-        // Visual index 0 is rightmost (Sunday). Reverse to map physical → logical.
-        var visualIndex = (int)((point.X - gridLeft) / cellWidth);
-        if (visualIndex is < 0 or >= 7) return null;
-        var dayIndex = 7 - 1 - visualIndex;  // map visual → Days array
+        // In RTL mode, WPF mirrors coordinates. point.X=0 is the RIGHT edge
+        // of the visible control, and it increases to the LEFT. The gridLeft
+        // offset is also mirrored, so we subtract from the mirrored width.
+        var mirroredX = width - point.X;
+        var dayIndex = (int)((mirroredX - gridLeft) / cellWidth);
+        if (dayIndex is < 0 or >= 7) return null;
         var day = Days[dayIndex];
         var hour = (int)((point.Y - gridTop) / cellHeight);
         return hour is >= 0 and < 24 ? (day, hour) : null;

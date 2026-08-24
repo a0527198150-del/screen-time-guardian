@@ -22,92 +22,36 @@ jobs:
       - name: Restore
         run: dotnet restore ScreenTimeGuardian.sln --runtime win-x64
 
-      - name: Publish service
-        run: dotnet publish src/Guardian.Service/Guardian.Service.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Service --no-restore
-
-      - name: Publish control panel EXE
-        run: dotnet publish src/Guardian.ControlPanel/Guardian.ControlPanel.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/ControlPanel --no-restore /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
-
       - name: Publish standalone application EXE
+        run: dotnet publish src/Guardian.ControlPanel/Guardian.ControlPanel.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts --no-restore /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Rename to final name
         shell: pwsh
         run: |
-          Copy-Item artifacts/ScreenTimeGuardian/ControlPanel/ScreenTimeGuardian.ControlPanel.exe artifacts/ScreenTimeGuardian/ScreenTimeGuardian.exe -Force
-
-      - name: Publish Native Host
-        run: dotnet publish src/Guardian.NativeHost/Guardian.NativeHost.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/NativeHost --no-restore
-
-      - name: Publish agent
-        run: dotnet publish src/Guardian.Agent/Guardian.Agent.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Agent --no-restore
-
-      - name: Publish launch blocker into the service folder
-        run: dotnet publish src/Guardian.LaunchBlocker/Guardian.LaunchBlocker.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Service --no-restore
-
-      - name: Publish updater
-        run: dotnet publish src/Guardian.Updater/Guardian.Updater.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Updater --no-restore
-
-      - name: Package extension and deployment files
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/Tools | Out-Null
-          Copy-Item extension/* artifacts/ScreenTimeGuardian/Extension/ -Recurse -Force
-          Copy-Item policies/* artifacts/ScreenTimeGuardian/Policies/ -Recurse -Force
-          Copy-Item docs/* artifacts/ScreenTimeGuardian/Docs/ -Recurse -Force
-          Copy-Item tools/* artifacts/ScreenTimeGuardian/Tools/ -Recurse -Force
-          Copy-Item src/Guardian.NativeHost/NativeHost.manifest.json artifacts/ScreenTimeGuardian/NativeHost/NativeHost.manifest.json -Force
-
-          # Copy one-click installer files to the ROOT of the package. Keep the
-          # repository's policies as the authoritative installer source.
-          Copy-Item policies/Setup.ps1, policies/Install.cmd, policies/Uninstall.cmd, policies/Emergency-Stop.cmd artifacts/ScreenTimeGuardian/ -Force
-
-          Compress-Archive -Path artifacts/ScreenTimeGuardian/Extension/* -DestinationPath artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -Force
-
-      - name: Create deployment package
-        shell: pwsh
-        run: |
-          Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Agent, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/Tools, artifacts/ScreenTimeGuardian/Setup.ps1, artifacts/ScreenTimeGuardian/Install.cmd, artifacts/ScreenTimeGuardian/Uninstall.cmd, artifacts/ScreenTimeGuardian/Emergency-Stop.cmd, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.exe, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
-
-      - name: Verify package contents
-        shell: pwsh
-        run: |
-          $package = 'artifacts/ScreenTimeGuardian.zip'
-          $required = @(
-            'Setup.ps1',
-            'Install.cmd',
-            'Uninstall.cmd',
-            'Emergency-Stop.cmd',
-            'Service/',
-            'ControlPanel/',
-            'ScreenTimeGuardian.exe',
-            'NativeHost/',
-            'Agent/',
-            'Updater/',
-            'Extension/manifest.json',
-            'Policies/Install-Service.ps1',
-            'Policies/Register-NativeHost.ps1',
-            'Docs/TrialRunGuide.md',
-            'Docs/ExtensionSetup.md',
-            'Tools/Test-LocalUser.cmd',
-            'Tools/Test-LocalUser.ps1',
-            'Tools/Diagnose-WebsiteBlocking.ps1',
-            'NativeHost/NativeHost.manifest.json'
-          )
-          Add-Type -AssemblyName System.IO.Compression
-          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $package))
-          try {
-            $names = @($archive.Entries | ForEach-Object { $_.FullName })
-            foreach ($item in $required) {
-              if (-not ($names -contains $item) -and -not ($names | Where-Object { $_.StartsWith($item) })) {
-                throw "Missing required package entry: $item"
-              }
-            }
+          $src = 'artifacts/ScreenTimeGuardian.ControlPanel.exe'
+          $dst = 'artifacts/ScreenTimeGuardian.exe'
+          if (Test-Path $src) {
+            Copy-Item $src $dst -Force
+            Remove-Item $src -Force
           }
-          finally {
-            $archive.Dispose()
+          Write-Host "Output: $dst"
+
+      - name: Verify output
+        shell: pwsh
+        run: |
+          $exe = 'artifacts/ScreenTimeGuardian.exe'
+          if (-not (Test-Path $exe)) {
+            throw "Output EXE not found: $exe"
+          }
+          $size = (Get-Item $exe).Length
+          Write-Host "ScreenTimeGuardian.exe size: $([math]::Round($size / 1MB, 1)) MB"
+          if ($size -lt 1MB) {
+            throw "EXE seems too small ($size bytes) — publish may have failed"
           }
 
-      - name: Upload package artifact
+      - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
         with:
           name: ScreenTimeGuardian-${{ github.ref_name }}
-          path: artifacts/ScreenTimeGuardian.zip
+          path: artifacts/ScreenTimeGuardian.exe
           if-no-files-found: error
