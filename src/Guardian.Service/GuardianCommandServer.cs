@@ -286,6 +286,15 @@ public sealed class GuardianCommandServer : BackgroundService
 
         if (string.Equals(request.Type, "changePassword", StringComparison.OrdinalIgnoreCase))
         {
+            // Verify the CURRENT password before allowing a change.
+            // Without this check any authenticated client could overwrite the
+            // password without knowing the old one, which defeats the whole point.
+            if (!ApplicationPassword.Verify(request.Password, configuration.Security))
+            {
+                RegisterFailure(clientSid);
+                return Error("הסיסמה הנוכחית אינה נכונה.");
+            }
+
             try
             {
                 ApplicationPassword.Validate(request.NewPassword);

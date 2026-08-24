@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.ServiceProcess;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -32,6 +33,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // Adapt window size to the current screen so the title bar and close
+        // button are always visible, even on 1366x768 laptops.
+        Loaded += OnWindowLoaded;
+
         RulesListBox.ItemsSource = _rules;
         TargetsListBox.ItemsSource = _targets;
         WindowsListBox.ItemsSource = _windows;
@@ -47,6 +52,79 @@ public partial class MainWindow : Window
         UsersListBox.ItemsSource = _localUsers;
 
         SetStatus("יש להזין את סיסמת האפליקציה. בהפעלה הראשונה הסיסמה שתוזן תיקבע כסיסמת הניהול.", false);
+    }
+
+    private void OnWindowLoaded(object sender, RoutedEventArgs e)
+    {
+        // 90% of work area, clamped to reasonable bounds, so the title bar
+        // and close button are always reachable.
+        var screen = SystemParameters.WorkArea;
+        var targetWidth = Math.Min(1060, screen.Width * 0.9);
+        var targetHeight = Math.Min(640, screen.Height * 0.92);
+        Width = Math.Max(MinWidth, targetWidth);
+        Height = Math.Max(MinHeight, targetHeight);
+        Left = (screen.Width - Width) / 2 + screen.Left;
+        Top = (screen.Height - Height) / 2 + screen.Top;
+
+        // Show installation banner if the service is not installed.
+        if (!Installer.IsServiceInstalled())
+        {
+            InstallBanner.Visibility = Visibility.Visible;
+            SetStatus("השירות אינו מותקן. לחץ על 'התקן עכשיו' כדי להתחיל.", true);
+        }
+        else if (!Installer.IsServiceRunning())
+        {
+            SetStatus("השירות מותקן אך אינו פועל. נסה להפעיל אותו.", true);
+        }
+    }
+
+    private async void InstallButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (!Installer.IsAdministrator())
+        {
+            SetStatus("נדרשות הרשאות מנהל. לחץ לחיצה ימנית על הקובץ ובחר 'הפעל כמנהל'.", true);
+            return;
+        }
+
+        InstallButton.IsEnabled = false;
+        InstallButton.Content = "מתקין...";
+        SetStatus("מתקין את השירות...", false);
+
+        try
+        {
+            var exeDir = Installer.GetExeDirectory();
+            var serviceExe = Path.Combine(exeDir, "Service", "ScreenTimeGuardian.Service.exe");
+
+            if (!File.Exists(serviceExe))
+            {
+                SetStatus($"קובץ השירות לא נמצא: {serviceExe}. ודא שכל קבצי החבילה בתיקייה אחת.", true);
+                InstallButton.IsEnabled = true;
+                InstallButton.Content = "התקן עכשיו";
+                return;
+            }
+
+            var (success, message) = Installer.Install(serviceExe);
+
+            if (success)
+            {
+                Installer.StartService();
+                InstallBanner.Visibility = Visibility.Collapsed;
+                SetStatus("ההתקנה הושלמה והשירות הופעל. אפשר להגדיר סיסמה וכללים.", false);
+                await RefreshStatusAsync();
+            }
+            else
+            {
+                SetStatus(message, true);
+                InstallButton.IsEnabled = true;
+                InstallButton.Content = "התקן עכשיו";
+            }
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"שגיאה בהתקנה: {ex.Message}", true);
+            InstallButton.IsEnabled = true;
+            InstallButton.Content = "התקן עכשיו";
+        }
     }
 
     private ApplicationRule? SelectedRule => RulesListBox.SelectedItem as ApplicationRule;
