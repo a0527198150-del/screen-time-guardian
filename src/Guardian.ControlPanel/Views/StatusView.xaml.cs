@@ -18,7 +18,7 @@ public partial class StatusView : UserControl
             : status?.EnforcementActive == true ? "אכיפה פעילה כרגע" : "האכיפה אינה פעילה כרגע";
         EnforcementReason.Text = status?.Reason ?? "לא התקבל מצב מהשירות.";
         EnforcementCard.Background = new System.Windows.Media.SolidColorBrush(
-            safe ? System.Windows.Media.Color.FromRgb(250, 242, 220) : System.Windows.Media.Color.FromRgb(227, 245, 241));
+            safe ? System.Windows.Media.Color.FromRgb(254, 249, 195) : System.Windows.Media.Color.FromRgb(236, 253, 245));
 
         var active = configuration.Applications.Where(rule => rule.IsActive(DateTimeOffset.Now)).Select(rule => rule.Name)
             .Concat(configuration.Websites.Where(rule => rule.IsActive(DateTimeOffset.Now)).Select(rule => rule.Domain))

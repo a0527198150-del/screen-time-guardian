@@ -9,4 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Guardian.Contracts\Guardian.Contracts.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+  </ItemGroup>
 </Project>

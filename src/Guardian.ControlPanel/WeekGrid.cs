@@ -92,11 +92,11 @@ public sealed class WeekGrid : FrameworkElement
         var gridTop = HeaderHeight;
 
         // Brushes
-        var freeBrush = new SolidColorBrush(Color.FromRgb(237, 241, 245));   // cool stone
-        var blockedBrush = new SolidColorBrush(Color.FromRgb(14, 124, 134));  // Teal #0E7C86
-        var borderPen = new Pen(new SolidColorBrush(Color.FromRgb(200, 210, 218)), 1.0);
-        var inkBrush = new SolidColorBrush(Color.FromRgb(21, 33, 61));        // Ink #15213D
-        var mutedBrush = new SolidColorBrush(Color.FromRgb(83, 97, 122));     // MutedInk #53617A
+        var freeBrush = new SolidColorBrush(Color.FromRgb(241, 245, 249));   // #F1F5F9
+        var blockedBrush = new SolidColorBrush(Color.FromRgb(13, 148, 136));  // Teal #0D9488
+        var borderPen = new Pen(new SolidColorBrush(Color.FromRgb(226, 232, 240)), 1.0);
+        var inkBrush = new SolidColorBrush(Color.FromRgb(26, 26, 46));        // Ink #1A1A2E
+        var mutedBrush = new SolidColorBrush(Color.FromRgb(100, 116, 139));   // MutedInk #64748B
         var headerTypeface = new Typeface("Assistant");
         var hourTypeface = new Typeface("Assistant");
 
@@ -140,7 +140,7 @@ public sealed class WeekGrid : FrameworkElement
                 if (isBlocked && cellHeight >= 26)
                 {
                     // Subtle inner highlight on blocked cells
-                    var lightBlocked = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255));
+                    var lightBlocked = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
                     var inner = new Rect(rect.X + 2, rect.Y + 2, Math.Max(1, rect.Width - 4), Math.Max(1, rect.Height - 4));
                     drawingContext.DrawRoundedRectangle(lightBlocked, null, inner, 1.5, 1.5);
                 }
@@ -148,7 +148,7 @@ public sealed class WeekGrid : FrameworkElement
         }
 
         // Hour guides — subtle horizontal lines every 6 hours
-        var guidePen = new Pen(new SolidColorBrush(Color.FromRgb(180, 190, 200)), 0.5);
+        var guidePen = new Pen(new SolidColorBrush(Color.FromRgb(203, 213, 225)), 0.5);
         for (var hour = 0; hour <= 24; hour += 6)
         {
             var y = gridTop + hour * cellHeight;
