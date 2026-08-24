@@ -1,4 +1,4 @@
-# מדריך הרצה ניסיונית — שומר זמן מסך 0.4.7
+# מדריך הרצה ניסיונית — שומר זמן מסך 0.4.8
 
 המדריך מיועד לבדיקה מבוקרת לפני שימוש אמיתי. אין לדלג על שלבים, ואין להתחיל עם כללים חשובים או עם חסימת דפדפנים.
 
@@ -29,7 +29,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 ## ב. פריסת קבצי הגרסה
 
 1. הורד מ־GitHub Actions את ה־artifact של `package` שהסתיים בהצלחה.
-2. חלץ אותו לתיקייה זמנית, למשל `C:\Temp\ScreenTimeGuardian-0.4.7`.
+2. חלץ אותו לתיקייה זמנית, למשל `C:\Temp\ScreenTimeGuardian-0.4.8`.
 3. ודא שקיימות התיקיות `Service`, `ControlPanel`, `NativeHost`, `Agent`, `Updater`, `Extension`, `Policies` ו־`Docs`.
 4. העתק את תוכן החבילה אל:
 
