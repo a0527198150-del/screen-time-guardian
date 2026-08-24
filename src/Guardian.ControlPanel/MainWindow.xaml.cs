@@ -1567,5 +1567,5 @@ public partial class MainWindow : Window
             or UnauthorizedAccessException
             or ArgumentException
             or IOException
-            or TimeoutException;
+            or System.TimeoutException;
 }
