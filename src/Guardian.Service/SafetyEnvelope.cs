@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using Microsoft.Extensions.Logging;
 using ScreenTimeGuardian.Contracts;
 
