@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<string> _accountSites = new();
     private readonly ObservableCollection<ScheduleWindow> _accountWindows = new();
     private readonly ObservableCollection<WebsiteRule> _domains = new();
+    private readonly ObservableCollection<ScheduleWindow> _websiteWindows = new();
     private readonly ObservableCollection<DiscoveredSite> _discovered = new();
     private readonly ObservableCollection<string> _approvedBrowsers = new();
 
@@ -34,6 +35,7 @@ public partial class MainWindow : Window
         RulesListBox.ItemsSource = _rules;
         TargetsListBox.ItemsSource = _targets;
         WindowsListBox.ItemsSource = _windows;
+        WebsiteWindowsListBox.ItemsSource = _websiteWindows;
         AccountsListBox.ItemsSource = _accounts;
         AccountSitesListBox.ItemsSource = _accountSites;
         AccountWindowsListBox.ItemsSource = _accountWindows;
@@ -51,6 +53,8 @@ public partial class MainWindow : Window
     private ScheduleWindow? SelectedWindow => WindowsListBox.SelectedItem as ScheduleWindow;
     private GoogleAccountRule? SelectedAccount => AccountsListBox.SelectedItem as GoogleAccountRule;
     private ScheduleWindow? SelectedAccountWindow => AccountWindowsListBox.SelectedItem as ScheduleWindow;
+    private WebsiteRule? SelectedWebsite => DomainsListBox.SelectedItem as WebsiteRule;
+    private ScheduleWindow? SelectedWebsiteWindow => WebsiteWindowsListBox.SelectedItem as ScheduleWindow;
 
     // ==================== authentication ====================
 
@@ -187,7 +191,6 @@ public partial class MainWindow : Window
             UpdatePublicKeyBox.Text = _configuration.UpdatePublicKeyPem;
             ScanIntervalBox.Text = _configuration.BrowserLockdown.ScanIntervalMinutes.ToString();
             CoolingOffBox.Text = _configuration.ChangeControl.CoolingOffHours.ToString();
-            WebsiteDelayBox.Text = "0";
             AccountWindowDelayBox.Text = "0";
 
             _approvedBrowsers.Clear();
@@ -202,6 +205,11 @@ public partial class MainWindow : Window
             AccountEditorPanel.IsEnabled = false;
             _targets.Clear();
             _windows.Clear();
+            ApplicationWeekGrid.Windows = null;
+            _websiteWindows.Clear();
+            WebsiteWeekGrid.Windows = null;
+            WebsiteWindowEditorPanel.IsEnabled = false;
+            SelectedWebsiteText.Text = string.Empty;
             _accountSites.Clear();
             _accountWindows.Clear();
         }
@@ -217,14 +225,28 @@ public partial class MainWindow : Window
         _configuration.GoogleAccounts = _accounts.ToList();
         _configuration.Websites = _domains.ToList();
 
+        foreach (var website in _configuration.Websites)
+        {
+            if (!ConfigurationValidation.IsValidDomain(PolicyEngine.NormalizeDomain(website.Domain)))
+            {
+                throw new InvalidOperationException($"הדומיין '{website.Domain}' אינו תקין.");
+            }
+
+            website.Name = website.Domain;
+            if (website.Enabled && website.Windows.Count(window => window.Enabled && window.Days.Count > 0) == 0)
+            {
+                throw new InvalidOperationException($"האתר '{website.Domain}' פעיל אבל אין בו אף חלון זמן עם ימים.");
+            }
+        }
+
         _configuration.WebsiteEnforcement = EnforceWebsitesBox.IsChecked == true
             ? WebsiteEnforcementMode.Enforced
             : WebsiteEnforcementMode.AuditOnly;
         _configuration.AllowMachineWideWebsiteBlocking = AllowMachineWideWebsiteBlockingBox.IsChecked == true;
 
-        _configuration.Safety.BootGraceSeconds = ParseInt(BootGraceBox.Text, 120, "תקופת חסד אחרי הפעלת המחשב");
-        _configuration.Safety.ServiceGraceSeconds = ParseInt(ServiceGraceBox.Text, 30, "תקופת חסד אחרי הפעלת השירות");
-        _configuration.Safety.MaxActionsPerMinute = ParseInt(MaxActionsBox.Text, 20, "מקסימום פעולות בדקה");
+        _configuration.Safety.BootGraceSeconds = Math.Clamp(ParseInt(BootGraceBox.Text, 120, "תקופת חסד אחרי הפעלת המחשב"), 0, 86_400);
+        _configuration.Safety.ServiceGraceSeconds = Math.Clamp(ParseInt(ServiceGraceBox.Text, 30, "תקופת חסד אחרי הפעלת השירות"), 0, 86_400);
+        _configuration.Safety.MaxActionsPerMinute = Math.Clamp(ParseInt(MaxActionsBox.Text, 20, "מקסימום פעולות בדקה"), 1, 10_000);
 
         _configuration.BrowserLockdown.BlockUnapprovedBrowserLaunch = BlockBrowserLaunchBox.IsChecked == true;
         _configuration.BrowserLockdown.ScanForHiddenBrowsers = ScanHiddenBrowsersBox.IsChecked == true;
@@ -233,9 +255,9 @@ public partial class MainWindow : Window
         _configuration.AutomaticUpdatesEnabled = AutomaticUpdatesBox.IsChecked == true;
         _configuration.UpdateManifestUrl = UpdateManifestUrlBox.Text.Trim();
         _configuration.UpdatePublicKeyPem = UpdatePublicKeyBox.Text.Trim();
-        _configuration.BrowserLockdown.ScanIntervalMinutes = ParseInt(ScanIntervalBox.Text, 10, "תדירות סריקה");
+        _configuration.BrowserLockdown.ScanIntervalMinutes = Math.Clamp(ParseInt(ScanIntervalBox.Text, 10, "תדירות סריקה"), 1, 1440);
         _configuration.BrowserLockdown.ApprovedBrowserPaths = _approvedBrowsers.ToList();
-        _configuration.ChangeControl.CoolingOffHours = ParseInt(CoolingOffBox.Text, 0, "שעות המתנה להקלה");
+        _configuration.ChangeControl.CoolingOffHours = Math.Clamp(ParseInt(CoolingOffBox.Text, 0, "שעות המתנה להקלה"), 0, 8760);
 
         foreach (var rule in _configuration.Applications)
         {
@@ -287,6 +309,7 @@ public partial class MainWindow : Window
             if (rule is null)
             {
                 RuleNameBox.Text = string.Empty;
+                ApplicationWeekGrid.Windows = null;
                 return;
             }
 
@@ -302,6 +325,7 @@ public partial class MainWindow : Window
             {
                 _windows.Add(window);
             }
+            ApplicationWeekGrid.Windows = rule.Windows;
 
             AllUsersBox.IsChecked = rule.AppliesToUserSids.Count == 0;
             UsersListBox.SelectedItems.Clear();
@@ -594,6 +618,27 @@ public partial class MainWindow : Window
         }
 
         WindowsListBox.Items.Refresh();
+        ApplicationWeekGrid.Refresh();
+    }
+
+    private void ApplicationWeekGrid_OnScheduleChanged(object sender, EventArgs e)
+    {
+        if (_suppressEvents || SelectedRule is not { } rule)
+        {
+            return;
+        }
+
+        var editedWindows = ApplicationWeekGrid.ToScheduleWindows();
+        if (editedWindows.Count == 0)
+        {
+            SetStatus("הלוח ריק. בחר שעות חסומות לפני שמירת השינוי.", true);
+            return;
+        }
+        rule.Windows = editedWindows;
+        _windows.Clear();
+        foreach (var window in rule.Windows) _windows.Add(window);
+        WindowsListBox.SelectedItem = _windows.FirstOrDefault();
+        SetStatus("לוח הזמנים עודכן מהרשת השבועית. אפשר לכוון את השעות המדויקות ברשימה.", false);
     }
 
     private void AddWindowButton_OnClick(object sender, RoutedEventArgs e)
@@ -606,6 +651,7 @@ public partial class MainWindow : Window
         var window = NewWindow();
         rule.Windows.Add(window);
         _windows.Add(window);
+        ApplicationWeekGrid.Windows = rule.Windows;
         WindowsListBox.SelectedItem = window;
     }
 
@@ -618,6 +664,7 @@ public partial class MainWindow : Window
 
         rule.Windows.Remove(window);
         _windows.Remove(window);
+        ApplicationWeekGrid.Windows = rule.Windows;
     }
 
     private void PresetWeekdaysButton_OnClick(object sender, RoutedEventArgs e)
@@ -880,7 +927,7 @@ public partial class MainWindow : Window
         }
 
         AddSiteToAccount(account, site.Origin);
-        MainTabs.SelectedIndex = 1;
+        MainTabs.SelectedIndex = 2;
         AccountsListBox.SelectedItem = account;
     }
 
@@ -918,34 +965,204 @@ public partial class MainWindow : Window
 
     private void DomainsListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_suppressEvents || DomainsListBox.SelectedItem is not WebsiteRule rule)
+        if (_suppressEvents || SelectedWebsite is not { } rule)
         {
-            WebsiteDelayBox.Text = "0";
+            WebsiteWindowEditorPanel.IsEnabled = false;
+            _websiteWindows.Clear();
+            WebsiteWeekGrid.Windows = null;
+            SelectedWebsiteText.Text = string.Empty;
             return;
         }
 
-        WebsiteDelayBox.Text = rule.Windows.FirstOrDefault()?.ActivationDelaySeconds.ToString() ?? "0";
+        WebsiteWindowEditorPanel.IsEnabled = true;
+        SelectedWebsiteText.Text = $"{rule.Domain} · {(rule.Enabled ? "פעיל" : "מושבת")}";
+        _websiteWindows.Clear();
+        foreach (var window in rule.Windows)
+        {
+            _websiteWindows.Add(window);
+        }
+        WebsiteWeekGrid.Windows = rule.Windows;
+
+        WebsiteWindowsListBox.SelectedItem = _websiteWindows.FirstOrDefault();
     }
 
     private void WebsiteDelayBox_OnLostFocus(object sender, RoutedEventArgs e)
     {
-        if (_suppressEvents || DomainsListBox.SelectedItem is not WebsiteRule rule)
+        // Kept as a compatibility handler for older XAML/packages. Website delays
+        // are now edited per window in the schedule editor below.
+    }
+
+    private void WebsiteWindowsListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressEvents)
         {
             return;
         }
 
-        if (!int.TryParse(WebsiteDelayBox.Text.Trim(), out var delay) || delay is < 0 or > 86_400)
+        var window = SelectedWebsiteWindow;
+        if (window is null)
+        {
+            WebsiteWindowEditorPanel.IsEnabled = SelectedWebsite is not null;
+            return;
+        }
+
+        _suppressEvents = true;
+        try
+        {
+            WebsiteDaySun.IsChecked = window.Days.Contains(DayOfWeek.Sunday);
+            WebsiteDayMon.IsChecked = window.Days.Contains(DayOfWeek.Monday);
+            WebsiteDayTue.IsChecked = window.Days.Contains(DayOfWeek.Tuesday);
+            WebsiteDayWed.IsChecked = window.Days.Contains(DayOfWeek.Wednesday);
+            WebsiteDayThu.IsChecked = window.Days.Contains(DayOfWeek.Thursday);
+            WebsiteDayFri.IsChecked = window.Days.Contains(DayOfWeek.Friday);
+            WebsiteDaySat.IsChecked = window.Days.Contains(DayOfWeek.Saturday);
+            WebsiteAllDayBox.IsChecked = window.AllDay;
+            WebsiteStartBox.Text = window.Start;
+            WebsiteEndBox.Text = window.End;
+            WebsiteWindowEnabledBox.IsChecked = window.Enabled;
+            WebsiteWindowDelayBox.Text = window.ActivationDelaySeconds.ToString();
+        }
+        finally
+        {
+            _suppressEvents = false;
+        }
+    }
+
+    private void WebsiteWindowField_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (_suppressEvents || SelectedWebsiteWindow is not { } window)
+        {
+            return;
+        }
+
+        window.Days = GetWebsiteDays();
+        window.AllDay = WebsiteAllDayBox.IsChecked == true;
+        window.Enabled = WebsiteWindowEnabledBox.IsChecked == true;
+        if (!int.TryParse(WebsiteWindowDelayBox.Text.Trim(), out var delay) || delay is < 0 or > 86_400)
         {
             SetStatus("השהיית האתר חייבת להיות מספר בין 0 ל־86400 שניות.", true);
             return;
         }
 
-        foreach (var window in rule.Windows)
+        window.ActivationDelaySeconds = delay;
+        if (!window.AllDay)
         {
-            window.ActivationDelaySeconds = delay;
+            if (!TimeOnly.TryParse(WebsiteStartBox.Text.Trim(), out _) || !TimeOnly.TryParse(WebsiteEndBox.Text.Trim(), out _))
+            {
+                SetStatus("שעה חייבת להיות בפורמט HH:mm, לדוגמה 23:00.", true);
+                return;
+            }
+
+            window.Start = WebsiteStartBox.Text.Trim();
+            window.End = WebsiteEndBox.Text.Trim();
         }
 
+        WebsiteWindowsListBox.Items.Refresh();
         DomainsListBox.Items.Refresh();
+        WebsiteWeekGrid.Refresh();
+    }
+
+    private void WebsiteWeekGrid_OnScheduleChanged(object sender, EventArgs e)
+    {
+        if (_suppressEvents || SelectedWebsite is not { } rule)
+        {
+            return;
+        }
+
+        var editedWindows = WebsiteWeekGrid.ToScheduleWindows();
+        if (editedWindows.Count == 0)
+        {
+            SetStatus("הלוח ריק. בחר שעות חסומות לפני שמירת השינוי.", true);
+            return;
+        }
+        rule.Windows = editedWindows;
+        _websiteWindows.Clear();
+        foreach (var window in rule.Windows) _websiteWindows.Add(window);
+        WebsiteWindowsListBox.SelectedItem = _websiteWindows.FirstOrDefault();
+        SetStatus("לוח הזמנים של האתר עודכן מהרשת השבועית.", false);
+    }
+
+    private List<DayOfWeek> GetWebsiteDays()
+    {
+        var days = new List<DayOfWeek>();
+        if (WebsiteDaySun.IsChecked == true) days.Add(DayOfWeek.Sunday);
+        if (WebsiteDayMon.IsChecked == true) days.Add(DayOfWeek.Monday);
+        if (WebsiteDayTue.IsChecked == true) days.Add(DayOfWeek.Tuesday);
+        if (WebsiteDayWed.IsChecked == true) days.Add(DayOfWeek.Wednesday);
+        if (WebsiteDayThu.IsChecked == true) days.Add(DayOfWeek.Thursday);
+        if (WebsiteDayFri.IsChecked == true) days.Add(DayOfWeek.Friday);
+        if (WebsiteDaySat.IsChecked == true) days.Add(DayOfWeek.Saturday);
+        return days;
+    }
+
+    private void AddWebsiteWindowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (SelectedWebsite is not { } rule)
+        {
+            return;
+        }
+
+        var window = NewWindow();
+        rule.Windows.Add(window);
+        _websiteWindows.Add(window);
+        WebsiteWeekGrid.Windows = rule.Windows;
+        WebsiteWindowsListBox.SelectedItem = window;
+    }
+
+    private void RemoveWebsiteWindowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (SelectedWebsite is not { } rule || SelectedWebsiteWindow is not { } window)
+        {
+            return;
+        }
+
+        rule.Windows.Remove(window);
+        _websiteWindows.Remove(window);
+        WebsiteWeekGrid.Windows = rule.Windows;
+        WebsiteWindowsListBox.SelectedItem = _websiteWindows.FirstOrDefault();
+    }
+
+    private void CopyWebsiteScheduleButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (SelectedWebsite is not { } website || SelectedRule is not { } rule)
+        {
+            SetStatus("בחר אתר וכלל אפליקציה כדי להעתיק לוח זמנים.", true);
+            return;
+        }
+
+        website.Windows = rule.Windows.Select(CloneWindow).ToList();
+        _websiteWindows.Clear();
+        foreach (var window in website.Windows)
+        {
+            _websiteWindows.Add(window);
+        }
+        WebsiteWeekGrid.Windows = website.Windows;
+
+        WebsiteWindowsListBox.SelectedItem = _websiteWindows.FirstOrDefault();
+        SetStatus($"לוח הזמנים של '{rule.Name}' הועתק אל {website.Domain}.", false);
+    }
+
+    private void WebsiteWeekdaysButton_OnClick(object sender, RoutedEventArgs e)
+        => SetWebsiteDays(true, true, true, true, true, false, false);
+
+    private void WebsiteAllDaysButton_OnClick(object sender, RoutedEventArgs e)
+        => SetWebsiteDays(true, true, true, true, true, true, true);
+
+    private void WebsiteClearDaysButton_OnClick(object sender, RoutedEventArgs e)
+        => SetWebsiteDays(false, false, false, false, false, false, false);
+
+    private void SetWebsiteDays(bool sun, bool mon, bool tue, bool wed, bool thu, bool fri, bool sat)
+    {
+        _suppressEvents = true;
+        WebsiteDaySun.IsChecked = sun;
+        WebsiteDayMon.IsChecked = mon;
+        WebsiteDayTue.IsChecked = tue;
+        WebsiteDayWed.IsChecked = wed;
+        WebsiteDayThu.IsChecked = thu;
+        WebsiteDayFri.IsChecked = fri;
+        WebsiteDaySat.IsChecked = sat;
+        _suppressEvents = false;
+        WebsiteWindowField_OnChanged(this, new RoutedEventArgs());
     }
 
     private void RemoveDomainButton_OnClick(object sender, RoutedEventArgs e)
@@ -953,25 +1170,83 @@ public partial class MainWindow : Window
         if (DomainsListBox.SelectedItem is WebsiteRule rule)
         {
             _domains.Remove(rule);
-            WebsiteDelayBox.Text = "0";
         }
     }
 
     private void AddDomainAlwaysWindowButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (DomainsListBox.SelectedItem is not WebsiteRule rule)
+        if (SelectedWebsite is not { } rule)
         {
             return;
         }
 
         var window = AlwaysWindow();
-        if (int.TryParse(WebsiteDelayBox.Text.Trim(), out var delay) && delay is >= 0 and <= 86_400)
-        {
-            window.ActivationDelaySeconds = delay;
-        }
-
         rule.Windows.Add(window);
+        _websiteWindows.Add(window);
+        WebsiteWeekGrid.Windows = rule.Windows;
+        WebsiteWindowsListBox.SelectedItem = window;
         SetStatus($"נוסף חלון 'כל הזמן' ל־{rule.Domain}.", false);
+    }
+
+    // ==================== password ====================
+
+    private void NewPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        var password = NewPasswordBox.Password;
+        var score = 0;
+        if (password.Length >= 8) score++;
+        if (password.Any(char.IsUpper)) score++;
+        if (password.Any(char.IsLower)) score++;
+        if (password.Any(char.IsDigit)) score++;
+        if (password.Any(ch => !char.IsLetterOrDigit(ch))) score++;
+        PasswordStrengthText.Text = password.Length == 0
+            ? string.Empty
+            : $"חוזק הסיסמה: {(score <= 2 ? "חלשה" : score <= 4 ? "בינונית" : "חזקה")} · {password.Length} תווים";
+        ValidatePasswordConfirmation();
+    }
+
+    private void ConfirmPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e)
+        => ValidatePasswordConfirmation();
+
+    private void ValidatePasswordConfirmation()
+    {
+        PasswordChangeErrorText.Text = NewPasswordBox.Password.Length > 0
+            && !string.Equals(NewPasswordBox.Password, ConfirmPasswordBox.Password, StringComparison.Ordinal)
+            ? "הסיסמאות אינן תואמות."
+            : string.Empty;
+    }
+
+    private async void ChangePasswordButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            EnsureAuthenticated();
+            if (!string.Equals(NewPasswordBox.Password, ConfirmPasswordBox.Password, StringComparison.Ordinal))
+            {
+                PasswordChangeErrorText.Text = "הסיסמאות אינן תואמות.";
+                return;
+            }
+
+            ApplicationPassword.Validate(NewPasswordBox.Password);
+            var response = await _pipeClient.ChangePasswordAsync(CurrentPasswordBox.Password, NewPasswordBox.Password);
+            if (!response.Ok)
+            {
+                PasswordChangeErrorText.Text = response.Error;
+                return;
+            }
+
+            _applicationPassword = NewPasswordBox.Password;
+            CurrentPasswordBox.Clear();
+            NewPasswordBox.Clear();
+            ConfirmPasswordBox.Clear();
+            PasswordStrengthText.Text = string.Empty;
+            PasswordChangeErrorText.Text = string.Empty;
+            SetStatus("הסיסמה שונתה בהצלחה.", false);
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            PasswordChangeErrorText.Text = exception.Message;
+        }
     }
 
     // ==================== status ====================
@@ -1017,6 +1292,7 @@ public partial class MainWindow : Window
         try
         {
             var response = await _pipeClient.GetStatusAsync(_applicationPassword);
+            var upcomingResponse = await _pipeClient.GetUpcomingAsync(_applicationPassword);
             if (!response.Ok || response.Status is null)
             {
                 ServiceStatusText.Text = "לא ניתן לקרוא את מצב השירות.";
@@ -1041,6 +1317,7 @@ public partial class MainWindow : Window
             ServiceStatusText.Foreground = status.SafeMode ? Brushes.DarkRed : Brushes.Black;
             HeaderStatusText.Text = status.SafeMode ? "⚠ השירות במצב בטוח — האכיפה מושבתת" : string.Empty;
             HeaderStatusText.Foreground = Brushes.DarkRed;
+            StatusDashboard.Show(_configuration, status, upcomingResponse.Ok ? upcomingResponse.Upcoming : Array.Empty<UpcomingEvent>());
         }
         catch (Exception exception) when (IsExpected(exception))
         {

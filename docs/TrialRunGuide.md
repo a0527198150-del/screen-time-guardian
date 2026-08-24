@@ -216,11 +216,13 @@ cd 'C:\Program Files\ScreenTimeGuardian\Policies'
 .\Emergency-Disable.ps1
 ```
 
-3. אם אין שליטה, צור את הקובץ:
+3. אם אין שליטה, בקש מהמנהל ליצור את הקובץ:
 
 ```powershell
 New-Item -ItemType File -Force 'C:\ProgramData\ScreenTimeGuardian\SAFEMODE'
 ```
+
+משתמש רגיל אמור לקבל שגיאת הרשאות — זו בדיקת אבטחה צפויה.
 
 4. בדוק שהשירות במצב בטוח.
 5. אם עדיין יש בעיה, הרץ `Uninstall-Service.ps1` כמנהל.

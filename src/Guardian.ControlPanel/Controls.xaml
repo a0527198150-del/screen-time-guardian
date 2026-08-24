@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ScreenTimeGuardian.ControlPanel">
+    <SolidColorBrush x:Key="Ink" Color="#15213D" />
+    <SolidColorBrush x:Key="MutedInk" Color="#53617A" />
+    <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="BorderLine" Color="#DDE4EA" />
+    <SolidColorBrush x:Key="Teal" Color="#86C7E0" />
+    <Style TargetType="Button">
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="Margin" Value="0,3,6,3" />
+        <Setter Property="MinHeight" Value="34" />
+        <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        <Setter Property="Background" Value="{StaticResource Surface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style TargetType="TextBox">
+        <Setter Property="Margin" Value="0,3" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        <Setter Property="Background" Value="{StaticResource Surface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
+    </Style>
+    <Style TargetType="PasswordBox" BasedOn="{StaticResource {x:Type TextBox}}" />
+    <Style TargetType="local:WeekGrid">
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="Margin" Value="0,4,0,4" />
+    </Style>
+</ResourceDictionary>

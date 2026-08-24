@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using ScreenTimeGuardian.Contracts;
 using ScreenTimeGuardian.Service;
 
@@ -9,12 +10,15 @@ builder.Services.AddWindowsService(options =>
     options.ServiceName = "Screen Time Guardian";
 });
 
+// Secure the shared directory before any hosted service can load configuration.
+DataDirectoryHardening.Apply(NullLogger.Instance);
 builder.Services.AddSingleton<ConfigurationStore>();
 builder.Services.AddSingleton<PolicyEngine>();
 builder.Services.AddSingleton<SafetyEnvelope>();
 builder.Services.AddSingleton<ServiceStatusHolder>();
 builder.Services.AddSingleton<ApplicationNetworkBlocker>();
 builder.Services.AddSingleton<WindowsFirewallFqdnBlocker>();
+builder.Services.AddSingleton<NetworkProtectionEnforcer>();
 builder.Services.AddSingleton<BrowserLaunchBlocker>();
 builder.Services.AddSingleton<HiddenBrowserScanner>();
 builder.Services.AddSingleton<ChangeCoordinator>();

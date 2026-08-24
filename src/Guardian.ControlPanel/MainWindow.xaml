@@ -1,19 +1,28 @@
 <Window x:Class="ScreenTimeGuardian.ControlPanel.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ScreenTimeGuardian.ControlPanel"
         Title="שומר זמן מסך" Height="880" Width="1180"
         FlowDirection="RightToLeft"
+        KeyboardNavigation.TabNavigation="Continue"
         FontFamily="Segoe UI"
         Background="#F8F9FA"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <SolidColorBrush x:Key="GoogleBlue" Color="#1A73E8" />
-        <SolidColorBrush x:Key="GoogleBlueDark" Color="#1557B0" />
-        <SolidColorBrush x:Key="Ink" Color="#202124" />
-        <SolidColorBrush x:Key="MutedInk" Color="#5F6368" />
+        <SolidColorBrush x:Key="Ink" Color="#15213D" />
+        <SolidColorBrush x:Key="MutedInk" Color="#53617A" />
         <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="SurfaceAlt" Color="#F1F3F4" />
-        <SolidColorBrush x:Key="BorderLine" Color="#DADCE0" />
+        <SolidColorBrush x:Key="SurfaceAlt" Color="#E3DDEE" />
+        <SolidColorBrush x:Key="BorderLine" Color="#DDE4EA" />
+        <SolidColorBrush x:Key="Mist" Color="#EEF3F6" />
+        <SolidColorBrush x:Key="Sidebar" Color="#15213D" />
+        <SolidColorBrush x:Key="Indigo" Color="#B6E3F2" />
+        <SolidColorBrush x:Key="Teal" Color="#86C7E0" />
+        <SolidColorBrush x:Key="Amber" Color="#B2A98C" />
+        <Style TargetType="Window">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        </Style>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="14,7" />
             <Setter Property="Margin" Value="0,3,6,3" />
@@ -25,9 +34,9 @@
             <Setter Property="FontSize" Value="13" />
         </Style>
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="Background" Value="{StaticResource GoogleBlue}" />
-            <Setter Property="BorderBrush" Value="{StaticResource GoogleBlue}" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Background" Value="{StaticResource Teal}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Teal}" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style TargetType="TextBox">
@@ -58,10 +67,24 @@
             <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
             <Setter Property="Padding" Value="4" />
         </Style>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="#F8F6FA" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
         <Style TargetType="TabItem">
-            <Setter Property="Padding" Value="16,9" />
-            <Setter Property="Foreground" Value="{StaticResource MutedInk}" />
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Width" Value="210" />
+            <Setter Property="Padding" Value="18,13" />
+            <Setter Property="Margin" Value="0,2,0,2" />
+            <Setter Property="Background" Value="{StaticResource Sidebar}" />
+            <Setter Property="Foreground" Value="#D9E1F0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource Teal}" />
+                    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="Hint" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource MutedInk}" />
@@ -86,7 +109,7 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="שומר זמן מסך" FontSize="18" FontWeight="SemiBold"
-                           Foreground="{StaticResource GoogleBlue}" VerticalAlignment="Center" Margin="0,0,22,0" />
+                           Foreground="{StaticResource Teal}" VerticalAlignment="Center" Margin="0,0,22,0" />
                 <PasswordBox Grid.Column="1" x:Name="AppPasswordBox" FlowDirection="LeftToRight" VerticalAlignment="Center" />
                 <Button Grid.Column="2" Content="אמת / הגדר" Style="{StaticResource PrimaryButton}" Click="AuthenticateButton_OnClick" />
                 <Button Grid.Column="3" Content="טען מחדש" Click="ReloadButton_OnClick" />
@@ -102,7 +125,11 @@
             <TextBlock x:Name="StatusText" TextWrapping="Wrap" Foreground="#137333" />
         </Border>
 
-        <TabControl x:Name="MainTabs">
+        <TabControl x:Name="MainTabs" TabStripPlacement="Right" SelectedIndex="0"
+                    KeyboardNavigation.TabNavigation="Local">
+            <TabItem Header="מצב">
+                <local:StatusView x:Name="StatusDashboard" />
+            </TabItem>
 
             <!-- ============ APPLICATIONS ============ -->
             <TabItem Header="אפליקציות">
@@ -192,6 +219,8 @@
                                             <Button Content="חלון חדש" Click="AddWindowButton_OnClick" />
                                             <Button Content="מחק חלון" Click="RemoveWindowButton_OnClick" />
                                         </StackPanel>
+                                        <TextBlock Text="תצוגה שבועית — מספרים 1–7 בוחרים יום, Shift מנקה אותו" Style="{StaticResource Hint}" Margin="0,8,0,0" />
+                                        <local:WeekGrid x:Name="ApplicationWeekGrid" Height="300" Margin="0,4,0,0" ScheduleChanged="ApplicationWeekGrid_OnScheduleChanged" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" x:Name="WindowEditorPanel" IsEnabled="False">
                                         <TextBlock Text="ימים:" FontWeight="Bold" />
@@ -354,30 +383,90 @@
 
             <!-- ============ WEBSITES ============ -->
             <TabItem Header="אתרים לכל המחשב">
-                <DockPanel Margin="10">
-                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Hint}"
-                               Text="חסימה זו חלה על כל משתמשי המחשב וכל הדפדפנים. אין כאן הפרדה בין חשבונות. אם מותקן נטפרי, בדוק שהחסימה לא מתנגשת איתו לפני שאתה מפעיל אכיפה." />
-                    <StackPanel DockPanel.Dock="Bottom">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBox x:Name="NewDomainBox" Width="260" FlowDirection="LeftToRight" />
-                            <Button Content="הוסף דומיין" Click="AddDomainButton_OnClick" />
-                            <Button Content="הסר נבחר" Click="RemoveDomainButton_OnClick" />
-                            <Button Content="חלון 'כל היום, כל השבוע'" Click="AddDomainAlwaysWindowButton_OnClick" />
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <TextBlock Text="השהיית אכיפה לאתר שנבחר (שניות):" VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBox x:Name="WebsiteDelayBox" Width="100" FlowDirection="LeftToRight"
-                                     LostFocus="WebsiteDelayBox_OnLostFocus" />
-                        </StackPanel>
-                        <CheckBox x:Name="EnforceWebsitesBox" Content="הפעל אכיפה בפועל (ללא סימון — מצב האזנה בלבד)" Margin="0,10,0,0" />
-                        <CheckBox x:Name="AllowMachineWideWebsiteBlockingBox"
-                                  Content="אשר החלה על כל חשבונות המחשב, כולל מנהלים"
-                                  Margin="0,6,0,0" />
-                        <TextBlock Style="{StaticResource Hint}"
-                                   Text="חוקי Firewall לדומיין הם כלל־מחשביים ואי אפשר להחריג מהם חשבון. ללא סימון האפשרות הזו, חסימת האתרים לא תופעל כלל, גם אם 'הפעל אכיפה בפועל' מסומן." />
-                    </StackPanel>
-                    <ListBox x:Name="DomainsListBox" SelectionChanged="DomainsListBox_OnSelectionChanged" />
-                </DockPanel>
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Style="{StaticResource Hint}"
+                               Text="חסימה זו חלה על כל משתמשי המחשב וכל הדפדפנים. אין כאן הפרדה בין חשבונות. כל אתר נפתח כברירת מחדל עם לוח 'כל היום, כל השבוע'; ניתן לערוך אותו בחלונות הזמן למטה." />
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="260" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <DockPanel Grid.Column="0">
+                            <StackPanel DockPanel.Dock="Bottom">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="הוסף דומיין" Click="AddDomainButton_OnClick" />
+                                    <Button Content="הסר נבחר" Click="RemoveDomainButton_OnClick" />
+                                </StackPanel>
+                                <CheckBox x:Name="EnforceWebsitesBox" Content="הפעל אכיפה בפועל" Margin="0,10,0,0" />
+                                <CheckBox x:Name="AllowMachineWideWebsiteBlockingBox"
+                                          Content="אשר החלה על כל חשבונות המחשב, כולל מנהלים"
+                                          Margin="0,6,0,0" />
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                                           Text="חוקי Firewall לדומיין הם כלל־מחשביים ואי אפשר להחריג מהם חשבון. ללא שתי האפשרויות האלה, הדומיינים נשארים במצב האזנה בלבד." />
+                            </StackPanel>
+                            <TextBox DockPanel.Dock="Top" x:Name="NewDomainBox" FlowDirection="LeftToRight" />
+                            <ListBox x:Name="DomainsListBox" SelectionChanged="DomainsListBox_OnSelectionChanged" />
+                        </DockPanel>
+                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="WebsiteWindowEditorPanel" IsEnabled="False">
+                                <TextBlock Text="לוח הזמנים של האתר הנבחר" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                <TextBlock x:Name="SelectedWebsiteText" Style="{StaticResource Hint}" />
+                                <TextBlock Text="תצוגה שבועית — גרירה צובעת שעות, Shift+גרירה מנקה" Style="{StaticResource Hint}" />
+                                <local:WeekGrid x:Name="WebsiteWeekGrid" Height="300" Margin="0,0,0,8" ScheduleChanged="WebsiteWeekGrid_OnScheduleChanged" />
+                                <ListBox x:Name="WebsiteWindowsListBox" Height="150"
+                                         SelectionChanged="WebsiteWindowsListBox_OnSelectionChanged" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="חלון חדש" Click="AddWebsiteWindowButton_OnClick" />
+                                    <Button Content="הוסף חלון כל היום" Click="AddDomainAlwaysWindowButton_OnClick" />
+                                    <Button Content="מחק חלון" Click="RemoveWebsiteWindowButton_OnClick" />
+                                    <Button Content="העתק מכלל אפליקציה נבחר" Click="CopyWebsiteScheduleButton_OnClick" />
+                                </StackPanel>
+                                <GroupBox Header="עריכת החלון" Margin="0,12,0,0">
+                                    <StackPanel>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="WebsiteDaySun" Content="ראשון" Margin="0,4,10,4" Click="WebsiteWindowField_OnChanged" />
+                                            <CheckBox x:Name="WebsiteDayMon" Content="שני" Margin="0,4,10,4" Click="WebsiteWindowField_OnChanged" />
+                                            <CheckBox x:Name="WebsiteDayTue" Content="שלישי" Margin="0,4,10,4" Click="WebsiteWindowField_OnChanged" />
+                                            <CheckBox x:Name="WebsiteDayWed" Content="רביעי" Margin="0,4,10,4" Click="WebsiteWindowField_OnChanged" />
+                                            <CheckBox x:Name="WebsiteDayThu" Content="חמישי" Margin="0,4,10,4" Click="WebsiteWindowField_OnChanged" />
+                                            <CheckBox x:Name="WebsiteDayFri" Content="שישי" Margin="0,4,10,4" Click="WebsiteWindowField_OnChanged" />
+                                            <CheckBox x:Name="WebsiteDaySat" Content="שבת" Margin="0,4,10,4" Click="WebsiteWindowField_OnChanged" />
+                                        </WrapPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="ימי חול" Click="WebsiteWeekdaysButton_OnClick" />
+                                            <Button Content="כל השבוע" Click="WebsiteAllDaysButton_OnClick" />
+                                            <Button Content="נקה ימים" Click="WebsiteClearDaysButton_OnClick" />
+                                        </StackPanel>
+                                        <CheckBox x:Name="WebsiteAllDayBox" Content="כל היום" Margin="0,8,0,4" Click="WebsiteWindowField_OnChanged" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                            <TextBlock Grid.Row="0" Text="משעה:" VerticalAlignment="Center" />
+                                            <TextBox Grid.Row="0" Grid.Column="1" x:Name="WebsiteStartBox" FlowDirection="LeftToRight" LostFocus="WebsiteWindowField_OnChanged" />
+                                            <TextBlock Grid.Row="1" Text="עד שעה:" VerticalAlignment="Center" />
+                                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="WebsiteEndBox" FlowDirection="LeftToRight" LostFocus="WebsiteWindowField_OnChanged" />
+                                        </Grid>
+                                        <Grid Margin="0,8,0,0">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions>
+                                            <CheckBox x:Name="WebsiteWindowEnabledBox" Content="החלון פעיל" Click="WebsiteWindowField_OnChanged" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="השהיה בשניות:" FontSize="12" />
+                                                <TextBox x:Name="WebsiteWindowDelayBox" FlowDirection="LeftToRight" LostFocus="WebsiteWindowField_OnChanged" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
+                                                   Text="פורמט שעה HH:mm. אם הסיום מוקדם מההתחלה, החלון חוצה חצות. ההשהיה נשמרת בכלל ונאכפת גם כשהלוח סגור." />
+                                    </StackPanel>
+                                </GroupBox>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
             </TabItem>
 
 
@@ -512,6 +601,22 @@
                                 </Grid>
                                 <TextBlock Style="{StaticResource Hint}" Margin="0,12,0,0"
                                            Text="התוכנה הזו לא סוגרת תהליכים בכוח. אין בה קוד שנוגע בתהליך רץ. כל האכיפה היא חוקי חומת אש ומפתחות רגיסטרי — פעולות שלא יכולות לערער את יציבות Windows." />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="שינוי סיסמה">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="שינוי סיסמה דורש את הסיסמה הנוכחית. אין מסלול שחזור: אם הסיסמה אובדת, מנהל צריך להסיר ולהתקין מחדש. שמור עותק אצל המבוגר האחראי." />
+                                <TextBlock Text="סיסמה נוכחית:" />
+                                <PasswordBox x:Name="CurrentPasswordBox" FlowDirection="LeftToRight" />
+                                <TextBlock Text="סיסמה חדשה:" Margin="0,8,0,0" />
+                                <PasswordBox x:Name="NewPasswordBox" FlowDirection="LeftToRight" PasswordChanged="NewPasswordBox_OnPasswordChanged" />
+                                <TextBlock x:Name="PasswordStrengthText" Style="{StaticResource Hint}" Margin="0,2,0,0" />
+                                <TextBlock Text="אימות הסיסמה החדשה:" />
+                                <PasswordBox x:Name="ConfirmPasswordBox" FlowDirection="LeftToRight" PasswordChanged="ConfirmPasswordBox_OnPasswordChanged" />
+                                <TextBlock x:Name="PasswordChangeErrorText" Foreground="{StaticResource Amber}" TextWrapping="Wrap" />
+                                <Button Content="שנה סיסמה" Style="{StaticResource PrimaryButton}" Click="ChangePasswordButton_OnClick" HorizontalAlignment="Right" />
                             </StackPanel>
                         </GroupBox>
 

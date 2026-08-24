@@ -60,6 +60,17 @@ public sealed class GuardianPipeClient
         }, cancellationToken);
     }
 
+    public async Task<GuardianCommandResponse> GetUpcomingAsync(
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendAsync(new GuardianCommand
+        {
+            Type = "getUpcoming",
+            Password = password
+        }, cancellationToken);
+    }
+
     public async Task<GuardianCommandResponse> ClearSafeModeAsync(
         string password,
         CancellationToken cancellationToken = default)

@@ -106,6 +106,11 @@ public sealed class SafetyEnvelope
         // into C:\ProgramData\ScreenTimeGuardian and everything stops at once.
         if (File.Exists(ConfigPaths.ManualKillSwitchFile))
         {
+            var owner = TryReadOwner(ConfigPaths.ManualKillSwitchFile);
+            _logger.LogWarning(
+                "SAFEMODE kill switch is present. File owner: {Owner}, created: {Created:u}",
+                owner,
+                File.GetCreationTimeUtc(ConfigPaths.ManualKillSwitchFile));
             return new SafetyState(false, true,
                 "קובץ SAFEMODE קיים בתיקיית ההגדרות. כל האכיפה מושבתת ידנית.");
         }
@@ -212,6 +217,18 @@ public sealed class SafetyEnvelope
         }
 
         _logger.LogWarning("Safe mode cleared by an authenticated operator");
+    }
+
+    private static string TryReadOwner(string path)
+    {
+        try
+        {
+            return new FileInfo(path).GetAccessControl().GetOwner(typeof(NTAccount))?.ToString() ?? "לא ידוע";
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+        {
+            return "לא זמין";
+        }
     }
 
     private static string TryReadFlag(string path)

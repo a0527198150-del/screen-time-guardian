@@ -15,6 +15,7 @@ public sealed class GuardianWorker : BackgroundService
     private readonly SafetyEnvelope _safety;
     private readonly ApplicationNetworkBlocker _networkBlocker;
     private readonly WindowsFirewallFqdnBlocker _websiteBlocker;
+    private readonly NetworkProtectionEnforcer _networkProtection;
     private readonly BrowserLaunchBlocker _launchBlocker;
     private readonly HiddenBrowserScanner _browserScanner;
     private readonly ChangeCoordinator _changes;
@@ -31,6 +32,7 @@ public sealed class GuardianWorker : BackgroundService
         SafetyEnvelope safety,
         ApplicationNetworkBlocker networkBlocker,
         WindowsFirewallFqdnBlocker websiteBlocker,
+        NetworkProtectionEnforcer networkProtection,
         BrowserLaunchBlocker launchBlocker,
         HiddenBrowserScanner browserScanner,
         ChangeCoordinator changes,
@@ -43,6 +45,7 @@ public sealed class GuardianWorker : BackgroundService
         _safety = safety;
         _networkBlocker = networkBlocker;
         _websiteBlocker = websiteBlocker;
+        _networkProtection = networkProtection;
         _launchBlocker = launchBlocker;
         _browserScanner = browserScanner;
         _changes = changes;
@@ -53,7 +56,12 @@ public sealed class GuardianWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var dataDirectorySecured = DataDirectoryHardening.Apply(_logger);
         _safety.Initialize();
+        if (!dataDirectorySecured)
+        {
+            _safety.TripSafeMode("לא ניתן לאבטח את תיקיית הנתונים. האכיפה נשארת מושבתת.");
+        }
         _logger.LogInformation("Screen Time Guardian service started");
 
         while (!stoppingToken.IsCancellationRequested)
@@ -135,6 +143,10 @@ public sealed class GuardianWorker : BackgroundService
         var websiteMode = safety.EnforcementAllowed && configuration.AllowMachineWideWebsiteBlocking
             ? configuration.WebsiteEnforcement
             : WebsiteEnforcementMode.Disabled;
+        if (websiteMode == WebsiteEnforcementMode.Enforced && !_networkProtection.EnsureEnabled())
+        {
+            websiteMode = WebsiteEnforcementMode.Disabled;
+        }
         if (websiteMode != WebsiteEnforcementMode.Enforced && snapshot.BlockedDomains.Count > 0)
         {
             _logger.LogWarning(

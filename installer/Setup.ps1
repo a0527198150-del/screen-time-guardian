@@ -74,6 +74,28 @@ function Safe-RemoveItem {
     }
 }
 
+function Set-DataDirectoryAcl {
+    param([Parameter(Mandatory)][string]$Path)
+
+    New-Item -ItemType Directory -Force -Path $Path | Out-Null
+    $acl = Get-Acl -Path $Path
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($rule in @($acl.Access)) {
+        $acl.RemoveAccessRuleSpecific($rule) | Out-Null
+    }
+
+    $inherit = [System.Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit'
+    $none = [System.Security.AccessControl.PropagationFlags]::None
+    $allow = [System.Security.AccessControl.AccessControlType]::Allow
+    foreach ($identity in @('NT AUTHORITY\SYSTEM', 'BUILTIN\Administrators')) {
+        $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new(
+            $identity, 'FullControl', $inherit, $none, $allow))
+    }
+    $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new(
+        'BUILTIN\Users', 'ReadAndExecute', $inherit, $none, $allow))
+    Set-Acl -Path $Path -AclObject $acl
+}
+
 # =============================================================================
 # EMERGENCY STOP
 # =============================================================================
@@ -248,7 +270,11 @@ if ($extensionData -notmatch '"key"') {
 }
 Green 'החבילה תקינה.'
 
-# ---- 2. Stop running service before copy ------------------------------------
+# ---- 2. Secure data directory before any configuration/runtime writes --------
+Set-DataDirectoryAcl -Path $DataDir
+Set-DataDirectoryAcl -Path (Join-Path $DataDir 'runtime')
+
+# ---- 3. Stop running service before copy ------------------------------------
 $existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if ($existingService -and $existingService.Status -ne 'Stopped') {
     Green 'עוצר שירות קיים...'
@@ -256,7 +282,7 @@ if ($existingService -and $existingService.Status -ne 'Stopped') {
     Start-Sleep -Seconds 3
 }
 
-# ---- 3. Copy files ----------------------------------------------------------
+# ---- 4. Copy files ----------------------------------------------------------
 $sourceFull = [System.IO.Path]::GetFullPath($SourceFolder).TrimEnd('\')
 $targetFull = [System.IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
 if ($sourceFull -eq $targetFull) {
@@ -273,7 +299,7 @@ else {
 
 $policiesDir = Join-Path $InstallRoot 'Policies'
 
-# ---- 4. Install service -----------------------------------------------------
+# ---- 5. Install service -----------------------------------------------------
 Green ''
 Green 'מתקין את שירות Windows...'
 $serviceExe = Join-Path $InstallRoot 'Service\ScreenTimeGuardian.Service.exe'
@@ -287,7 +313,7 @@ if (-not (Test-Path $serviceExe -PathType Leaf)) {
     -ServiceExecutable $serviceExe `
     -StartAfterInstall
 
-# ---- 5. Register NativeHost ------------------------------------------------
+# ---- 6. Register NativeHost ------------------------------------------------
 Green ''
 Green 'רושם את Native Messaging Host...'
 $registerScript = Join-Path $policiesDir 'Register-NativeHost.ps1'
@@ -329,7 +355,7 @@ else {
     }
 }
 
-# ---- 6. Agent (optional) ----------------------------------------------------
+# ---- 7. Agent (optional) ----------------------------------------------------
 Green ''
 $installAgent = Read-Host 'להתקין את סוכן ההתראות? (yes/no, ברירת מחדל yes)'
 if ($installAgent -ne 'no') {
@@ -347,7 +373,7 @@ if ($installAgent -ne 'no') {
     }
 }
 
-# ---- 7. Summary -------------------------------------------------------------
+# ---- 8. Summary -------------------------------------------------------------
 Green ''
 Green '========================================'
 Green '  ההתקנה הושלמה!'

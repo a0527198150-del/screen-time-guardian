@@ -28,8 +28,10 @@ public sealed class GuardianCommandServer : BackgroundService
     private readonly ServiceStatusHolder _status;
     private readonly ILogger<GuardianCommandServer> _logger;
 
-    private readonly List<DateTimeOffset> _failedAttempts = new();
+    private readonly object _authenticationSync = new();
+    private readonly Dictionary<string, List<DateTimeOffset>> _failedAttemptsByClient = new(StringComparer.OrdinalIgnoreCase);
     private DateTimeOffset _lastDiscovery = DateTimeOffset.MinValue;
+    private const int MaxDiscoveredSites = 200;
 
     public GuardianCommandServer(
         ConfigurationStore store,
@@ -76,8 +78,10 @@ public sealed class GuardianCommandServer : BackgroundService
         var security = new PipeSecurity();
         var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
         var system = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+        var administrators = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
         security.AddAccessRule(new PipeAccessRule(users, PipeAccessRights.ReadWrite, AccessControlType.Allow));
         security.AddAccessRule(new PipeAccessRule(system, PipeAccessRights.FullControl, AccessControlType.Allow));
+        security.AddAccessRule(new PipeAccessRule(administrators, PipeAccessRights.FullControl, AccessControlType.Allow));
 
         return NamedPipeServerStreamAcl.Create(
             PipeNames.Control,
@@ -123,7 +127,8 @@ public sealed class GuardianCommandServer : BackgroundService
         try
         {
             var request = JsonSerializer.Deserialize<GuardianCommand>(requestJson, JsonOptions) ?? new GuardianCommand();
-            response = ExecuteCommand(request);
+            var client = GetClientIdentity(pipe);
+            response = ExecuteCommand(request, client.IsAdministrator, client.Sid);
         }
         catch (JsonException)
         {
@@ -176,16 +181,57 @@ public sealed class GuardianCommandServer : BackgroundService
         }
     }
 
-    private GuardianCommandResponse ExecuteCommand(GuardianCommand request)
+    private GuardianCommandResponse ExecuteCommand(GuardianCommand request, bool clientIsAdministrator, string clientSid)
     {
         var configuration = _store.Load();
 
-        // Discovery reports come from the browser extension running as a standard user
-        // and carry no password. They only append to a review list; they never enforce.
+        // Discovery is intentionally unauthenticated so the browser extension can report
+        // sign-ins, but it must never be allowed to mutate any other command path.
         if (string.Equals(request.Type, "reportDiscovery", StringComparison.OrdinalIgnoreCase))
         {
-            return HandleDiscovery(configuration, request);
+            return configuration.Security.IsConfigured
+                ? HandleDiscovery(configuration, request)
+                : Error("יש להגדיר את סיסמת האפליקציה בפעם הראשונה.");
         }
+
+        if (!configuration.Security.IsConfigured)
+        {
+            if (string.Equals(request.Type, "initializePassword", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!clientIsAdministrator)
+                {
+                    _logger.LogWarning("Rejected password initialization from a non-administrator client");
+                    return Error("אתחול הסיסמה הראשון מותר למנהל בלבד.");
+                }
+
+                try
+                {
+                    ApplicationPassword.Validate(request.Password);
+                }
+                catch (ArgumentException exception)
+                {
+                    return Error(exception.Message);
+                }
+
+                configuration.Security = ApplicationPassword.Create(request.Password);
+                _store.Save(configuration);
+                return Success(configuration);
+            }
+
+            return string.Equals(request.Type, "getConfiguration", StringComparison.OrdinalIgnoreCase)
+                ? new GuardianCommandResponse { NeedsInitialization = true }
+                : Error("יש להגדיר את סיסמת האפליקציה בפעם הראשונה.");
+        }
+
+        EnsureNotLockedOut(clientSid);
+
+        if (!ApplicationPassword.Verify(request.Password, configuration.Security))
+        {
+            RegisterFailure(clientSid);
+            throw new UnauthorizedAccessException("הסיסמה אינה נכונה.");
+        }
+
+        ClearFailures(clientSid);
 
         if (string.Equals(request.Type, "getUpcoming", StringComparison.OrdinalIgnoreCase))
         {
@@ -195,38 +241,6 @@ public sealed class GuardianCommandServer : BackgroundService
                 Upcoming = UpcomingCalculator.Calculate(configuration, DateTimeOffset.Now)
             };
         }
-
-        if (string.Equals(request.Type, "initializePassword", StringComparison.OrdinalIgnoreCase))
-        {
-            if (configuration.Security.IsConfigured)
-            {
-                return Error("סיסמת האפליקציה כבר הוגדרה.");
-            }
-
-            configuration.Security = ApplicationPassword.Create(request.Password);
-            _store.Save(configuration);
-            return Success(configuration);
-        }
-
-        if (!configuration.Security.IsConfigured)
-        {
-            if (string.Equals(request.Type, "getConfiguration", StringComparison.OrdinalIgnoreCase))
-            {
-                return new GuardianCommandResponse { NeedsInitialization = true };
-            }
-
-            return Error("יש להגדיר את סיסמת האפליקציה בפעם הראשונה.");
-        }
-
-        EnsureNotLockedOut();
-
-        if (!ApplicationPassword.Verify(request.Password, configuration.Security))
-        {
-            RegisterFailure();
-            throw new UnauthorizedAccessException("הסיסמה אינה נכונה.");
-        }
-
-        ClearFailures();
 
         if (string.Equals(request.Type, "getConfiguration", StringComparison.OrdinalIgnoreCase))
         {
@@ -272,8 +286,23 @@ public sealed class GuardianCommandServer : BackgroundService
 
         if (string.Equals(request.Type, "changePassword", StringComparison.OrdinalIgnoreCase))
         {
+            try
+            {
+                ApplicationPassword.Validate(request.NewPassword);
+            }
+            catch (ArgumentException exception)
+            {
+                return Error(exception.Message);
+            }
+
+            if (ApplicationPassword.Verify(request.NewPassword, configuration.Security))
+            {
+                return Error("הסיסמה החדשה זהה לסיסמה הנוכחית.");
+            }
+
             configuration.Security = ApplicationPassword.Create(request.NewPassword);
             _store.Save(configuration);
+            _logger.LogWarning("Application password changed");
             return Success(configuration);
         }
 
@@ -305,6 +334,11 @@ public sealed class GuardianCommandServer : BackgroundService
         {
             existing.LastSeenUtc = DateTimeOffset.UtcNow;
         }
+        else if (configuration.DiscoveredSites.Count >= MaxDiscoveredSites)
+        {
+            _logger.LogWarning("Discovery list limit reached at {Limit}; report rejected", MaxDiscoveredSites);
+            return Error("רשימת האתרים שהתגלו מלאה. מחק פריטים ישנים לפני הוספה נוספת.");
+        }
         else
         {
             configuration.DiscoveredSites.Add(new DiscoveredSite { Origin = origin, Email = email });
@@ -315,24 +349,72 @@ public sealed class GuardianCommandServer : BackgroundService
         return new GuardianCommandResponse { Ok = true };
     }
 
-    private void EnsureNotLockedOut()
+    private static (string Sid, bool IsAdministrator) GetClientIdentity(Stream pipe)
     {
-        var now = DateTimeOffset.UtcNow;
-        _failedAttempts.RemoveAll(stamp => now - stamp > LockoutWindow);
-        if (_failedAttempts.Count >= MaxFailedAttempts)
+        if (pipe is not NamedPipeServerStream serverPipe)
         {
-            throw new UnauthorizedAccessException(
-                $"יותר מדי ניסיונות שגויים. נסה שוב בעוד {(int)(LockoutWindow - (now - _failedAttempts[0])).TotalMinutes + 1} דקות.");
+            return ("unknown", false);
+        }
+
+        var sid = "unknown";
+        var isAdministrator = false;
+        serverPipe.RunAsClient(() =>
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            sid = identity.User?.Value ?? "unknown";
+            isAdministrator = identity.User is not null
+                && new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+        });
+        return (sid, isAdministrator);
+    }
+
+    private void EnsureNotLockedOut(string clientSid)
+    {
+        lock (_authenticationSync)
+        {
+            var attempts = GetAttempts(clientSid);
+            var now = DateTimeOffset.UtcNow;
+            attempts.RemoveAll(stamp => now - stamp > LockoutWindow);
+            if (attempts.Count >= MaxFailedAttempts)
+            {
+                _logger.LogWarning("Control pipe authentication lockout reached for client {ClientSid}", clientSid);
+                throw new UnauthorizedAccessException(
+                    $"יותר מדי ניסיונות שגויים. נסה שוב בעוד {(int)(LockoutWindow - (now - attempts[0])).TotalMinutes + 1} דקות.");
+            }
         }
     }
 
-    private void RegisterFailure()
+    private void RegisterFailure(string clientSid)
     {
-        _failedAttempts.Add(DateTimeOffset.UtcNow);
-        _logger.LogWarning("Failed control pipe authentication attempt ({Count} in the current window)", _failedAttempts.Count);
+        lock (_authenticationSync)
+        {
+            var attempts = GetAttempts(clientSid);
+            attempts.Add(DateTimeOffset.UtcNow);
+            _logger.LogWarning(
+                "Failed control pipe authentication attempt for client {ClientSid} ({Count} in the current window)",
+                clientSid,
+                attempts.Count);
+        }
     }
 
-    private void ClearFailures() => _failedAttempts.Clear();
+    private void ClearFailures(string clientSid)
+    {
+        lock (_authenticationSync)
+        {
+            _failedAttemptsByClient.Remove(clientSid);
+        }
+    }
+
+    private List<DateTimeOffset> GetAttempts(string clientSid)
+    {
+        if (!_failedAttemptsByClient.TryGetValue(clientSid, out var attempts))
+        {
+            attempts = new List<DateTimeOffset>();
+            _failedAttemptsByClient[clientSid] = attempts;
+        }
+
+        return attempts;
+    }
 
     /// <summary>
     /// Returns a DEEP COPY with the password hash stripped. The previous version assigned

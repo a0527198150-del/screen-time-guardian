@@ -34,20 +34,26 @@ New-Item -ItemType Directory -Force -Path $runtimeDirectory | Out-Null
 # Config folder: users may read (the native host runs as a standard user), never write.
 $acl = Get-Acl $DataDirectory
 $acl.SetAccessRuleProtection($true, $false)
-$acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+foreach ($rule in @($acl.Access)) {
+    $acl.RemoveAccessRuleSpecific($rule) | Out-Null
+}
+$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-$acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-$acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'Users', 'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
 Set-Acl -Path $DataDirectory -AclObject $acl
 
 # Runtime folder holds the crash marker and the safe mode flag. Users get no access at all.
 $runtimeAcl = Get-Acl $runtimeDirectory
 $runtimeAcl.SetAccessRuleProtection($true, $false)
-$runtimeAcl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+foreach ($rule in @($runtimeAcl.Access)) {
+    $runtimeAcl.RemoveAccessRuleSpecific($rule) | Out-Null
+}
+$runtimeAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-$runtimeAcl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+$runtimeAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
 Set-Acl -Path $runtimeDirectory -AclObject $runtimeAcl
 
