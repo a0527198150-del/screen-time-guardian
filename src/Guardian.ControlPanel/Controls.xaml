@@ -201,7 +201,6 @@
     <Style TargetType="local:WeekGrid">
         <Setter Property="Focusable" Value="True" />
         <Setter Property="Margin" Value="0,8" />
-        <Setter Property="Background" Value="Transparent" />
     </Style>
 
     <!-- ==================== CARD STYLES ==================== -->
