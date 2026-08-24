@@ -111,7 +111,10 @@ public static class Installer
                 RegisterAgent(agentExe);
             }
 
-            return (true, "ההתקנה הושלמה בהצלחה.");
+            // Create Start Menu and Desktop shortcuts
+            CreateShortcuts(serviceExePath);
+
+            return (true, "ההתקנה הושלמה בהצלחה. נוצרו קיצורי דרך בתפריט ההתחל ובשולחן העבודה.");
         }
         catch (Exception ex)
         {
@@ -195,6 +198,53 @@ public static class Installer
         catch
         {
             // Non-critical: agent registration may fail if registry is locked
+        }
+    }
+
+    private static void CreateShortcuts(string targetPath)
+    {
+        var exeDir = GetExeDirectory();
+        var iconPath = Path.Combine(exeDir, "icon.ico");
+        var hasIcon = File.Exists(iconPath);
+        var iconArg = hasIcon ? $", {iconPath}" : string.Empty;
+
+        // Start Menu shortcut
+        var startMenuDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms),
+            "Screen Time Guardian");
+        Directory.CreateDirectory(startMenuDir);
+        var startMenuShortcut = Path.Combine(startMenuDir, "שומר זמן מסך.lnk");
+        CreateShortcut(startMenuShortcut, targetPath, "שומר זמן מסך", iconPath);
+
+        // Desktop shortcut
+        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
+        var desktopShortcut = Path.Combine(desktopPath, "שומר זמן מסך.lnk");
+        CreateShortcut(desktopShortcut, targetPath, "שומר זמן מסך", iconPath);
+    }
+
+    private static void CreateShortcut(string shortcutPath, string targetPath, string description, string? iconPath)
+    {
+        // Use PowerShell's WScript.Shell COM object via a temporary script
+        var iconArg = !string.IsNullOrEmpty(iconPath) && File.Exists(iconPath)
+            ? $"\n$sc.IconLocation = '{iconPath}'"
+            : string.Empty;
+        var workDir = Path.GetDirectoryName(targetPath) ?? string.Empty;
+        var script = $"""
+$sc = (New-Object -ComObject WScript.Shell).CreateShortcut('{shortcutPath}')
+$sc.TargetPath = '{targetPath}'
+$sc.WorkingDirectory = '{workDir}'
+$sc.Description = '{description}'{iconArg}
+$sc.Save()
+""";
+        var psFile = Path.Combine(Path.GetTempPath(), "stg_shortcut.ps1");
+        File.WriteAllText(psFile, script, System.Text.Encoding.UTF8);
+        try
+        {
+            RunProcess("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -File \"{psFile}\"");
+        }
+        finally
+        {
+            try { File.Delete(psFile); } catch { /* non-critical */ }
         }
     }
 

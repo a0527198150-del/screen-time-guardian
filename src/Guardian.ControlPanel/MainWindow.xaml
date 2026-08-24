@@ -8,7 +8,8 @@
         KeyboardNavigation.TabNavigation="Continue"
         FontFamily="Assistant, Segoe UI, Arial"
         Background="#F8FAFC"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Icon="icon.ico">
     <Window.Resources>
         <SolidColorBrush x:Key="Ink" Color="#1A1A2E" />
         <SolidColorBrush x:Key="MutedInk" Color="#64748B" />
