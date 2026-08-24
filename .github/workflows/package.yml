@@ -25,8 +25,13 @@ jobs:
       - name: Publish service
         run: dotnet publish src/Guardian.Service/Guardian.Service.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/Service --no-restore
 
-      - name: Publish control panel
-        run: dotnet publish src/Guardian.ControlPanel/Guardian.ControlPanel.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/ControlPanel --no-restore
+      - name: Publish control panel EXE
+        run: dotnet publish src/Guardian.ControlPanel/Guardian.ControlPanel.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/ControlPanel --no-restore /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Publish standalone application EXE
+        shell: pwsh
+        run: |
+          Copy-Item artifacts/ScreenTimeGuardian/ControlPanel/ScreenTimeGuardian.ControlPanel.exe artifacts/ScreenTimeGuardian/ScreenTimeGuardian.exe -Force
 
       - name: Publish Native Host
         run: dotnet publish src/Guardian.NativeHost/Guardian.NativeHost.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/ScreenTimeGuardian/NativeHost --no-restore
@@ -59,7 +64,7 @@ jobs:
       - name: Create deployment package
         shell: pwsh
         run: |
-          Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Agent, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/Tools, artifacts/ScreenTimeGuardian/Setup.ps1, artifacts/ScreenTimeGuardian/Install.cmd, artifacts/ScreenTimeGuardian/Uninstall.cmd, artifacts/ScreenTimeGuardian/Emergency-Stop.cmd, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
+          Compress-Archive -Path artifacts/ScreenTimeGuardian/Service, artifacts/ScreenTimeGuardian/ControlPanel, artifacts/ScreenTimeGuardian/NativeHost, artifacts/ScreenTimeGuardian/Agent, artifacts/ScreenTimeGuardian/Updater, artifacts/ScreenTimeGuardian/Extension, artifacts/ScreenTimeGuardian/Policies, artifacts/ScreenTimeGuardian/Docs, artifacts/ScreenTimeGuardian/Tools, artifacts/ScreenTimeGuardian/Setup.ps1, artifacts/ScreenTimeGuardian/Install.cmd, artifacts/ScreenTimeGuardian/Uninstall.cmd, artifacts/ScreenTimeGuardian/Emergency-Stop.cmd, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.exe, artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -DestinationPath artifacts/ScreenTimeGuardian.zip -Force
 
       - name: Verify package contents
         shell: pwsh
@@ -72,6 +77,7 @@ jobs:
             'Emergency-Stop.cmd',
             'Service/',
             'ControlPanel/',
+            'ScreenTimeGuardian.exe',
             'NativeHost/',
             'Agent/',
             'Updater/',

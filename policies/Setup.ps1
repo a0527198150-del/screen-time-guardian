@@ -15,9 +15,13 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 $policies = Join-Path $PackageRoot 'Policies'
 $service = Join-Path $PackageRoot 'Service\ScreenTimeGuardian.Service.exe'
 $agent = Join-Path $PackageRoot 'Agent\ScreenTimeGuardian.Agent.exe'
+$controlPanel = Join-Path $PackageRoot 'ControlPanel\ScreenTimeGuardian.ControlPanel.exe'
 
 if (-not (Test-Path -LiteralPath $service -PathType Leaf)) {
     throw "קובץ השירות לא נמצא: $service"
+}
+if (-not (Test-Path -LiteralPath $controlPanel -PathType Leaf)) {
+    throw "לוח הבקרה לא נמצא: $controlPanel"
 }
 if (-not (Test-Path -LiteralPath (Join-Path $policies 'Install-Service.ps1') -PathType Leaf)) {
     throw "סקריפט התקנת השירות לא נמצא: $policies"
@@ -30,3 +34,4 @@ if (Test-Path -LiteralPath $agent -PathType Leaf) {
 }
 
 Write-Host 'ההתקנה הושלמה. פתח את ControlPanel כדי להגדיר סיסמה וכללים.' -ForegroundColor Green
+Write-Host "לוח הבקרה: $controlPanel"
