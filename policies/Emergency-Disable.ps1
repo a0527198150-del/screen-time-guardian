@@ -24,8 +24,9 @@ try {
     $ifeoRoot = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options'
     if (Test-Path $ifeoRoot) {
         Get-ChildItem $ifeoRoot | ForEach-Object {
-            $owner = (Get-ItemProperty -Path $_.PSPath -Name 'STGOwned' -ErrorAction SilentlyContinue).STGOwned
-            if ($owner -eq 'ScreenTimeGuardian') {
+            $properties = Get-ItemProperty -Path $_.PSPath -Name 'STGOwned' -ErrorAction SilentlyContinue
+            if ($null -ne $properties -and $properties.PSObject.Properties.Name -contains 'STGOwned' -and
+                $properties.STGOwned -eq 'ScreenTimeGuardian') {
                 Remove-Item -Path $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
