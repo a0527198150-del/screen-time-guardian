@@ -172,6 +172,7 @@ public partial class MainWindow : Window
             }
 
             EnforceWebsitesBox.IsChecked = _configuration.WebsiteEnforcement == WebsiteEnforcementMode.Enforced;
+            AllowMachineWideWebsiteBlockingBox.IsChecked = _configuration.AllowMachineWideWebsiteBlocking;
 
             BootGraceBox.Text = _configuration.Safety.BootGraceSeconds.ToString();
             ServiceGraceBox.Text = _configuration.Safety.ServiceGraceSeconds.ToString();
@@ -219,6 +220,7 @@ public partial class MainWindow : Window
         _configuration.WebsiteEnforcement = EnforceWebsitesBox.IsChecked == true
             ? WebsiteEnforcementMode.Enforced
             : WebsiteEnforcementMode.AuditOnly;
+        _configuration.AllowMachineWideWebsiteBlocking = AllowMachineWideWebsiteBlockingBox.IsChecked == true;
 
         _configuration.Safety.BootGraceSeconds = ParseInt(BootGraceBox.Text, 120, "תקופת חסד אחרי הפעלת המחשב");
         _configuration.Safety.ServiceGraceSeconds = ParseInt(ServiceGraceBox.Text, 30, "תקופת חסד אחרי הפעלת השירות");

@@ -132,10 +132,22 @@ public sealed class GuardianWorker : BackgroundService
             safety.EnforcementAllowed,
             cancellationToken);
 
+        var websiteMode = safety.EnforcementAllowed && configuration.AllowMachineWideWebsiteBlocking
+            ? configuration.WebsiteEnforcement
+            : WebsiteEnforcementMode.Disabled;
+        if (websiteMode != WebsiteEnforcementMode.Enforced && snapshot.BlockedDomains.Count > 0)
+        {
+            _logger.LogWarning(
+                "{Count} domains are scheduled for blocking but website enforcement is off. " +
+                "EnforcementAllowed={Allowed}, AllowMachineWideWebsiteBlocking={Allowed2}, WebsiteEnforcement={Mode}",
+                snapshot.BlockedDomains.Count,
+                safety.EnforcementAllowed,
+                configuration.AllowMachineWideWebsiteBlocking,
+                configuration.WebsiteEnforcement);
+        }
+
         await _websiteBlocker.ApplyAsync(
-            safety.EnforcementAllowed && configuration.EnforceForAdministrators
-                ? configuration.WebsiteEnforcement
-                : WebsiteEnforcementMode.Disabled,
+            websiteMode,
             snapshot.BlockedDomains,
             configuration.Safety,
             cancellationToken);
@@ -187,6 +199,18 @@ public sealed class GuardianWorker : BackgroundService
 
         try
         {
+            // Website rules are machine-wide; a cleanly stopped service must not leave
+            // them behind and unexpectedly cut off the machine.
+            using var websiteTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await _websiteBlocker.RemoveAllAsync(websiteTimeout.Token);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "Could not remove website firewall rules during shutdown");
+        }
+
+        try
+        {
             // Leaving IFEO entries behind would make browsers unlaunchable after the
             // service is gone. They must come out on every clean stop.
             _launchBlocker.RemoveAll();
@@ -213,7 +237,7 @@ public sealed class GuardianWorker : BackgroundService
 
 public sealed class ServiceStatusHolder
 {
-    public const string Version = "0.4.6";
+    public const string Version = "0.4.7";
 
     private GuardianStatus _status = new() { Version = Version };
 

@@ -1,5 +1,5 @@
 ﻿<#
-    Screen Time Guardian – מתקין אחיד v0.4.6+
+    Screen Time Guardian – מתקין אחיד v0.4.7+
 
     לחיצה כפולה על Install.cmd = התקנה מלאה.
     לחיצה כפולה על Uninstall.cmd = הסרה מלאה.
@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.4.6'
+$script:Version     = '0.4.7'
 
 # =============================================================================
 # צבעים

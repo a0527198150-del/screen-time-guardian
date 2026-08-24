@@ -370,6 +370,11 @@
                                      LostFocus="WebsiteDelayBox_OnLostFocus" />
                         </StackPanel>
                         <CheckBox x:Name="EnforceWebsitesBox" Content="הפעל אכיפה בפועל (ללא סימון — מצב האזנה בלבד)" Margin="0,10,0,0" />
+                        <CheckBox x:Name="AllowMachineWideWebsiteBlockingBox"
+                                  Content="אשר החלה על כל חשבונות המחשב, כולל מנהלים"
+                                  Margin="0,6,0,0" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="חוקי Firewall לדומיין הם כלל־מחשביים ואי אפשר להחריג מהם חשבון. ללא סימון האפשרות הזו, חסימת האתרים לא תופעל כלל, גם אם 'הפעל אכיפה בפועל' מסומן." />
                     </StackPanel>
                     <ListBox x:Name="DomainsListBox" SelectionChanged="DomainsListBox_OnSelectionChanged" />
                 </DockPanel>

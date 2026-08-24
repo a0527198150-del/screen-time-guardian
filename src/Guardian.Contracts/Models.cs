@@ -203,6 +203,13 @@ public sealed class ConfigurationDocument
     /// <summary>When true, scheduled enforcement also includes users in the local Administrators group.</summary>
     public bool EnforceForAdministrators { get; set; }
 
+    /// <summary>
+    /// Machine-wide website firewall rules apply to every account on the PC, administrators
+    /// included, and cannot be scoped per user. Turning them on is a separate, explicit
+    /// decision from EnforceForAdministrators, which governs per-application rules.
+    /// </summary>
+    public bool AllowMachineWideWebsiteBlocking { get; set; }
+
     /// <summary>Enables the signed update polling path. Disabled by default.</summary>
     public bool AutomaticUpdatesEnabled { get; set; }
     public string UpdateManifestUrl { get; set; } = string.Empty;

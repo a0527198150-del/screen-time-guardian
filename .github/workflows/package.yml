@@ -80,6 +80,7 @@ jobs:
             'Docs/ExtensionSetup.md',
             'Tools/Test-LocalUser.cmd',
             'Tools/Test-LocalUser.ps1',
+            'Tools/Diagnose-WebsiteBlocking.ps1',
             'NativeHost/NativeHost.manifest.json'
           )
           Add-Type -AssemblyName System.IO.Compression
