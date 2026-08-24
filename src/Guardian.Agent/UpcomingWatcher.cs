@@ -1,6 +1,4 @@
 using System.IO;
-using System.IO.Pipes;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ScreenTimeGuardian.Contracts;
@@ -73,48 +71,11 @@ public sealed class UpcomingWatcher
         return warnings;
     }
 
-    private static async Task<IReadOnlyList<UpcomingEvent>> FetchUpcomingAsync()
+    private static Task<IReadOnlyList<UpcomingEvent>> FetchUpcomingAsync()
     {
-        try
-        {
-            await using var pipe = new NamedPipeClientStream(
-                ".", PipeNames.Control, PipeDirection.InOut, PipeOptions.Asynchronous);
-
-            using var connectTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            await pipe.ConnectAsync(connectTimeout.Token);
-
-            await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, leaveOpen: true)
-            {
-                AutoFlush = true
-            };
-            using var reader = new StreamReader(pipe, Encoding.UTF8, true, 4096, leaveOpen: true);
-
-            var command = new GuardianCommand { Type = "getUpcoming" };
-            await writer.WriteLineAsync(JsonSerializer.Serialize(command, JsonOptions));
-
-            using var readTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            var json = await reader.ReadLineAsync(readTimeout.Token);
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return Array.Empty<UpcomingEvent>();
-            }
-
-            var response = JsonSerializer.Deserialize<UpcomingResponse>(json, JsonOptions);
-            return response?.Upcoming ?? (IReadOnlyList<UpcomingEvent>)Array.Empty<UpcomingEvent>();
-        }
-        catch (Exception exception) when (exception is IOException
-                                              or TimeoutException
-                                              or OperationCanceledException
-                                              or UnauthorizedAccessException
-                                              or JsonException)
-        {
-            return Array.Empty<UpcomingEvent>();
-        }
-    }
-
-    private sealed class UpcomingResponse
-    {
-        public bool Ok { get; set; }
-        public List<UpcomingEvent> Upcoming { get; set; } = new();
+        // Upcoming data is authenticated at the service boundary. The agent has no
+        // secure credential hand-off yet, so it must not probe the pipe anonymously:
+        // that would count as a failed login for the interactive user's SID.
+        return Task.FromResult<IReadOnlyList<UpcomingEvent>>(Array.Empty<UpcomingEvent>());
     }
 }

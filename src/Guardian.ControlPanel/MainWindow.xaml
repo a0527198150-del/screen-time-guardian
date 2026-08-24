@@ -5,7 +5,7 @@
         Title="שומר זמן מסך" Height="880" Width="1180"
         FlowDirection="RightToLeft"
         KeyboardNavigation.TabNavigation="Continue"
-        FontFamily="Segoe UI"
+        FontFamily="Assistant"
         Background="#F8F9FA"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
@@ -16,11 +16,11 @@
         <SolidColorBrush x:Key="BorderLine" Color="#DDE4EA" />
         <SolidColorBrush x:Key="Mist" Color="#EEF3F6" />
         <SolidColorBrush x:Key="Sidebar" Color="#15213D" />
-        <SolidColorBrush x:Key="Indigo" Color="#B6E3F2" />
-        <SolidColorBrush x:Key="Teal" Color="#86C7E0" />
-        <SolidColorBrush x:Key="Amber" Color="#B2A98C" />
+        <SolidColorBrush x:Key="Indigo" Color="#2F3E6B" />
+        <SolidColorBrush x:Key="Teal" Color="#0E7C86" />
+        <SolidColorBrush x:Key="Amber" Color="#92400E" />
         <Style TargetType="Window">
-            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontFamily" Value="Assistant" />
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
         </Style>
         <Style TargetType="Button">
@@ -126,7 +126,7 @@
         </Border>
 
         <TabControl x:Name="MainTabs" TabStripPlacement="Right" SelectedIndex="0"
-                    KeyboardNavigation.TabNavigation="Local">
+                    KeyboardNavigation.TabNavigation="Local" FlowDirection="RightToLeft">
             <TabItem Header="מצב">
                 <local:StatusView x:Name="StatusDashboard" />
             </TabItem>

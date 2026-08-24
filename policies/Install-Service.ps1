@@ -43,6 +43,9 @@ $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
 $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'Users', 'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+$administratorsSid = [Security.Principal.SecurityIdentifier]::new(
+    [Security.Principal.WellKnownSidType]::BuiltinAdministratorsSid, $null)
+$acl.SetOwner($administratorsSid)
 Set-Acl -Path $DataDirectory -AclObject $acl
 
 # Runtime folder holds the crash marker and the safe mode flag. Users get no access at all.
@@ -55,6 +58,7 @@ $runtimeAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
 $runtimeAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
     'Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+$runtimeAcl.SetOwner($administratorsSid)
 Set-Acl -Path $runtimeDirectory -AclObject $runtimeAcl
 
 $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue

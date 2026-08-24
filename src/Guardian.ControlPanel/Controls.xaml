@@ -5,7 +5,9 @@
     <SolidColorBrush x:Key="MutedInk" Color="#53617A" />
     <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
     <SolidColorBrush x:Key="BorderLine" Color="#DDE4EA" />
-    <SolidColorBrush x:Key="Teal" Color="#86C7E0" />
+    <SolidColorBrush x:Key="Teal" Color="#0E7C86" />
+    <SolidColorBrush x:Key="Indigo" Color="#2F3E6B" />
+    <SolidColorBrush x:Key="Mist" Color="#EEF3F6" />
     <Style TargetType="Button">
         <Setter Property="Padding" Value="14,7" />
         <Setter Property="Margin" Value="0,3,6,3" />
@@ -24,7 +26,14 @@
         <Setter Property="Background" Value="{StaticResource Surface}" />
         <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
     </Style>
-    <Style TargetType="PasswordBox" BasedOn="{StaticResource {x:Type TextBox}}" />
+    <Style TargetType="PasswordBox">
+        <Setter Property="Margin" Value="0,3" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        <Setter Property="Background" Value="{StaticResource Surface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
+    </Style>
     <Style TargetType="local:WeekGrid">
         <Setter Property="Focusable" Value="True" />
         <Setter Property="Margin" Value="0,4,0,4" />

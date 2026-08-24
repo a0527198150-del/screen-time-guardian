@@ -49,8 +49,9 @@ jobs:
           Copy-Item tools/* artifacts/ScreenTimeGuardian/Tools/ -Recurse -Force
           Copy-Item src/Guardian.NativeHost/NativeHost.manifest.json artifacts/ScreenTimeGuardian/NativeHost/NativeHost.manifest.json -Force
 
-          # Copy one-click installer files to the ROOT of the package
-          Copy-Item installer/* artifacts/ScreenTimeGuardian/ -Force
+          # Copy one-click installer files to the ROOT of the package. Keep the
+          # repository's policies as the authoritative installer source.
+          Copy-Item policies/Setup.ps1, policies/Install.cmd, policies/Uninstall.cmd, policies/Emergency-Stop.cmd artifacts/ScreenTimeGuardian/ -Force
 
           Compress-Archive -Path artifacts/ScreenTimeGuardian/Extension/* -DestinationPath artifacts/ScreenTimeGuardian/ScreenTimeGuardian.Extension.zip -Force
 

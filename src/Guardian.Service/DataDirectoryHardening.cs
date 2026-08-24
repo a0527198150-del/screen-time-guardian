@@ -41,6 +41,11 @@ public static class DataDirectoryHardening
         var system = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
         var administrators = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
 
+        // ACL protection alone is insufficient: the owner can always rewrite the DACL.
+        // Keep ownership with the administrators group so a standard user cannot undo
+        // this hardening even if they can reach the directory through another path.
+        security.SetOwner(administrators);
+
         security.AddAccessRule(new FileSystemAccessRule(
             system, FileSystemRights.FullControl, inheritance, PropagationFlags.None, AccessControlType.Allow));
         security.AddAccessRule(new FileSystemAccessRule(
