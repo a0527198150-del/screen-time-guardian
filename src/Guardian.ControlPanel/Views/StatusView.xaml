@@ -7,27 +7,27 @@
         <StackPanel Margin="18">
             <TextBlock Text="מה קורה עכשיו" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,4" />
             <TextBlock Text="תמונה קצרה וברורה של האכיפה ושל השינוי הבא." Foreground="#53617A" FontSize="15" Margin="0,0,0,18" />
-            <Border x:Name="EnforcementCard" Background="#E3F5F1" BorderBrush="#86C7E0" BorderThickness="1" CornerRadius="10" Padding="18" Margin="0,0,0,14">
+            <Border x:Name="EnforcementCard" Background="#E3F5F1" BorderBrush="#0E7C86" BorderThickness="1.5" CornerRadius="12" Padding="20" Margin="0,0,0,14">
                 <StackPanel>
                     <TextBlock x:Name="EnforcementTitle" Text="אכיפה פעילה כרגע" FontSize="20" FontWeight="SemiBold" />
                     <TextBlock x:Name="EnforcementReason" TextWrapping="Wrap" Foreground="#53617A" Margin="0,5,0,0" />
                 </StackPanel>
             </Border>
-            <Border Background="#FFFFFF" BorderBrush="#DDE4EA" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,14">
+            <Border Background="#FFFFFF" BorderBrush="#DDE4EA" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,14">
                 <StackPanel>
                     <TextBlock Text="חסום כרגע" FontSize="20" FontWeight="SemiBold" />
                     <ListBox x:Name="ActiveRulesListBox" BorderThickness="0" Margin="0,8,0,0" />
                     <TextBlock x:Name="NoActiveText" Text="אין חסימות פעילות כרגע." Foreground="#53617A" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
-            <Border Background="#FFFFFF" BorderBrush="#DDE4EA" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,14">
+            <Border Background="#FFFFFF" BorderBrush="#DDE4EA" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,14">
                 <StackPanel>
                     <TextBlock Text="לוח השבוע" FontSize="20" FontWeight="SemiBold" />
                     <TextBlock Text="תצוגה לקריאה בלבד של חלונות החסימה." Foreground="#53617A" Margin="0,3,0,8" />
-                    <local:WeekGrid x:Name="StatusWeekGrid" Height="350" IsHitTestVisible="False" />
+                    <local:WeekGrid x:Name="StatusWeekGrid" Height="500" MinHeight="360" IsHitTestVisible="False" />
                 </StackPanel>
             </Border>
-            <Border Background="#FFFFFF" BorderBrush="#DDE4EA" BorderThickness="1" CornerRadius="10" Padding="16">
+            <Border Background="#FFFFFF" BorderBrush="#DDE4EA" BorderThickness="1" CornerRadius="12" Padding="18">
                 <StackPanel>
                     <TextBlock Text="הבא בתור" FontSize="20" FontWeight="SemiBold" />
                     <TextBlock x:Name="UpcomingText" Text="אין אירוע מתוזמן קרוב." Foreground="#53617A" TextWrapping="Wrap" Margin="0,5,0,0" />

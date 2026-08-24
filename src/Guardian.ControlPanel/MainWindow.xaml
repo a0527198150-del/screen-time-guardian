@@ -26,12 +26,13 @@
         <Style TargetType="Button">
             <Setter Property="Padding" Value="14,7" />
             <Setter Property="Margin" Value="0,3,6,3" />
-            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="MinHeight" Value="36" />
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
             <Setter Property="Background" Value="{StaticResource Surface}" />
             <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
@@ -66,6 +67,7 @@
             <Setter Property="Background" Value="{StaticResource Surface}" />
             <Setter Property="BorderBrush" Value="{StaticResource BorderLine}" />
             <Setter Property="Padding" Value="4" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style TargetType="TabControl">
             <Setter Property="Background" Value="#F8F6FA" />
@@ -73,16 +75,16 @@
         </Style>
         <Style TargetType="TabItem">
             <Setter Property="Width" Value="210" />
-            <Setter Property="Padding" Value="18,13" />
-            <Setter Property="Margin" Value="0,2,0,2" />
+            <Setter Property="Padding" Value="18,14" />
+            <Setter Property="Margin" Value="0,3,0,3" />
             <Setter Property="Background" Value="{StaticResource Sidebar}" />
-            <Setter Property="Foreground" Value="#D9E1F0" />
+            <Setter Property="Foreground" Value="#C8D6E5" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{StaticResource Teal}" />
-                    <Setter Property="Foreground" Value="{StaticResource Ink}" />
+                    <Setter Property="Foreground" Value="#FFFFFF" />
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -220,7 +222,7 @@
                                             <Button Content="מחק חלון" Click="RemoveWindowButton_OnClick" />
                                         </StackPanel>
                                         <TextBlock Text="תצוגה שבועית — מספרים 1–7 בוחרים יום, Shift מנקה אותו" Style="{StaticResource Hint}" Margin="0,8,0,0" />
-                                        <local:WeekGrid x:Name="ApplicationWeekGrid" Height="300" Margin="0,4,0,0" ScheduleChanged="ApplicationWeekGrid_OnScheduleChanged" />
+                                        <local:WeekGrid x:Name="ApplicationWeekGrid" Height="420" MinHeight="360" Margin="0,4,0,0" ScheduleChanged="ApplicationWeekGrid_OnScheduleChanged" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" x:Name="WindowEditorPanel" IsEnabled="False">
                                         <TextBlock Text="ימים:" FontWeight="Bold" />
@@ -417,7 +419,7 @@
                                 <TextBlock Text="לוח הזמנים של האתר הנבחר" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
                                 <TextBlock x:Name="SelectedWebsiteText" Style="{StaticResource Hint}" />
                                 <TextBlock Text="תצוגה שבועית — גרירה צובעת שעות, Shift+גרירה מנקה" Style="{StaticResource Hint}" />
-                                <local:WeekGrid x:Name="WebsiteWeekGrid" Height="300" Margin="0,0,0,8" ScheduleChanged="WebsiteWeekGrid_OnScheduleChanged" />
+                                <local:WeekGrid x:Name="WebsiteWeekGrid" Height="420" MinHeight="360" Margin="0,0,0,8" ScheduleChanged="WebsiteWeekGrid_OnScheduleChanged" />
                                 <ListBox x:Name="WebsiteWindowsListBox" Height="150"
                                          SelectionChanged="WebsiteWindowsListBox_OnSelectionChanged" />
                                 <StackPanel Orientation="Horizontal">
