@@ -80,12 +80,12 @@ else {
 
     foreach ($url in @($UpdateUrl, $EdgeUpdateUrl)) {
         $parsed = $null
-        if (-not [Uri]::TryCreate($url, [UriKind]::Absolute, [ref]$parsed)
-            -or $parsed.Scheme -ne 'https'
-            -or -not [string]::IsNullOrWhiteSpace($parsed.UserInfo)
-            -or $parsed.Port -ne -1
-            -or -not [string]::IsNullOrWhiteSpace($parsed.Query)
-            -or -not [string]::IsNullOrWhiteSpace($parsed.Fragment)) {
+        if (-not [Uri]::TryCreate($url, [UriKind]::Absolute, [ref]$parsed) -or
+            $parsed.Scheme -ne 'https' -or
+            -not [string]::IsNullOrWhiteSpace($parsed.UserInfo) -or
+            $parsed.Port -ne -1 -or
+            -not [string]::IsNullOrWhiteSpace($parsed.Query) -or
+            -not [string]::IsNullOrWhiteSpace($parsed.Fragment)) {
             throw "כתובת העדכון חייבת להיות HTTPS ללא פרטי משתמש, port, query או fragment: $url"
         }
     }
