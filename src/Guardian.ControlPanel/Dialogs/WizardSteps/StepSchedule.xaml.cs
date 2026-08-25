@@ -6,11 +6,7 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 {
     public partial class StepSchedule : UserControl
     {
-        public event EventHandler? ValidityChanged;
-
         public bool IsValid => true;
-
-        private bool _suppressEvents;
 
         public string StartTime => $"{TxtStartHour.Text.PadLeft(2, '0')}:{TxtStartMin.Text.PadLeft(2, '0')}";
         public string EndTime => $"{TxtEndHour.Text.PadLeft(2, '0')}:{TxtEndMin.Text.PadLeft(2, '0')}";
@@ -26,8 +22,6 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
         /// </summary>
         public void ApplyPreset(string preset)
         {
-            _suppressEvents = true;
-
             switch (preset)
             {
                 case "shabbat":
@@ -51,7 +45,6 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
                     break;
             }
 
-            _suppressEvents = false;
             UpdateSummary();
         }
 
