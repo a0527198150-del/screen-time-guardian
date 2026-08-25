@@ -49,8 +49,8 @@ jobs:
           Copy-Item -Path policies -Destination package\Policies -Recurse -Force
           Copy-Item -Path extension -Destination package\Extension -Recurse -Force
           Copy-Item -Path installer -Destination package\installer -Recurse -Force
-          Copy-Item -Path src\Guardian.NativeHost\NativeHost.manifest.json -Destination package\NativeHost\ -Force
-          Copy-Item -Path src\Guardian.ControlPanel\icon.ico -Destination package\ControlPanel\ -Force
+          Copy-Item -Path src\Guardian.NativeHost\NativeHost.manifest.json -Destination package\ScreenTimeGuardian.NativeHost\ -Force
+          Copy-Item -Path src\Guardian.ControlPanel\icon.ico -Destination package\ScreenTimeGuardian.ControlPanel\ -Force
           # Copy installer scripts to the root of the package for convenience
           Copy-Item installer\Install.cmd package\ -Force
           Copy-Item installer\Uninstall.cmd package\ -Force
@@ -62,10 +62,10 @@ jobs:
         shell: pwsh
         run: |
           $required = @(
-            'package\Service\ScreenTimeGuardian.Service.exe',
-            'package\ControlPanel\ScreenTimeGuardian.ControlPanel.exe',
-            'package\Agent\ScreenTimeGuardian.Agent.exe',
-            'package\NativeHost\ScreenTimeGuardian.NativeHost.exe',
+            'package\ScreenTimeGuardian.Service\ScreenTimeGuardian.Service.exe',
+            'package\ScreenTimeGuardian.ControlPanel\ScreenTimeGuardian.ControlPanel.exe',
+            'package\ScreenTimeGuardian.Agent\ScreenTimeGuardian.Agent.exe',
+            'package\ScreenTimeGuardian.NativeHost\ScreenTimeGuardian.NativeHost.exe',
             'package\Policies\Install-Service.ps1',
             'package\Policies\Uninstall-Service.ps1',
             'package\Policies\Register-NativeHost.ps1',
