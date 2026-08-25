@@ -47,7 +47,8 @@ jobs:
             const fs = require('fs');
             const pem = fs.readFileSync('../keys/extension.pem', 'utf8');
             const rsa = crypto.createPrivateKey(pem);
-            const pubDer = rsa.export({ type: 'spki', format: 'der' });
+            const pub = crypto.createPublicKey(rsa);
+            const pubDer = pub.export({ type: 'spki', format: 'der' });
             const sha = crypto.createHash('sha256').update(pubDer).digest();
             const id = [...sha.subarray(0,16)].map(b => {
               return String.fromCharCode('a'.charCodeAt(0) + (b >> 4)) +
