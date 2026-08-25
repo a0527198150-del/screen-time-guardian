@@ -1,0 +1,8 @@
+This directory contains font files used by Screen Time Guardian.
+
+Fonts included:
+  Assistant — Google Fonts (SIL Open Font License 1.1)
+  Frank Ruhl Libre — Google Fonts (SIL Open Font License 1.1)
+  IBM Plex Mono — Google Fonts (SIL Open Font License 1.1)
+
+Full license text: https://scripts.sil.org/OFL

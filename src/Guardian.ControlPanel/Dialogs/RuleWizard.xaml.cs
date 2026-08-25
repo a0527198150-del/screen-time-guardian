@@ -22,6 +22,7 @@ public partial class RuleWizard : Window
     // Step 1 UI elements (created in code to avoid massive XAML)
     private StackPanel? _step1Content;
     private StackPanel? _step1Detail;
+    private TextBlock? _step1Error;
     private Border? _selectedAppCard;
     private Border? _selectedSiteCard;
     private Border? _selectedAccountCard;
@@ -60,9 +61,21 @@ public partial class RuleWizard : Window
         {
             if (string.IsNullOrEmpty(_selectedType))
             {
-                MessageBox.Show("בחר סוג כלל", "שגיאה", MessageBoxButton.OK, MessageBoxImage.Warning);
+                if (_step1Error is null)
+                {
+                    _step1Error = new TextBlock
+                    {
+                        Text = "בחר סוג כלל",
+                        FontSize = 13,
+                        Foreground = new SolidColorBrush(Color.FromRgb(169, 50, 38)),
+                        Margin = new Thickness(0, 8, 0, 0)
+                    };
+                    _step1Content?.Children.Add(_step1Error);
+                }
+                _step1Error.Visibility = Visibility.Visible;
                 return;
             }
+            if (_step1Error is not null) _step1Error.Visibility = Visibility.Collapsed;
             ShowStep2();
         }
         else if (_step == 2)

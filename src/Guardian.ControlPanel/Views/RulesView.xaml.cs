@@ -20,6 +20,8 @@ public partial class RulesView : UserControl
     public event EventHandler<ScheduledRule>? DeleteRuleRequested;
     public event EventHandler<ScheduledRule>? ToggleRuleRequested;
 
+    public Snackbar? Snackbar { get; set; }
+
     public RulesView()
     {
         InitializeComponent();
@@ -91,12 +93,22 @@ public partial class RulesView : UserControl
             _ => "כלל"
         };
 
-        if (MessageBox.Show($"למחוק את '{name}'?", "אישור מחיקה",
-            MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+        // Remove immediately
+        DeleteRuleRequested?.Invoke(this, rule);
+        ApplyFilter();
+
+        // Show undo snackbar
+        Snackbar?.Show($"הכלל '{name}' נמחק.", () =>
         {
-            DeleteRuleRequested?.Invoke(this, rule);
+            // Undo: re-add the rule
+            switch (rule)
+            {
+                case ApplicationRule app: _appRules.Add(app); break;
+                case WebsiteRule site: _siteRules.Add(site); break;
+                case GoogleAccountRule account: _accountRules.Add(account); break;
+            }
             ApplyFilter();
-        }
+        });
     }
 
     private void Filter_Changed(object sender, RoutedEventArgs e)

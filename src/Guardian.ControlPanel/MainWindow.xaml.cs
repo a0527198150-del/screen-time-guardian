@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         ShellControl.Rules.EditAccountRuleRequested += Rules_EditAccountRuleRequested;
         ShellControl.Rules.DeleteRuleRequested += Rules_DeleteRuleRequested;
         ShellControl.Rules.ToggleRuleRequested += Rules_ToggleRuleRequested;
+        ShellControl.Rules.Snackbar = ShellControl.Snackbar;
     }
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e)

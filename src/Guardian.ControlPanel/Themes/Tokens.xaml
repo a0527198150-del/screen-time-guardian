@@ -1,15 +1,24 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================
          FONTS — Section 3.1 of the design guide.
-         Font files must be in Assets/Fonts/ with Build Action = Resource.
+         Font files must be in Fonts/ with Build Action = Resource.
          The pack URI embeds the font from the assembly's resources.
+         Required files:
+           Fonts/Assistant-Regular.ttf    (already present)
+           Fonts/Assistant-SemiBold.ttf   (from Google Fonts)
+           Fonts/FrankRuhlLibre-Medium.ttf (from Google Fonts)
+           Fonts/IBMPlexMono-Regular.ttf  (from Google Fonts)
          ================================================================ -->
 
+    <!-- Sans: UI text in small sizes -->
     <FontFamily x:Key="FontUi">pack://application:,,,/Fonts/#Assistant</FontFamily>
-    <FontFamily x:Key="FontDisplay">pack://application:,,,/Fonts/#Assistant</FontFamily>
-    <FontFamily x:Key="FontData">pack://application:,,,/Fonts/#Assistant</FontFamily>
+    <!-- Serif: screen titles only, used sparingly -->
+    <FontFamily x:Key="FontDisplay">pack://application:,,,/Fonts/#Frank Ruhl Libre</FontFamily>
+    <!-- Mono: emails, domains, paths, hours. Always LTR. -->
+    <FontFamily x:Key="FontData">pack://application:,,,/Fonts/#IBM Plex Mono</FontFamily>
 
     <!-- ================================================================
          COLOR PALETTE — Section 3.4 of the design guide.
@@ -110,14 +119,14 @@
          4 · 8 · 12 · 16 · 24 · 32 · 48. Nothing outside this scale.
          ================================================================ -->
 
-    <system:Double x:Key="Space4">4</system:Double>
-    <system:Double x:Key="Space8">8</system:Double>
-    <system:Double x:Key="Space12">12</system:Double>
-    <system:Double x:Key="Space16">16</system:Double>
-    <system:Double x:Key="Space20">20</system:Double>
-    <system:Double x:Key="Space24">24</system:Double>
-    <system:Double x:Key="Space32">32</system:Double>
-    <system:Double x:Key="Space48">48</system:Double>
+    <sys:Double x:Key="Space4">4</sys:Double>
+    <sys:Double x:Key="Space8">8</sys:Double>
+    <sys:Double x:Key="Space12">12</sys:Double>
+    <sys:Double x:Key="Space16">16</sys:Double>
+    <sys:Double x:Key="Space20">20</sys:Double>
+    <sys:Double x:Key="Space24">24</sys:Double>
+    <sys:Double x:Key="Space32">32</sys:Double>
+    <sys:Double x:Key="Space48">48</sys:Double>
 
     <!-- ================================================================
          CORNER RADII — Section 3.3 of the design guide.

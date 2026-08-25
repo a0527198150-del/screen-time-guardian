@@ -7,10 +7,10 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <!-- Sidebar — in RTL mode, Column 0 appears on the right side -->
-            <ColumnDefinition Width="240" />
             <!-- Content area -->
             <ColumnDefinition Width="*" />
+            <!-- Sidebar -->
+            <ColumnDefinition Width="240" />
         </Grid.ColumnDefinitions>
 
         <!-- ============================================================
@@ -44,22 +44,22 @@
              SIDEBAR — 240px, Ink background, RTL.
              Three nav items, status dot at bottom.
              ============================================================ -->
-        <Border Grid.Column="0" Background="{StaticResource BrushInk}"
-                Padding="0,32,0,32">
-            <DockPanel>
+        <Border Grid.Column="0" Background="{StaticResource BrushInk}">
+            <DockPanel Margin="0,32,0,32">
 
                 <!-- Status dot — always at bottom, always visible -->
-                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
-                            Margin="0,0,0,0" HorizontalAlignment="Right"
-                            Padding="20,12">
-                    <Ellipse x:Name="StatusDot" Width="10" Height="10"
-                             Fill="{StaticResource BrushTeal}"
-                             VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBlock x:Name="StatusLabel" Text="אכיפה פעילה"
-                               Foreground="#94A3B8" FontSize="13"
-                               FontFamily="{StaticResource FontUi}"
-                               VerticalAlignment="Center" />
-                </StackPanel>
+                <Border DockPanel.Dock="Bottom" Margin="0,0,0,0"
+                        HorizontalAlignment="Right" Padding="20,12">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="StatusDot" Width="10" Height="10"
+                                 Fill="{StaticResource BrushTeal}"
+                                 VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock x:Name="StatusLabel" Text="אכיפה פעילה"
+                                   Foreground="#94A3B8" FontSize="13"
+                                   FontFamily="{StaticResource FontUi}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
 
                 <!-- Brand -->
                 <TextBlock DockPanel.Dock="Top" Text="שומר זמן מסך"
@@ -157,5 +157,8 @@
                 </StackPanel>
             </DockPanel>
         </Border>
+
+        <!-- Snackbar — floats above everything -->
+        <local:Snackbar x:Name="Snackbar" Grid.ColumnSpan="2" />
     </Grid>
 </UserControl>

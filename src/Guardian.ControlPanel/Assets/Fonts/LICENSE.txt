@@ -1,7 +1,0 @@
-Fonts in this directory are licensed under the SIL Open Font License (OFL).
-Download the actual font files from Google Fonts:
-- Assistant: https://fonts.google.com/specimen/Assistant
-- Frank Ruhl Libre: https://fonts.google.com/specimen/Frank+Ruhl+Libre
-- IBM Plex Mono: https://fonts.google.com/specimen/IBM+Plex+Mono
-
-Full license text: https://scripts.sil.org/OFL
