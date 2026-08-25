@@ -65,19 +65,13 @@ public partial class MainWindow : Window
             var data = System.Text.Json.JsonSerializer.Deserialize<WindowStateData>(json);
             if (data is null) return;
 
-            var screen = SystemParameters.WorkArea;
-            // Validate saved position is within a connected screen
-            var anyScreen = false;
-            foreach (var s in System.Windows.Forms.Screen.AllScreens)
+            var workArea = SystemParameters.WorkArea;
+            // Validate saved position is within a connected screen (basic check)
+            if (data.Left < workArea.Left - 200 || data.Top < workArea.Top - 200
+                || data.Left > workArea.Right + 200 || data.Top > workArea.Bottom + 200)
             {
-                if (data.Left >= s.Bounds.Left && data.Left < s.Bounds.Right
-                    && data.Top >= s.Bounds.Top && data.Top < s.Bounds.Bottom)
-                {
-                    anyScreen = true;
-                    break;
-                }
+                return; // Screen disconnected, keep default
             }
-            if (!anyScreen) return; // Screen disconnected, keep default
 
             Width = Math.Max(MinWidth, data.Width);
             Height = Math.Max(MinHeight, data.Height);
