@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Guardian.ControlPanel.Dialogs.WizardSteps
+namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 {
     public partial class StepType : UserControl
     {

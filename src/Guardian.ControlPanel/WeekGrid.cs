@@ -65,6 +65,53 @@ public sealed class WeekGrid : FrameworkElement
 
     public void Refresh() => Rebuild();
 
+    /// <summary>Clear every cell in the grid.</summary>
+    public void ClearAll()
+    {
+        _blocked.Clear();
+        InvalidateVisual();
+        ScheduleChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Select every cell in the grid (all days, all 24 hours).</summary>
+    public void SelectAll()
+    {
+        foreach (var day in Days)
+            for (var hour = 0; hour < 24; hour++)
+                _blocked.Add((day, hour));
+        InvalidateVisual();
+        ScheduleChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Whether the cell at the given day index (0=Sunday) and hour is selected.</summary>
+    public bool IsSelected(int dayIndex, int hour)
+        => dayIndex is >= 0 and < 7 && hour is >= 0 and < 24
+           && _blocked.Contains((Days[dayIndex], hour));
+
+    /// <summary>Number of selected hours across all days.</summary>
+    public int BlockedHourCount => _blocked.Count;
+
+    /// <summary>
+    /// Select the hours [startHour, endHour) for one day. When startHour &gt;= endHour
+    /// the range crosses midnight (e.g. 22:00 to 07:00).
+    /// </summary>
+    public void SetDayHours(int dayIndex, int startHour, int endHour)
+    {
+        if (dayIndex is < 0 or >= 7) return;
+        var day = Days[dayIndex];
+        if (startHour < endHour)
+        {
+            for (var h = startHour; h < endHour; h++) _blocked.Add((day, h));
+        }
+        else
+        {
+            for (var h = startHour; h < 24; h++) _blocked.Add((day, h));
+            for (var h = 0; h < endHour; h++) _blocked.Add((day, h));
+        }
+        InvalidateVisual();
+        ScheduleChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public List<ScheduleWindow> ToScheduleWindows()
     {
         var result = new List<ScheduleWindow>();

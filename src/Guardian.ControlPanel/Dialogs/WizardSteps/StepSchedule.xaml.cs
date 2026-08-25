@@ -2,7 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Guardian.ControlPanel.Dialogs.WizardSteps
+namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 {
     public partial class StepSchedule : UserControl
     {
@@ -12,6 +12,9 @@ namespace Guardian.ControlPanel.Dialogs.WizardSteps
 
         private bool _suppressEvents;
 
+        public string StartTime => $"{TxtStartHour.Text.PadLeft(2, '0')}:{TxtStartMin.Text.PadLeft(2, '0')}";
+        public string EndTime => $"{TxtEndHour.Text.PadLeft(2, '0')}:{TxtEndMin.Text.PadLeft(2, '0')}";
+
         public StepSchedule()
         {
             InitializeComponent();
@@ -20,7 +23,6 @@ namespace Guardian.ControlPanel.Dialogs.WizardSteps
 
         /// <summary>
         /// Apply a preset schedule to the WeekGrid.
-        /// Called by StepConfirm to apply shortcuts.
         /// </summary>
         public void ApplyPreset(string preset)
         {
@@ -29,19 +31,20 @@ namespace Guardian.ControlPanel.Dialogs.WizardSteps
             switch (preset)
             {
                 case "shabbat":
-                    // Friday evening to Saturday evening
+                    // Friday 18:00 – Saturday 20:00
                     ScheduleGrid.ClearAll();
-                    ScheduleGrid.SetRange(5, 18, 6, 20, true); // Friday 18:00 – Saturday 20:00
+                    ScheduleGrid.SetDayHours(5, 18, 24);
+                    ScheduleGrid.SetDayHours(6, 0, 20);
                     break;
                 case "work":
-                    // Sunday–Thursday 9:00–17:00
+                    // Sunday–Thursday 09:00–17:00
                     ScheduleGrid.ClearAll();
-                    ScheduleGrid.SetRange(0, 9, 4, 17, true);
+                    for (var d = 0; d <= 4; d++) ScheduleGrid.SetDayHours(d, 9, 17);
                     break;
                 case "night":
                     // Every day 22:00–07:00
                     ScheduleGrid.ClearAll();
-                    ScheduleGrid.SetRange(0, 22, 6, 7, true);
+                    for (var d = 0; d <= 6; d++) ScheduleGrid.SetDayHours(d, 22, 7);
                     break;
                 case "all":
                     ScheduleGrid.SelectAll();
@@ -60,76 +63,59 @@ namespace Guardian.ControlPanel.Dialogs.WizardSteps
             }
         }
 
-        private void TimeExpander_Expanded(object sender, RoutedEventArgs e) { }
-
-        private void TimeExpander_Collapsed(object sender, RoutedEventArgs e) { }
+        private void TimeToggle_Click(object sender, RoutedEventArgs e)
+        {
+            var show = TimePanel.Visibility != Visibility.Visible;
+            TimePanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            TimeToggle.Content = show ? "שעות מדויקות ▴" : "שעות מדויקות ▾";
+        }
 
         /// <summary>
         /// Get the schedule summary for Step 3 confirmation.
         /// </summary>
         public string GetSummary()
         {
-            var stats = ScheduleGrid.GetStats();
-            if (stats.TotalHours == 0) return "לא נבחרו שעות";
-
-            var dayNames = new[] { "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳" };
-            int firstDay = -1, lastDay = -1, firstHour = -1, lastHour = -1;
-
-            for (int d = 0; d < 7; d++)
-            {
-                for (int h = 0; h < 24; h++)
-                {
-                    if (ScheduleGrid.IsSelected(d, h))
-                    {
-                        if (firstDay == -1) firstDay = d;
-                        lastDay = d;
-                        if (firstHour == -1 || h < firstHour) firstHour = h;
-                        if (h > lastHour) lastHour = h;
-                    }
-                }
-            }
-
-            string days = firstDay == lastDay
-                ? dayNames[firstDay]
-                : $"{dayNames[firstDay]}–{dayNames[lastDay]}";
-
-            string start = $"{firstHour:D2}:00";
-            string end = $"{lastHour:D2}:00";
-
-            return $"{days} · {start}–{end} · {stats.TotalHours} שעות";
+            if (ScheduleGrid.BlockedHourCount == 0) return "לא נבחרו שעות";
+            return BuildSummaryText();
         }
 
         private void UpdateSummary()
         {
-            var stats = ScheduleGrid.GetStats();
-            if (stats.TotalHours == 0)
+            if (ScheduleGrid.BlockedHourCount == 0)
             {
                 SummaryText.Text = "בחר שעות ברשת למעלה או באמצעות קיצור דרך";
                 return;
             }
+            SummaryText.Text = BuildSummaryText();
+        }
 
+        private string BuildSummaryText()
+        {
             var dayNames = new[] { "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳" };
-            int firstDay = -1, lastDay = -1, firstHour = -1, lastHour = -1;
+            var firstDay = -1;
+            var lastDay = -1;
+            var firstHour = -1;
+            var lastHour = -1;
 
-            for (int d = 0; d < 7; d++)
+            for (var d = 0; d < 7; d++)
             {
-                for (int h = 0; h < 24; h++)
+                for (var h = 0; h < 24; h++)
                 {
-                    if (ScheduleGrid.IsSelected(d, h))
-                    {
-                        if (firstDay == -1) firstDay = d;
-                        lastDay = d;
-                        if (firstHour == -1 || h < firstHour) firstHour = h;
-                        if (h > lastHour) lastHour = h;
-                    }
+                    if (!ScheduleGrid.IsSelected(d, h)) continue;
+                    if (firstDay == -1) firstDay = d;
+                    lastDay = d;
+                    if (firstHour == -1 || h < firstHour) firstHour = h;
+                    if (h > lastHour) lastHour = h;
                 }
             }
 
-            string days = firstDay == lastDay
+            if (firstDay == -1) return "לא נבחרו שעות";
+
+            var days = firstDay == lastDay
                 ? dayNames[firstDay]
                 : $"{dayNames[firstDay]}–{dayNames[lastDay]}";
 
-            SummaryText.Text = $"נבחרו {stats.TotalHours} שעות · {days} · {firstHour:D2}:00–{lastHour:D2}:00";
+            return $"נבחרו {ScheduleGrid.BlockedHourCount} שעות · {days} · {firstHour:D2}:00–{lastHour:D2}:00";
         }
     }
 }

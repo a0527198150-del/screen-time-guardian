@@ -1,12 +1,12 @@
-<UserControl x:Class="Guardian.ControlPanel.Dialogs.WizardSteps.StepType"
+<UserControl x:Class="ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps.StepType"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Guardian.ControlPanel">
+             xmlns:local="clr-namespace:ScreenTimeGuardian.ControlPanel">
 
-    <StackPanel x:Root="Root">
+    <StackPanel>
 
         <!-- Error message (hidden by default) -->
-        <Border x:Name="ErrorBorder" Background="#FDECEA" CornerRadius="6"
+        <Border x:Name="ErrorBorder" Background="#26A93226" CornerRadius="6"
                 Padding="12" Margin="0,0,0,16" Visibility="Collapsed">
             <TextBlock x:Name="ErrorText" Text="בחר סוג כלל"
                        Foreground="{StaticResource BrushRose}"

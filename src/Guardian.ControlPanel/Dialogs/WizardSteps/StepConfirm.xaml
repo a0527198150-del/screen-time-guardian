@@ -1,9 +1,9 @@
-<UserControl x:Class="Guardian.ControlPanel.Dialogs.WizardSteps.StepConfirm"
+<UserControl x:Class="ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps.StepConfirm"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Guardian.ControlPanel">
+             xmlns:local="clr-namespace:ScreenTimeGuardian.ControlPanel">
 
-    <StackPanel x:Root="Root" Margin="0,0,0,0">
+    <StackPanel Margin="0,0,0,0">
 
         <!-- Confirmation text -->
         <TextBlock x:Name="ConfirmationText"

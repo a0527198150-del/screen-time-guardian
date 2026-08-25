@@ -2,7 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Guardian.ControlPanel.Dialogs.WizardSteps
+namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 {
     public partial class StepConfirm : UserControl
     {
