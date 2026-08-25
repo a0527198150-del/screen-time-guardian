@@ -77,6 +77,16 @@ jobs:
             $size = (Get-Item $file).Length
             Write-Host "OK $file ($([math]::Round($size / 1MB, 1)) MB)"
           }
+          # Syntax-check all PowerShell installer scripts
+          foreach ($psFile in (Get-ChildItem -Path package -Recurse -Filter *.ps1)) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($psFile.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              throw "PowerShell syntax error in $($psFile.FullName): $($errors[0].Message)"
+            }
+            Write-Host "OK PS $($psFile.FullName)"
+          }
           Write-Host 'Package structure verified.'
 
       - name: Create ZIP

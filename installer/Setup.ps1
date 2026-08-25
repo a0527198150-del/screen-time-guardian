@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.5.0'
+$script:Version     = '0.5.1'
 $script:AppName     = 'Screen Time Guardian'
 $script:AppNameHeb  = 'שומר זמן מסך'
 
@@ -345,6 +345,35 @@ if ($Uninstall) {
 # =============================================================================
 Assert-Admin
 
+# ---- Normalize package layout ------------------------------------------------
+# החבילה מאורגנת בשמות מלאים (ScreenTimeGuardian.Service\ וכו'), אבל חלק מהחלקים
+# של המתקין משתמשים בשמות קצרים (Service\ וכו'). יוצר תיקיות קצרות אם חסרות.
+$componentFolders = @(
+    @{ Short = 'Service';       Full = 'ScreenTimeGuardian.Service' },
+    @{ Short = 'ControlPanel';  Full = 'ScreenTimeGuardian.ControlPanel' },
+    @{ Short = 'NativeHost';    Full = 'ScreenTimeGuardian.NativeHost' },
+    @{ Short = 'Agent';         Full = 'ScreenTimeGuardian.Agent' },
+    @{ Short = 'LaunchBlocker'; Full = 'ScreenTimeGuardian.LaunchBlocker' },
+    @{ Short = 'Updater';       Full = 'ScreenTimeGuardian.Updater' }
+)
+
+foreach ($pair in $componentFolders) {
+    $shortPath = Join-Path $SourceFolder $pair.Short
+    $fullPath  = Join-Path $SourceFolder $pair.Full
+    if (-not (Test-Path $shortPath -PathType Container) -and (Test-Path $fullPath -PathType Container)) {
+        New-Item -ItemType Directory -Force -Path $shortPath | Out-Null
+        Copy-Item -Path (Join-Path $fullPath '*') -Destination $shortPath -Recurse -Force
+    }
+}
+
+# הבנייה מייצרת קובץ .exe יחיד (PublishSingleFile) — יוצר עותק .dll
+# כדי שבדיקות תקינות החבילה והסקריפטים הישנים יעבדו.
+$serviceExePath = Join-Path $SourceFolder 'Service\ScreenTimeGuardian.Service.exe'
+$serviceDllPath = Join-Path $SourceFolder 'Service\ScreenTimeGuardian.Service.dll'
+if (-not (Test-Path $serviceDllPath -PathType Leaf) -and (Test-Path $serviceExePath -PathType Leaf)) {
+    Copy-Item -Path $serviceExePath -Destination $serviceDllPath -Force
+}
+
 Write-Header "$AppNameHeb — התקנה v$Version"
 
 # ---- 1. Validate package ---------------------------------------------------
@@ -409,7 +438,12 @@ if ($sourceFull -eq $targetFull) {
 else {
     Write-Host "  מעתיק אל $InstallRoot..."
     if (Test-Path $InstallRoot) {
-        Remove-Item -Path $InstallRoot -Recurse -Force
+        # עוצר תהליכים שעשויים לנעול קבצים (סוכן/לוח בקרה)
+        Get-Process -ErrorAction SilentlyContinue | Where-Object {
+            $_.ProcessName -match '^ScreenTimeGuardian\.(Agent|ControlPanel|NativeHost|Updater)$'
+        } | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        Remove-Item -Path $InstallRoot -Recurse -Force -ErrorAction Stop
     }
     Copy-Item -Path $SourceFolder -Destination $InstallRoot -Recurse -Force
     Write-Step 'הקבצים הועתקו.'
@@ -433,38 +467,48 @@ Write-Step 'השירות הותקן והופעל.'
 
 # ---- 7. Register NativeHost (auto — no questions) --------------------------
 Write-Host '  רושם את Native Messaging Host...'
-$extensionData = ''
 $manifestPath = Join-Path $SourceFolder 'Extension\manifest.json'
-if (Test-Path $manifestPath) {
-    $extensionData = [System.IO.File]::ReadAllText($manifestPath)
+$registerScript = Join-Path $policiesDir 'Register-NativeHost.ps1'
+
+# מחשב את מזהה התוסף (32 תווים a-p) מה-key שב-manifest.json —
+# אותו אלגוריתם שבו Chrome גוזר את ה-ID מהמפתח הציבורי.
+$extensionId = ''
+if (Test-Path $manifestPath -PathType Leaf) {
+    try {
+        $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+        if ($manifest.key) {
+            $keyBytes = [Convert]::FromBase64String($manifest.key)
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            try {
+                $hash = $sha.ComputeHash($keyBytes)
+            }
+            finally {
+                $sha.Dispose()
+            }
+            $extensionId = -join ($hash[0..15] | ForEach-Object {
+                [char]([int][char]'a' + ($_ -shr 4))
+                [char]([int][char]'a' + ($_ -band 0x0f))
+            })
+        }
+    }
+    catch {
+        $extensionId = ''
+    }
 }
 
-$registerScript = Join-Path $policiesDir 'Register-NativeHost.ps1'
-$nativeRegistered = $false
-
-if ($extensionData -match 'EXTENSION_ID_PLACEHOLDER') {
-    Write-Warn 'מזהי התוסף עדיין לא הוגדרו (EXTENSION_ID_PLACEHOLDER).'
+if (-not $extensionId) {
+    Write-Warn 'לא ניתן היה לחשב את מזהה התוסף (key חסר ב-manifest).'
     Write-Warn 'הרץ Register-NativeHost.ps1 ידנית לאחר התקנת התוסף.'
 }
 else {
-    # Try auto-register
-    $pemPath = Join-Path $InstallRoot 'Extension.pem'
-    if (Test-Path $pemPath -PathType Leaf) {
-        & $registerScript -KeyPath $pemPath 2>&1 | Out-Null
-        $nativeRegistered = $true
+    try {
+        & $registerScript -ExtensionId $extensionId -EdgeExtensionId $extensionId 2>&1 | Out-Null
+        Write-Step "Native Messaging Host נרשם (מזהה תוסף $extensionId)."
     }
-    else {
-        # Try direct registration without PEM
-        & $registerScript 2>&1 | Out-Null
-        $nativeRegistered = $true
+    catch {
+        Write-Warn "רישום NativeHost נכשל: $($_.Exception.Message)"
+        Write-Warn 'הרץ Register-NativeHost.ps1 ידנית לאחר ההתקנה.'
     }
-}
-
-if ($nativeRegistered) {
-    Write-Step 'Native Messaging Host נרשם.'
-}
-else {
-    Write-Warn 'רישום NativeHost ידרש ידנית.'
 }
 
 # ---- 8. Agent (auto — always install) ---------------------------------------
