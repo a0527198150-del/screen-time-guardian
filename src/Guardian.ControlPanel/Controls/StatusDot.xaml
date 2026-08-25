@@ -5,7 +5,24 @@
     <StackPanel Orientation="Horizontal">
         <Ellipse x:Name="Dot" Width="10" Height="10"
                  Fill="{StaticResource BrushTeal}"
-                 VerticalAlignment="Center" Margin="0,0,10,0" />
+                 VerticalAlignment="Center" Margin="0,0,10,0">
+            <Ellipse.Triggers>
+                <EventTrigger RoutedEvent="Loaded">
+                    <BeginStoryboard>
+                        <Storyboard x:Name="PulseStoryboard" AutoReverse="True"
+                                    RepeatBehavior="Forever">
+                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                             From="1.0" To="0.55"
+                                             Duration="0:0:1.2">
+                                <DoubleAnimation.EasingFunction>
+                                    <SineEase EasingMode="EaseInOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Ellipse.Triggers>
+        </Ellipse>
         <TextBlock x:Name="Label" Style="{StaticResource TypeBody}"
                    Foreground="{StaticResource BrushInkMuted}"
                    VerticalAlignment="Center" />

@@ -7,6 +7,8 @@ namespace ScreenTimeGuardian.ControlPanel;
 
 public partial class HomeView : UserControl
 {
+    public event EventHandler? NewRuleRequested;
+
     public HomeView()
     {
         InitializeComponent();
@@ -15,6 +17,21 @@ public partial class HomeView : UserControl
     public void Show(ConfigurationDocument configuration, GuardianStatus? status,
         IReadOnlyList<UpcomingEvent>? upcoming)
     {
+        var totalRules = configuration.Applications.Count
+            + configuration.Websites.Count
+            + configuration.GoogleAccounts.Count;
+
+        // First-run: show welcome card, hide everything else
+        if (totalRules == 0)
+        {
+            WelcomeCard.Visibility = Visibility.Visible;
+            NormalContent.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        WelcomeCard.Visibility = Visibility.Collapsed;
+        NormalContent.Visibility = Visibility.Visible;
+
         var safe = status?.SafeMode == true;
         var active = status?.EnforcementActive == true;
 
@@ -92,5 +109,10 @@ public partial class HomeView : UserControl
         if (remaining.TotalMinutes >= 1)
             return $"{(int)remaining.TotalMinutes} דקות";
         return $"{Math.Max(1, (int)remaining.TotalSeconds)} שניות";
+    }
+
+    private void WelcomeNewRule_Click(object sender, RoutedEventArgs e)
+    {
+        NewRuleRequested?.Invoke(this, EventArgs.Empty);
     }
 }

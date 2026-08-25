@@ -72,7 +72,8 @@
                 <!-- Navigation items -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
                     <Border x:Name="NavHome" Cursor="Hand" Padding="0"
-                            CornerRadius="0" Margin="0,0,0,2">
+                            CornerRadius="0" Margin="0,0,0,2"
+                            AutomationProperties.Name="בית">
                         <Border.Background>
                             <SolidColorBrush x:Name="NavHomeBg" Color="Transparent" />
                         </Border.Background>
@@ -100,7 +101,8 @@
                     </Border>
 
                     <Border x:Name="NavRules" Cursor="Hand" Padding="0"
-                            CornerRadius="0" Margin="0,0,0,2">
+                            CornerRadius="0" Margin="0,0,0,2"
+                            AutomationProperties.Name="כללים">
                         <Border.Background>
                             <SolidColorBrush x:Name="NavRulesBg" Color="Transparent" />
                         </Border.Background>
@@ -128,7 +130,8 @@
                     </Border>
 
                     <Border x:Name="NavSettings" Cursor="Hand" Padding="0"
-                            CornerRadius="0" Margin="0,0,0,2">
+                            CornerRadius="0" Margin="0,0,0,2"
+                            AutomationProperties.Name="הגדרות">
                         <Border.Background>
                             <SolidColorBrush x:Name="NavSettingsBg" Color="Transparent" />
                         </Border.Background>

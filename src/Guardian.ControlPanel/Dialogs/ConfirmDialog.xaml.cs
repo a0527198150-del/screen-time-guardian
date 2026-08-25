@@ -5,22 +5,33 @@ namespace ScreenTimeGuardian.ControlPanel;
 
 public partial class ConfirmDialog : Window
 {
+    public string Title
+    {
+        get => DialogTitle.Text;
+        set => DialogTitle.Text = value;
+    }
+
+    public string Message
+    {
+        get => DialogMessage.Text;
+        set => DialogMessage.Text = value;
+    }
+
+    public string ConfirmText
+    {
+        get => (string)ConfirmButton.Content;
+        set => ConfirmButton.Content = value;
+    }
+
+    public string CancelText
+    {
+        get => (string)CancelButton.Content;
+        set => CancelButton.Content = value;
+    }
+
     public ConfirmDialog()
     {
         InitializeComponent();
-    }
-
-    public void Configure(string title, string message, string confirmText = "אישור",
-        bool isDanger = false)
-    {
-        DialogTitle.Text = title;
-        DialogMessage.Text = message;
-        ConfirmButton.Content = confirmText;
-        if (isDanger)
-        {
-            ConfirmButton.Style = (Style)FindResource("ButtonPrimary");
-            ConfirmButton.Foreground = System.Windows.Media.Brushes.White;
-        }
     }
 
     private void Overlay_Click(object sender, MouseButtonEventArgs e) => Close();

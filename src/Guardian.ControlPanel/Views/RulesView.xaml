@@ -15,20 +15,28 @@
                        VerticalAlignment="Center" />
         </DockPanel>
 
-        <!-- Filter tags -->
-        <WrapPanel Margin="0,0,0,20">
-            <RadioButton x:Name="FilterAll" Content="הכל" Style="{StaticResource FilterTag}"
-                         IsChecked="True" Checked="Filter_Changed" />
-            <RadioButton x:Name="FilterApps" Content="אפליקציות"
-                         Style="{StaticResource FilterTag}"
-                         Checked="Filter_Changed" />
-            <RadioButton x:Name="FilterSites" Content="אתרים"
-                         Style="{StaticResource FilterTag}"
-                         Checked="Filter_Changed" />
-            <RadioButton x:Name="FilterAccounts" Content="חשבונות"
-                         Style="{StaticResource FilterTag}"
-                         Checked="Filter_Changed" />
-        </WrapPanel>
+        <!-- Filter tags + search row -->
+        <StackPanel Margin="0,0,0,20">
+            <WrapPanel Margin="0,0,0,0">
+                <RadioButton x:Name="FilterAll" Content="הכל" Style="{StaticResource FilterTag}"
+                             IsChecked="True" Checked="Filter_Changed" />
+                <RadioButton x:Name="FilterApps" Content="אפליקציות"
+                             Style="{StaticResource FilterTag}"
+                             Checked="Filter_Changed" />
+                <RadioButton x:Name="FilterSites" Content="אתרים"
+                             Style="{StaticResource FilterTag}"
+                             Checked="Filter_Changed" />
+                <RadioButton x:Name="FilterAccounts" Content="חשבונות"
+                             Style="{StaticResource FilterTag}"
+                             Checked="Filter_Changed" />
+            </WrapPanel>
+
+            <!-- Search field — visible only when >8 rules -->
+            <TextBox x:Name="SearchBox" Visibility="Collapsed"
+                     Height="36" FontSize="13" Margin="0,8,0,0"
+                     FlowDirection="LeftToRight"
+                     TextChanged="SearchBox_TextChanged" />
+        </StackPanel>
 
         <!-- Rules list -->
         <ItemsControl x:Name="RulesList">
@@ -55,6 +63,12 @@
                         HorizontalAlignment="Center" Height="44" Padding="20,0" />
             </StackPanel>
         </Border>
+
+        <!-- Keyboard shortcut hint -->
+        <TextBlock x:Name="ShortcutHint" Visibility="Collapsed"
+                   Text="Ctrl+N = כלל חדש"
+                   Style="{StaticResource TypeMeta}"
+                   HorizontalAlignment="Right" Margin="0,8,0,0" />
 
     </StackPanel>
 </UserControl>

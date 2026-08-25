@@ -6,56 +6,78 @@
 
     <StackPanel Margin="0,0,0,24">
 
-        <!-- 1. Status Card — The largest block -->
-        <Border x:Name="StatusCard" Style="{StaticResource Card}"
-                Margin="0,0,0,24">
-            <StackPanel>
-                <TextBlock x:Name="StatusTitle" Style="{StaticResource TypeDisplay}"
-                           Text="הכל פתוח כרגע" Margin="0,0,0,8" />
-                <TextBlock x:Name="StatusReason" Style="{StaticResource TypeBody}"
+        <!-- First-run welcome card -->
+        <Border x:Name="WelcomeCard" Style="{StaticResource Card}"
+                Margin="0,0,0,24" Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center" Margin="0,32">
+                <TextBlock Text="ברוך הבא" Style="{StaticResource TypeDisplay}"
+                           HorizontalAlignment="Center" Margin="0,0,0,12" />
+                <TextBlock Text="נתחיל מכלל אחד. אפשר להוסיף עוד בכל שלב."
+                           Style="{StaticResource TypeBody}"
                            Foreground="{StaticResource BrushInkMuted}"
-                           TextWrapping="Wrap" />
+                           HorizontalAlignment="Center" Margin="0,0,0,24" />
+                <Button x:Name="WelcomeNewRuleButton" Content="➕ כלל ראשון"
+                        Style="{StaticResource ButtonPrimary}"
+                        Click="WelcomeNewRule_Click"
+                        HorizontalAlignment="Center" Height="44" Padding="20,0" />
             </StackPanel>
         </Border>
 
-        <!-- 2. Active Blocks — flat rows -->
-        <Border Style="{StaticResource Card}" Margin="0,0,0,24">
-            <StackPanel>
-                <TextBlock Style="{StaticResource TypeTitle}" Text="חסום כרגע"
-                           Margin="0,0,0,12" />
-                <ListBox x:Name="ActiveBlocksList" BorderThickness="0"
-                         Background="Transparent" />
-                <TextBlock x:Name="NoActiveText" Style="{StaticResource TypeBody}"
-                           Foreground="{StaticResource BrushInkMuted}"
-                           Text="אין חסימות פעילות כרגע" Margin="0,8,0,0"
-                           Visibility="Visible" />
-            </StackPanel>
-        </Border>
+        <!-- Normal home content (hidden on first-run) -->
+        <StackPanel x:Name="NormalContent">
 
-        <!-- 3. WeekGrid — read-only, updates every minute -->
-        <Border Style="{StaticResource Card}" Margin="0,0,0,24">
-            <StackPanel>
-                <TextBlock Style="{StaticResource TypeTitle}" Text="לוח השבוע"
-                           Margin="0,0,0,4" />
-                <TextBlock Style="{StaticResource TypeMeta}"
-                           Text="תצוגה לקריאה בלבד של כל החסימות"
-                           Margin="0,0,0,12" />
-                <local:WeekGrid x:Name="StatusWeekGrid" Height="420" MinHeight="340"
-                                IsHitTestVisible="False" />
-            </StackPanel>
-        </Border>
+            <!-- 1. Status Card — The largest block -->
+            <Border x:Name="StatusCard" Style="{StaticResource Card}"
+                    Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock x:Name="StatusTitle" Style="{StaticResource TypeDisplay}"
+                               Text="הכל פתוח כרגע" Margin="0,0,0,8" />
+                    <TextBlock x:Name="StatusReason" Style="{StaticResource TypeBody}"
+                               Foreground="{StaticResource BrushInkMuted}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
 
-        <!-- 4. Upcoming — one sentence from UpcomingCalculator -->
-        <Border Style="{StaticResource Card}">
-            <StackPanel>
-                <TextBlock Style="{StaticResource TypeTitle}" Text="הבא בתור"
-                           Margin="0,0,0,8" />
-                <TextBlock x:Name="UpcomingText" Style="{StaticResource TypeBody}"
-                           Foreground="{StaticResource BrushInkMuted}"
-                           Text="אין אירוע מתוזמן קרוב"
-                           TextWrapping="Wrap" />
-            </StackPanel>
-        </Border>
+            <!-- 2. Active Blocks — flat rows -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource TypeTitle}" Text="חסום כרגע"
+                               Margin="0,0,0,12" />
+                    <ListBox x:Name="ActiveBlocksList" BorderThickness="0"
+                             Background="Transparent" />
+                    <TextBlock x:Name="NoActiveText" Style="{StaticResource TypeBody}"
+                               Foreground="{StaticResource BrushInkMuted}"
+                               Text="אין חסימות פעילות כרגע" Margin="0,8,0,0"
+                               Visibility="Visible" />
+                </StackPanel>
+            </Border>
+
+            <!-- 3. WeekGrid — read-only, updates every minute -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource TypeTitle}" Text="לוח השבוע"
+                               Margin="0,0,0,4" />
+                    <TextBlock Style="{StaticResource TypeMeta}"
+                               Text="תצוגה לקריאה בלבד של כל החסימות"
+                               Margin="0,0,0,12" />
+                    <local:WeekGrid x:Name="StatusWeekGrid" Height="420" MinHeight="340"
+                                    IsHitTestVisible="False" />
+                </StackPanel>
+            </Border>
+
+            <!-- 4. Upcoming — one sentence from UpcomingCalculator -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource TypeTitle}" Text="הבא בתור"
+                               Margin="0,0,0,8" />
+                    <TextBlock x:Name="UpcomingText" Style="{StaticResource TypeBody}"
+                               Foreground="{StaticResource BrushInkMuted}"
+                               Text="אין אירוע מתוזמן קרוב"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
 
     </StackPanel>
 </UserControl>

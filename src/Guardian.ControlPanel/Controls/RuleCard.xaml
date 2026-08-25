@@ -42,10 +42,12 @@
                             Margin="28,8,0,0" Visibility="Collapsed">
                     <Button Content="ערוך" Style="{StaticResource ButtonGhost}"
                             Click="EditButton_Click" Padding="12,4"
-                            Height="32" FontSize="13" />
+                            Height="32" FontSize="13"
+                            AutomationProperties.Name="ערוך כלל" />
                     <Button Content="מחק" Style="{StaticResource ButtonDanger}"
                             Click="DeleteButton_Click" Padding="12,4"
-                            Height="32" FontSize="13" Margin="4,0,0,0" />
+                            Height="32" FontSize="13" Margin="4,0,0,0"
+                            AutomationProperties.Name="מחק כלל" />
                 </StackPanel>
             </StackPanel>
 

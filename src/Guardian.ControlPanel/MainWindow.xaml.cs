@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.ServiceProcess;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ScreenTimeGuardian.Contracts;
@@ -29,6 +30,7 @@ public partial class MainWindow : Window
         ShellControl.Rules.DeleteRuleRequested += Rules_DeleteRuleRequested;
         ShellControl.Rules.ToggleRuleRequested += Rules_ToggleRuleRequested;
         ShellControl.Rules.Snackbar = ShellControl.Snackbar;
+        ShellControl.Home.NewRuleRequested += Rules_NewRuleRequested;
     }
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e)
@@ -42,53 +44,136 @@ public partial class MainWindow : Window
         Left = (screen.Width - Width) / 2 + screen.Left;
         Top = (screen.Height - Height) / 2 + screen.Top;
 
+        // Restore saved window size/position
+        LoadWindowState();
+
         SetHeaderStatus("יש להזין את סיסמת האפליקציה. בהפעלה הראשונה הסיסמה תיקבע כסיסמת הניהול.", false);
+
+        Closing += (_, _) => SaveWindowState();
+    }
+
+    private static readonly string WindowStatePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ScreenTimeGuardian", "window.json");
+
+    private void LoadWindowState()
+    {
+        try
+        {
+            if (!File.Exists(WindowStatePath)) return;
+            var json = File.ReadAllText(WindowStatePath);
+            var data = System.Text.Json.JsonSerializer.Deserialize<WindowStateData>(json);
+            if (data is null) return;
+
+            var screen = SystemParameters.WorkArea;
+            // Validate saved position is within a connected screen
+            var anyScreen = false;
+            foreach (var s in System.Windows.Forms.Screen.AllScreens)
+            {
+                if (data.Left >= s.Bounds.Left && data.Left < s.Bounds.Right
+                    && data.Top >= s.Bounds.Top && data.Top < s.Bounds.Bottom)
+                {
+                    anyScreen = true;
+                    break;
+                }
+            }
+            if (!anyScreen) return; // Screen disconnected, keep default
+
+            Width = Math.Max(MinWidth, data.Width);
+            Height = Math.Max(MinHeight, data.Height);
+            Left = data.Left;
+            Top = data.Top;
+        }
+        catch { /* corrupt file, keep defaults */ }
+    }
+
+    private void SaveWindowState()
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(WindowStatePath);
+            if (dir != null && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            var data = new WindowStateData { Width = Width, Height = Height, Left = Left, Top = Top };
+            File.WriteAllText(WindowStatePath, System.Text.Json.JsonSerializer.Serialize(data));
+        }
+        catch { /* best effort */ }
+    }
+
+    private class WindowStateData
+    {
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double Left { get; set; }
+        public double Top { get; set; }
     }
 
     // ==================== Authentication ====================
 
-    private async void AuthButton_Click(object sender, RoutedEventArgs e)
+    private bool _isBusy;
+
+    private async Task RunWithLockAsync(Func<Task> action, ButtonBase? button = null)
     {
+        if (_isBusy) return;
+        _isBusy = true;
+        var prevContent = button?.Content;
+        var prevEnabled = button?.IsEnabled;
         try
         {
-            var password = AppPasswordBox.Password;
-            ApplicationPassword.Validate(password);
-
-            var response = await _pipeClient.GetConfigurationAsync(password);
-            if (!response.Ok && response.NeedsInitialization)
-            {
-                response = await _pipeClient.InitializePasswordAsync(password);
-            }
-
-            if (!response.Ok || response.Configuration is null)
-            {
-                throw new UnauthorizedAccessException(response.Error.Length == 0
-                    ? "אימות סיסמת האפליקציה נכשל."
-                    : response.Error);
-            }
-
-            _applicationPassword = password;
-            _authenticated = true;
-            _configuration = response.Configuration;
-
-            // Show Shell, hide auth bar
-            AuthBar.Visibility = Visibility.Collapsed;
-            ShellControl.Visibility = Visibility.Visible;
-
-            // Set password for child views
-            ShellControl.Settings.SetPassword(password);
-
-            // Load data into all views
-            LoadAllViews();
-            await RefreshStatusAsync();
-
-            SetHeaderStatus("האימות הצליח.", false);
+            if (button != null) { button.IsEnabled = false; button.Content = "רגע…"; }
+            await action();
         }
-        catch (Exception ex) when (IsExpected(ex))
+        finally
         {
-            _authenticated = false;
-            SetHeaderStatus(ex.Message, true);
+            _isBusy = false;
+            if (button != null) { button.IsEnabled = true; button.Content = prevContent; }
         }
+    }
+
+    private async void AuthButton_Click(object sender, RoutedEventArgs e)
+    {
+        await RunWithLockAsync(async () =>
+        {
+            try
+            {
+                var password = AppPasswordBox.Password;
+                ApplicationPassword.Validate(password);
+
+                var response = await _pipeClient.GetConfigurationAsync(password);
+                if (!response.Ok && response.NeedsInitialization)
+                {
+                    response = await _pipeClient.InitializePasswordAsync(password);
+                }
+
+                if (!response.Ok || response.Configuration is null)
+                {
+                    throw new UnauthorizedAccessException(response.Error.Length == 0
+                        ? "אימות סיסמת האפליקציה נכשל."
+                        : response.Error);
+                }
+
+                _applicationPassword = password;
+                _authenticated = true;
+                _configuration = response.Configuration;
+
+                // Show Shell, hide auth bar
+                AuthBar.Visibility = Visibility.Collapsed;
+                ShellControl.Visibility = Visibility.Visible;
+
+                // Set password for child views
+                ShellControl.Settings.SetPassword(password);
+
+                // Load data into all views
+                LoadAllViews();
+                await RefreshStatusAsync();
+
+                SetHeaderStatus("האימות הצליח.", false);
+            }
+            catch (Exception ex) when (IsExpected(ex))
+            {
+                _authenticated = false;
+                SetHeaderStatus(ex.Message, true);
+            }
+        }, AuthButton);
     }
 
     // ==================== Load / Save ====================

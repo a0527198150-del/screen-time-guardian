@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using ScreenTimeGuardian.Contracts;
 
 namespace ScreenTimeGuardian.ControlPanel;
@@ -12,6 +13,7 @@ public partial class RulesView : UserControl
     private readonly ObservableCollection<GoogleAccountRule> _accountRules = new();
 
     private string _currentFilter = "all";
+    private string _searchText = "";
 
     public event EventHandler? NewRuleRequested;
     public event EventHandler<ApplicationRule>? EditAppRuleRequested;
@@ -37,6 +39,11 @@ public partial class RulesView : UserControl
         foreach (var rule in config.Websites) _siteRules.Add(rule);
         foreach (var rule in config.GoogleAccounts) _accountRules.Add(rule);
 
+        // Show search when >8 rules
+        var totalRules = _appRules.Count + _siteRules.Count + _accountRules.Count;
+        SearchBox.Visibility = totalRules > 8 ? Visibility.Visible : Visibility.Collapsed;
+        ShortcutHint.Visibility = totalRules > 0 ? Visibility.Visible : Visibility.Collapsed;
+
         ApplyFilter();
     }
 
@@ -54,6 +61,19 @@ public partial class RulesView : UserControl
                 .Concat(_accountRules.Cast<ScheduledRule>())
         };
 
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(_searchText))
+        {
+            var search = _searchText.Trim().ToLowerInvariant();
+            items = items.Where(r => MatchesSearch(r, search));
+        }
+
+        // Sort: active first, enabled-not-active second, disabled last (with 55% opacity)
+        var now = DateTimeOffset.Now;
+        items = items
+            .OrderBy(r => r.IsActive(now) ? 0 : r.Enabled ? 1 : 2)
+            .ThenBy(r => GetNameForSort(r));
+
         foreach (var rule in items)
         {
             var card = new RuleCard();
@@ -61,10 +81,41 @@ public partial class RulesView : UserControl
             card.EditRequested += (_, _) => OnEditRequested(rule);
             card.DeleteRequested += (_, _) => OnDeleteRequested(rule);
             card.ToggleChanged += (_, _) => ToggleRuleRequested?.Invoke(this, rule);
+
+            // Disabled rules get 55% opacity
+            if (!rule.Enabled)
+                card.Opacity = 0.55;
+
             RulesList.Items.Add(card);
         }
 
         EmptyState.Visibility = RulesList.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static bool MatchesSearch(ScheduledRule rule, string search)
+    {
+        var name = (rule.Name ?? "").ToLowerInvariant();
+        if (name.Contains(search)) return true;
+
+        var identifier = rule switch
+        {
+            WebsiteRule w => w.Domain,
+            GoogleAccountRule a => a.Email,
+            ApplicationRule app => string.Join(" ", app.Targets.Select(t => t.DisplayName)),
+            _ => ""
+        };
+        return identifier.ToLowerInvariant().Contains(search);
+    }
+
+    private static string GetNameForSort(ScheduledRule rule)
+    {
+        return rule switch
+        {
+            ApplicationRule app => app.Name ?? "",
+            WebsiteRule site => site.Domain ?? "",
+            GoogleAccountRule acct => acct.Email ?? "",
+            _ => ""
+        };
     }
 
     private void OnEditRequested(ScheduledRule rule)
@@ -119,6 +170,18 @@ public partial class RulesView : UserControl
             : FilterAccounts.IsChecked == true ? "accounts"
             : "all";
         ApplyFilter();
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _searchText = SearchBox.Text;
+        ApplyFilter();
+    }
+
+    public void ClearSearch()
+    {
+        SearchBox.Text = "";
+        _searchText = "";
     }
 
     private void NewRule_Click(object sender, RoutedEventArgs e)

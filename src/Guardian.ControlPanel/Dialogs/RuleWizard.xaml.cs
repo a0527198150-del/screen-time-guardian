@@ -38,6 +38,7 @@ public partial class RuleWizard : Window
 
     // Result
     public ScheduledRule? Result { get; private set; }
+    private bool _hasChanges;
 
     public RuleWizard()
     {
@@ -45,7 +46,7 @@ public partial class RuleWizard : Window
         ShowStep1();
     }
 
-    private void Overlay_Click(object sender, MouseButtonEventArgs e) => Close();
+    private void Overlay_Click(object sender, MouseButtonEventArgs e) => PromptClose();
 
     private void Back_Click(object sender, RoutedEventArgs e)
     {
@@ -53,7 +54,22 @@ public partial class RuleWizard : Window
         else if (_step == 3) ShowStep2();
     }
 
-    private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
+    private void Cancel_Click(object sender, RoutedEventArgs e) => PromptClose();
+
+    private void PromptClose()
+    {
+        if (!_hasChanges) { Close(); return; }
+
+        var dialog = new ConfirmDialog
+        {
+            Title = "לצWithoutלשמור?",
+            Message = "יש לך שינויים שלא נשמרו. לצאת?",
+            ConfirmText = "צא",
+            CancelText = " המשך לערוך"
+        };
+        if (dialog.ShowDialog() == true)
+            Close();
+    }
 
     private void Next_Click(object sender, RoutedEventArgs e)
     {
@@ -76,6 +92,7 @@ public partial class RuleWizard : Window
                 return;
             }
             if (_step1Error is not null) _step1Error.Visibility = Visibility.Collapsed;
+            _hasChanges = true;
             ShowStep2();
         }
         else if (_step == 2)

@@ -1,5 +1,6 @@
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace ScreenTimeGuardian.ControlPanel;
 
@@ -12,11 +13,27 @@ public partial class StatusDot : UserControl
     public StatusDot()
     {
         InitializeComponent();
+        // Pulse is started by the Loaded EventTrigger in XAML by default.
+        // We'll stop it immediately and control it from code.
+        PulseStoryboard.Stop(Dot);
+        Dot.Opacity = 1.0;
     }
 
     public void Update(bool active, bool safeMode, string label)
     {
         Dot.Fill = safeMode ? AmberBrush : active ? TealBrush : GrayBrush;
         Label.Text = label;
+
+        // Pulse only when enforcement is active (not safe mode, not disabled)
+        if (active && !safeMode)
+        {
+            Dot.Opacity = 1.0;
+            PulseStoryboard.Begin(Dot, true);
+        }
+        else
+        {
+            PulseStoryboard.Stop(Dot);
+            Dot.Opacity = 1.0;
+        }
     }
 }
