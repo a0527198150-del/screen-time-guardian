@@ -150,10 +150,10 @@ function Test-LegacyGuardianExtensionSettings {
 
         $wildcard = $settings.PSObject.Properties['*'].Value
         $guardian = $settings.PSObject.Properties[$Browser.Id].Value
-        return $wildcard.installation_mode -eq 'blocked'
-            -and $guardian.installation_mode -eq 'force_installed'
-            -and ([string]::IsNullOrWhiteSpace([string]$Browser.Update)
-                -or $guardian.update_url -eq $Browser.Update)
+        return $wildcard.installation_mode -eq 'blocked' -and
+            $guardian.installation_mode -eq 'force_installed' -and
+            ([string]::IsNullOrWhiteSpace([string]$Browser.Update) -or
+                $guardian.update_url -eq $Browser.Update)
     }
     catch {
         return $false
