@@ -1,0 +1,91 @@
+name: full-package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore ScreenTimeGuardian.sln --runtime win-x64
+
+      - name: Publish all components
+        shell: pwsh
+        run: |
+          $projects = @(
+            'src/Guardian.Service/Guardian.Service.csproj',
+            'src/Guardian.ControlPanel/Guardian.ControlPanel.csproj',
+            'src/Guardian.Agent/Guardian.Agent.csproj',
+            'src/Guardian.NativeHost/Guardian.NativeHost.csproj',
+            'src/Guardian.LaunchBlocker/Guardian.LaunchBlocker.csproj',
+            'src/Guardian.Updater/Guardian.Updater.csproj'
+          )
+          foreach ($project in $projects) {
+            $dir = Split-Path (Split-Path $project -Parent) -Leaf
+            $name = (Select-String -Path $project -Pattern '<AssemblyName>(.*?)</AssemblyName>').Matches[0].Groups[1].Value
+            Write-Host "Publishing $name from $project"
+            dotnet publish $project --configuration Release --runtime win-x64 `
+              --self-contained true --output "package/$name" --no-restore `
+              /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+            if ($LASTEXITCODE -ne 0) { throw "Publish failed for $project" }
+          }
+          Write-Host 'All components published.'
+
+      - name: Copy policies, extension and installer
+        shell: pwsh
+        run: |
+          Copy-Item -Path policies -Destination package\Policies -Recurse -Force
+          Copy-Item -Path extension -Destination package\Extension -Recurse -Force
+          Copy-Item -Path installer -Destination package\installer -Recurse -Force
+          Copy-Item -Path src\Guardian.NativeHost\NativeHost.manifest.json -Destination package\NativeHost\ -Force
+          Copy-Item -Path src\Guardian.ControlPanel\icon.ico -Destination package\ControlPanel\ -Force
+          # Copy installer scripts to the root of the package for convenience
+          Copy-Item installer\Install.cmd package\ -Force
+          Copy-Item installer\Uninstall.cmd package\ -Force
+          Copy-Item installer\Emergency-Stop.cmd package\ -Force
+          Copy-Item installer\Setup.ps1 package\ -Force
+          Write-Host 'Package files copied.'
+
+      - name: Verify package structure
+        shell: pwsh
+        run: |
+          $required = @(
+            'package\Service\ScreenTimeGuardian.Service.exe',
+            'package\ControlPanel\ScreenTimeGuardian.ControlPanel.exe',
+            'package\Agent\ScreenTimeGuardian.Agent.exe',
+            'package\NativeHost\ScreenTimeGuardian.NativeHost.exe',
+            'package\Policies\Install-Service.ps1',
+            'package\Policies\Uninstall-Service.ps1',
+            'package\Policies\Register-NativeHost.ps1',
+            'package\Extension\manifest.json',
+            'package\Setup.ps1'
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path $file)) { throw "Missing: $file" }
+            $size = (Get-Item $file).Length
+            Write-Host "OK $file ($([math]::Round($size / 1MB, 1)) MB)"
+          }
+          Write-Host 'Package structure verified.'
+
+      - name: Create ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path package\* -DestinationPath ScreenTimeGuardian-package.zip -Force
+          $size = (Get-Item ScreenTimeGuardian-package.zip).Length
+          Write-Host "ZIP size: $([math]::Round($size / 1MB, 1)) MB"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenTimeGuardian-full-package
+          path: ScreenTimeGuardian-package.zip
+          if-no-files-found: error
