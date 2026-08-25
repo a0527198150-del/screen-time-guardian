@@ -1,0 +1,60 @@
+<UserControl x:Class="ScreenTimeGuardian.ControlPanel.RuleCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FlowDirection="RightToLeft">
+
+    <Border x:Name="CardBorder" Style="{StaticResource Card}"
+            Margin="0,0,0,12" Cursor="Hand">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Main content -->
+            <StackPanel Grid.Column="0" Margin="0,4">
+                <!-- Row 1: Type icon + Name -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock x:Name="TypeIcon" FontSize="18" Margin="0,0,10,0"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="RuleName" Style="{StaticResource TypeTitle}" />
+                </StackPanel>
+
+                <!-- Row 2: Technical identifier, LTR, muted -->
+                <TextBlock x:Name="RuleIdentifier" Style="{StaticResource TypeData}"
+                           Foreground="{StaticResource BrushInkMuted}"
+                           Margin="28,0,0,4" />
+
+                <!-- Row 3: Schedule summary + status tag -->
+                <StackPanel Orientation="Horizontal" Margin="28,0,0,0">
+                    <TextBlock x:Name="ScheduleSummary" Style="{StaticResource TypeBody}"
+                               Foreground="{StaticResource BrushInkMuted}" />
+                    <Border x:Name="StatusTag" CornerRadius="20" Padding="10,4"
+                            Margin="10,0,0,0" VerticalAlignment="Center"
+                            Visibility="Collapsed">
+                        <TextBlock x:Name="StatusTagText" FontSize="12"
+                                   FontWeight="SemiBold" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Row 4: Action buttons (visible on hover) -->
+                <StackPanel x:Name="ActionButtons" Orientation="Horizontal"
+                            Margin="28,8,0,0" Visibility="Collapsed">
+                    <Button Content="ערוך" Style="{StaticResource ButtonGhost}"
+                            Click="EditButton_Click" Padding="12,4"
+                            Height="32" FontSize="13" />
+                    <Button Content="מחק" Style="{StaticResource ButtonDanger}"
+                            Click="DeleteButton_Click" Padding="12,4"
+                            Height="32" FontSize="13" Margin="4,0,0,0" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Switch toggle -->
+            <CheckBox x:Name="RuleSwitch" Grid.Column="1"
+                      Style="{StaticResource Switch}"
+                      VerticalAlignment="Center" Margin="16,0,0,0"
+                      Checked="RuleSwitch_Changed"
+                      Unchecked="RuleSwitch_Changed" />
+        </Grid>
+    </Border>
+</UserControl>

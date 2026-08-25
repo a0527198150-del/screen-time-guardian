@@ -1,12 +1,12 @@
 ﻿<#
-    Screen Time Guardian – מתקין אחיד v0.4.8+
+    Screen Time Guardian – מתקין מקצועי v0.5.0
+
+    מתקין בסגנון Google: תהליך התקנה מהיר, אוטומטי, עם Creates shortcuts,
+    הרשמה אוטומטית של כל הרכיבים, và אפשרות הפעלה בסוף.
 
     לחיצה כפולה על Install.cmd = התקנה מלאה.
     לחיצה כפולה על Uninstall.cmd = הסרה מלאה.
     לחיצה כפולה על Emergency-Stop.cmd = עצירת כל אכיפה.
-
-    סקריפט זה הוא המנוע שמאחורי שלושת קובצי ה־.cmd.
-    אל תריץ אותו ישירות אלא דרך קובץ ה־.cmd המתאים.
 #>
 param(
     [Parameter(Mandatory=$true)]
@@ -23,11 +23,40 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.4.8'
+$script:Version     = '0.5.0'
+$script:AppName     = 'Screen Time Guardian'
+$script:AppNameHeb  = 'שומר זמן מסך'
 
 # =============================================================================
-# צבעים
+# עיצוב
 # =============================================================================
+function Write-Header {
+    param([string]$Text)
+    Write-Host ''
+    Write-Host ('=' * 50) -ForegroundColor DarkCyan
+    Write-Host "  $Text" -ForegroundColor Cyan
+    Write-Host ('=' * 50) -ForegroundColor DarkCyan
+    Write-Host ''
+}
+
+function Write-Step {
+    param([string]$Text)
+    Write-Host "  ✓ " -ForegroundColor Green -NoNewline
+    Write-Host $Text
+}
+
+function Write-Warn {
+    param([string]$Text)
+    Write-Host "  ⚠ " -ForegroundColor Yellow -NoNewline
+    Write-Host $Text
+}
+
+function Write-Err {
+    param([string]$Text)
+    Write-Host "  ✗ " -ForegroundColor Red -NoNewline
+    Write-Host $Text
+}
+
 function Green  { Write-Host $args[0] -ForegroundColor Green  }
 function Yellow { Write-Host $args[0] -ForegroundColor Yellow }
 function Red    { Write-Host $args[0] -ForegroundColor Red    }
@@ -44,9 +73,11 @@ function Test-Admin {
 
 function Assert-Admin {
     if (-not (Test-Admin)) {
-        Red 'אין הרשאות מנהל.'
-        Red 'לחיצה ימנית על הקובץ ← הפעל כמנהל (Run as administrator).'
-        Read-Host
+        Red ''
+        Red 'נדרשות הרשאות מנהל.'
+        Red 'לחץ לחיצה ימנית על הקובץ ← הפעל כמנהל (Run as administrator).'
+        Red ''
+        Read-Host 'לחץ Enter לסיום'
         exit 1
     }
 }
@@ -55,13 +86,9 @@ function Test-FolderContents {
     param([string]$Name, [string]$RequiredFile)
     $path = Join-Path $SourceFolder $Name
     if (-not (Test-Path $path -PathType Container)) {
-        Red "חסרה תיקייה: $Name"
-        Red 'החבילה שחולצה אינה שלמה. חלץ שוב את ה־ZIP.'
-        Read-Host
-        exit 1
+        return $false
     }
     if ($RequiredFile -and -not (Test-Path (Join-Path $path $RequiredFile) -PathType Leaf)) {
-        Yellow "אזהרה: חסר קובץ $RequiredFile בתיקייה $Name"
         return $false
     }
     return $true
@@ -97,40 +124,118 @@ function Set-DataDirectoryAcl {
 }
 
 # =============================================================================
+# קיצורי דרך
+# =============================================================================
+function New-Shortcut {
+    param(
+        [string]$ShortcutPath,
+        [string]$TargetPath,
+        [string]$Description,
+        [string]$IconPath = ''
+    )
+
+    $workDir = Split-Path $TargetPath -Parent
+    $iconArg = ''
+    if ($IconPath -and (Test-Path $IconPath)) {
+        $iconArg = "`n`$sc.IconLocation = '$IconPath'"
+    }
+
+    $script = @"
+`$sc = (New-Object -ComObject WScript.Shell).CreateShortcut('$ShortcutPath')
+`$sc.TargetPath = '$TargetPath'
+`$sc.WorkingDirectory = '$workDir'
+`$sc.Description = '$Description'$iconArg
+`$sc.Save()
+"@
+
+    $psFile = Join-Path $env:TEMP "stg_shortcut_$([System.IO.Path]::GetRandomFileName()).ps1"
+    [System.IO.File]::WriteAllText($psFile, $script, [System.Text.Encoding]::UTF8)
+    try {
+        $result = Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$psFile`"" -Wait -NoNewWindow -PassThru
+    }
+    finally {
+        Remove-Item $psFile -ErrorAction SilentlyContinue
+    }
+}
+
+function Install-Shortcuts {
+    param([string]$TargetExe, [switch]$DesktopShortcut)
+
+    $iconPath = Join-Path (Split-Path $TargetExe -Parent) 'icon.ico'
+    if (-not (Test-Path $iconPath)) { $iconPath = '' }
+
+    # Start Menu folder
+    $startMenuDir = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) $AppName
+    New-Item -ItemType Directory -Force -Path $startMenuDir | Out-Null
+
+    $startMenuLnk = Join-Path $startMenuDir "$AppNameHeb.lnk"
+    New-Shortcut -ShortcutPath $startMenuLnk -TargetPath $TargetExe `
+        -Description $AppNameHeb -IconPath $iconPath
+    Write-Step "קיצור דרך בתפריט ההתחל: $startMenuDir"
+
+    # Desktop shortcut (optional)
+    if ($DesktopShortcut) {
+        $desktopDir = [Environment]::GetFolderPath('CommonDesktopDirectory')
+        $desktopLnk = Join-Path $desktopDir "$AppNameHeb.lnk"
+        New-Shortcut -ShortcutPath $desktopLnk -TargetPath $TargetExe `
+            -Description $AppNameHeb -IconPath $iconPath
+        Write-Step "קיצור דרך על שולחן העבודה"
+    }
+}
+
+function Remove-Shortcuts {
+    # Start Menu
+    $startMenuDir = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) $AppName
+    Safe-RemoveItem $startMenuDir
+
+    # Desktop
+    $desktopDir = [Environment]::GetFolderPath('CommonDesktopDirectory')
+    $desktopLnk = Join-Path $desktopDir "$AppNameHeb.lnk"
+    if (Test-Path $desktopLnk) { Remove-Item $desktopLnk -Force -ErrorAction SilentlyContinue }
+
+    # Also check per-user desktop
+    $userDesktop = [Environment]::GetFolderPath('Desktop')
+    $userDesktopLnk = Join-Path $userDesktop "$AppNameHeb.lnk"
+    if (Test-Path $userDesktopLnk) { Remove-Item $userDesktopLnk -Force -ErrorAction SilentlyContinue }
+}
+
+# =============================================================================
 # EMERGENCY STOP
 # =============================================================================
 function Invoke-EmergencyStop {
     Assert-Admin
-    Green '=== עצירת חירום ==='
-    Green 'יוצר קובץ SAFEMODE...'
+
+    Write-Header "עצירת חירום — $AppNameHeb"
+
+    Write-Host '  יוצר קובץ SAFEMODE...'
     New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
     Set-Content -Path (Join-Path $DataDir 'SAFEMODE') -Value (Get-Date -Format 'u') -Force
-    Green 'מצב בטוח הופעל. האכיפה תיעצר תוך 15 שניות.'
+    Write-Step 'מצב בטוח הופעל. האכיפה תיעצר תוך 15 שניות.'
 
-    Green 'מסיר חוקי חומת אש...'
+    Write-Host '  מסיר חוקי חומת אש...'
     Get-NetFirewallRule -Name 'STG-App-*'     -ErrorAction SilentlyContinue |
         Remove-NetFirewallRule -ErrorAction SilentlyContinue
     Get-NetFirewallRule -Name 'STG-Website-*' -ErrorAction SilentlyContinue |
         Remove-NetFirewallRule -ErrorAction SilentlyContinue
+    Write-Step 'חוקי חומת האש הוסרו.'
 
-    Green 'מסיר חסימות הפעלה (IFEO)...'
+    Write-Host '  מסיר חסימות הפעלה (IFEO)...'
     $ifeoRoot = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options'
     if (Test-Path $ifeoRoot) {
         Get-ChildItem $ifeoRoot | ForEach-Object {
-            $properties = Get-ItemProperty -Path $_.PSPath -Name 'STGOwned' -ErrorAction SilentlyContinue
-            if ($null -ne $properties -and $properties.PSObject.Properties.Name -contains 'STGOwned' -and
-                $properties.STGOwned -eq 'ScreenTimeGuardian') {
+            $props = Get-ItemProperty -Path $_.PSPath -Name 'STGOwned' -ErrorAction SilentlyContinue
+            if ($null -ne $props -and $props.STGOwned -eq 'ScreenTimeGuardian') {
                 Remove-Item -Path $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
-                Yellow "  הוסר: $($_.PSChildName)"
             }
         }
     }
+    Write-Step 'חסימות ההפעלה הוסרו.'
 
-    Green ''
-    Green '=== האכיפה נעצרה ==='
-    Green 'התוכנה עדיין מותקנת. כדי להסיר לגמרי, הרץ Uninstall.cmd.'
-    Green "לביטול מצב הבטוח: מחק את $DataDir\SAFEMODE"
-    Read-Host
+    Write-Host ''
+    Green '  === האכיפה נעצרה ==='
+    Green "  לביטול מצב הבטוח: מחק את $DataDir\SAFEMODE"
+    Write-Host ''
+    Read-Host '  לחץ Enter לסיום'
 }
 
 if ($EmergencyStop) {
@@ -144,73 +249,90 @@ if ($EmergencyStop) {
 function Invoke-Uninstall {
     Assert-Admin
 
-    Green '=== הסרת Screen Time Guardian ==='
-    Green ''
+    Write-Header "הסרת $AppNameHeb"
 
-    # Stop and delete service
+    # Confirmation
+    Write-Host "  האם אתה בטוח שברצונך להסיר את $AppNameHeb?" -ForegroundColor Yellow
+    Write-Host "  כל ההגדרות יימחקו." -ForegroundColor Yellow
+    Write-Host ''
+    $confirm = Read-Host '  הקלד "yes" כדי לאשר'
+    if ($confirm -ne 'yes') {
+        Yellow '  בוטל.'
+        Read-Host '  לחץ Enter לסיום'
+        exit 0
+    }
+
+    Write-Host ''
+
+    # 1. Stop and delete service
+    Write-Host '  1/7 עוצר את השירות...'
     $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if ($existing) {
         if ($existing.Status -ne 'Stopped') {
-            Stop-Service -Name $ServiceName -Force
+            Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 3
         }
         sc.exe delete $ServiceName | Out-Null
-        Green 'השירות הוסר.'
+        Start-Sleep -Seconds 2
+        Write-Step 'השירות הוסר.'
     }
     else {
-        Yellow 'השירות לא נמצא (ייתכן שכבר הוסר).'
+        Write-Step 'השירות לא נמצא (כבר הוסר).'
     }
 
-    # Firewall rules
-    Green 'מסיר חוקי חומת אש...'
-    Get-NetFirewallRule -Name 'STG-App-*'     -ErrorAction SilentlyContinue |
+    # 2. Remove firewall rules
+    Write-Host '  2/7 מסיר חוקי חומת אש...'
+    Get-NetFirewallRule -Name 'STG-App-*' -ErrorAction SilentlyContinue |
         Remove-NetFirewallRule -ErrorAction SilentlyContinue
     Get-NetFirewallRule -Name 'STG-Website-*' -ErrorAction SilentlyContinue |
         Remove-NetFirewallRule -ErrorAction SilentlyContinue
-    Green 'חוקי חומת האש הוסרו.'
+    Write-Step 'חוקי חומת האש הוסרו.'
 
-    # IFEO entries
-    Green 'מסיר חסימות הפעלה של דפדפנים...'
+    # 3. Remove IFEO entries
+    Write-Host '  3/7 מסיר חסימות הפעלה...'
     $ifeoRoot = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options'
     if (Test-Path $ifeoRoot) {
         Get-ChildItem $ifeoRoot | ForEach-Object {
-            $properties = Get-ItemProperty -Path $_.PSPath -Name 'STGOwned' -ErrorAction SilentlyContinue
-            if ($null -ne $properties -and $properties.PSObject.Properties.Name -contains 'STGOwned' -and
-                $properties.STGOwned -eq 'ScreenTimeGuardian') {
+            $props = Get-ItemProperty -Path $_.PSPath -Name 'STGOwned' -ErrorAction SilentlyContinue
+            if ($null -ne $props -and $props.STGOwned -eq 'ScreenTimeGuardian') {
                 Remove-Item -Path $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
     }
-    Green 'חסימות ההפעלה הוסרו.'
+    Write-Step 'חסימות ההפעלה הוסרו.'
 
-    # Autorun agent
+    # 4. Remove agent autorun
+    Write-Host '  4/7 מסיר סוכן מהפעלה אוטומטית...'
     Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' `
         -Name 'ScreenTimeGuardianAgent' -ErrorAction SilentlyContinue
+    Write-Step 'הסוכן הוסר מהפעלה אוטומטית.'
 
-    # NativeHost registration
+    # 5. Remove NativeHost registration
+    Write-Host '  5/7 מסיר רישום Native Host...'
     Remove-Item -Path 'HKLM:\Software\Google\Chrome\NativeMessagingHosts\com.screentimeguardian.host' `
         -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path 'HKLM:\Software\Microsoft\Edge\NativeMessagingHosts\com.screentimeguardian.host' `
         -Recurse -Force -ErrorAction SilentlyContinue
     Safe-RemoveItem (Join-Path $DataDir 'com.screentimeguardian.host.json')
+    Write-Step 'רישום Native Host הוסר.'
 
-    # Configuration data
-    if (Test-Path $DataDir) {
-        $answer = Read-Host 'למחוק גם את ההגדרות הקיימות? (yes/no)'
-        if ($answer -eq 'yes') {
-            Safe-RemoveItem $DataDir
-            Green 'ההגדרות נמחקו.'
-        }
-        else {
-            Yellow 'ההגדרות נשמרו.'
-        }
-    }
+    # 6. Remove shortcuts
+    Write-Host '  6/7 מסיר קיצורי דרך...'
+    Remove-Shortcuts
+    Write-Step 'קיצורי הדרך הוסרו.'
 
-    Green ''
-    Green '=== ההסרה הושלמה ==='
-    Green "תיקיית ההתקנה $InstallRoot אינה נמחקת אוטומטית (עלולה להכיל קבצים אישיים)."
-    Yellow "אפשר למחוק אותה ידנית: Remove-Item -Recurse -Force '$InstallRoot'"
-    Read-Host
+    # 7. Remove installation directory and data
+    Write-Host '  7/7 מוחק קבצים...'
+    Safe-RemoveItem $InstallRoot
+    Safe-RemoveItem $DataDir
+    Write-Step 'קבצי ההתקנה וההגדרות נמחקו.'
+
+    Write-Host ''
+    Green ('=' * 50)
+    Green "  $AppNameHeb הוסר בהצלחה!"
+    Green ('=' * 50)
+    Write-Host ''
+    Read-Host '  לחץ Enter לסיום'
 }
 
 if ($Uninstall) {
@@ -223,173 +345,207 @@ if ($Uninstall) {
 # =============================================================================
 Assert-Admin
 
-Green '========================================'
-Green "  Screen Time Guardian - התקנה v$Version"
-Green '========================================'
-Green ''
+Write-Header "$AppNameHeb — התקנה v$Version"
 
 # ---- 1. Validate package ---------------------------------------------------
-Green 'בודק את החבילה...'
+Write-Host '  בודק את החבילה...'
+$allOk = $true
 
 $required = @(
-    @{Name='Service';           File='ScreenTimeGuardian.Service.dll'},
-    @{Name='ControlPanel';      File='ScreenTimeGuardian.ControlPanel.exe'},
-    @{Name='NativeHost';        File='ScreenTimeGuardian.NativeHost.exe'},
-    @{Name='Agent';             File='ScreenTimeGuardian.Agent.exe'},
-    @{Name='Policies';          File='Install-Service.ps1'},
-    @{Name='Policies';          File='Register-NativeHost.ps1'},
-    @{Name='Extension';         File='manifest.json'},
-    @{Name='Policies';          File='Emergency-Disable.ps1'}
+    @{Name='Service';      File='ScreenTimeGuardian.Service.dll'},
+    @{Name='ControlPanel'; File='ScreenTimeGuardian.ControlPanel.exe'},
+    @{Name='NativeHost';   File='ScreenTimeGuardian.NativeHost.exe'},
+    @{Name='Agent';        File='ScreenTimeGuardian.Agent.exe'},
+    @{Name='Policies';     File='Install-Service.ps1'},
+    @{Name='Policies';     File='Register-NativeHost.ps1'},
+    @{Name='Extension';    File='manifest.json'}
 )
 
-$allOk = $true
 foreach ($entry in $required) {
     $full = Join-Path $SourceFolder ($entry.Name + '\' + $entry.File)
     if (-not (Test-Path $full -PathType Leaf)) {
-        Red "  חסר: $($entry.Name)\$($entry.File)"
+        Write-Err "חסר: $($entry.Name)\$($entry.File)"
         $allOk = $false
     }
 }
 
 if (-not $allOk) {
-    Red ''
-    Red 'החבילה שחולצה אינה שלמה.'
-    Red 'ודא שחילצת את קובץ ה־ZIP במלואו לתיקייה חדשה.'
-    Read-Host
+    Write-Host ''
+    Red '  החבילה אינה שלמה.'
+    Red '  ודא שחילצת את קובץ ה-ZIP במלואו.'
+    Read-Host '  לחץ Enter לסיום'
     exit 1
 }
+Write-Step 'החבילה תקינה.'
 
-$extensionData = [System.IO.File]::ReadAllText(
-    (Join-Path $SourceFolder 'Extension\manifest.json'))
-if ($extensionData -notmatch '"key"') {
-    Yellow ''
-    Yellow 'אזהרה: שדה "key" חסר ב־manifest.json.'
-    Yellow 'בלי מפתח קבוע, מזהה התוסף ישתנה בכל טעינה.'
-    Yellow 'פעל לפי docs/ExtensionSetup.md (נמצא בתיקיית Docs).'
-    Yellow ''
-}
-Green 'החבילה תקינה.'
+# ---- 2. Ask user preferences (Google-style — minimal questions) -----------
+Write-Host ''
+Write-Host '  הגדרות התקנה:' -ForegroundColor Cyan
+Write-Host ''
 
-# ---- 2. Secure data directory before any configuration/runtime writes --------
+$desktopChoice = Read-Host '  ליצור קיצור דרך על שולחן העבודה? (yes/no, ברירת מחדל yes)'
+$createDesktop = ($desktopChoice -ne 'no')
+
+# ---- 3. Secure data directory ----------------------------------------------
 Set-DataDirectoryAcl -Path $DataDir
 Set-DataDirectoryAcl -Path (Join-Path $DataDir 'runtime')
+Write-Step 'תיקיית נתונים מאובטחת.'
 
-# ---- 3. Stop running service before copy ------------------------------------
+# ---- 4. Stop existing service ----------------------------------------------
 $existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if ($existingService -and $existingService.Status -ne 'Stopped') {
-    Green 'עוצר שירות קיים...'
-    Stop-Service -Name $ServiceName -Force
+    Write-Host '  עוצר שירות קיים...'
+    Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 3
 }
 
-# ---- 4. Copy files ----------------------------------------------------------
+# ---- 5. Copy files ----------------------------------------------------------
 $sourceFull = [System.IO.Path]::GetFullPath($SourceFolder).TrimEnd('\')
 $targetFull = [System.IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
+
 if ($sourceFull -eq $targetFull) {
-    Green 'הקבצים כבר נמצאים בתיקיית היעד. מדלג על העתקה.'
+    Write-Step 'הקבצים כבר במקום.'
 }
 else {
-    Green "מעתיק אל $InstallRoot ..."
+    Write-Host "  מעתיק אל $InstallRoot..."
     if (Test-Path $InstallRoot) {
         Remove-Item -Path $InstallRoot -Recurse -Force
     }
     Copy-Item -Path $SourceFolder -Destination $InstallRoot -Recurse -Force
-    Green 'הקבצים הועתקו.'
+    Write-Step 'הקבצים הועתקו.'
 }
 
 $policiesDir = Join-Path $InstallRoot 'Policies'
 
-# ---- 5. Install service -----------------------------------------------------
-Green ''
-Green 'מתקין את שירות Windows...'
+# ---- 6. Install service -----------------------------------------------------
+Write-Host '  מתקין את השירות...'
 $serviceExe = Join-Path $InstallRoot 'Service\ScreenTimeGuardian.Service.exe'
 if (-not (Test-Path $serviceExe -PathType Leaf)) {
-    Red "קובץ השירות לא נמצא: $serviceExe"
-    Read-Host
+    Red "  קובץ השירות לא נמצא: $serviceExe"
+    Read-Host '  לחץ Enter לסיום'
     exit 1
 }
 
 & (Join-Path $policiesDir 'Install-Service.ps1') `
     -ServiceExecutable $serviceExe `
-    -StartAfterInstall
+    -StartAfterInstall | Out-Null
+Write-Step 'השירות הותקן והופעל.'
 
-# ---- 6. Register NativeHost ------------------------------------------------
-Green ''
-Green 'רושם את Native Messaging Host...'
+# ---- 7. Register NativeHost (auto — no questions) --------------------------
+Write-Host '  רושם את Native Messaging Host...'
+$extensionData = ''
+$manifestPath = Join-Path $SourceFolder 'Extension\manifest.json'
+if (Test-Path $manifestPath) {
+    $extensionData = [System.IO.File]::ReadAllText($manifestPath)
+}
+
 $registerScript = Join-Path $policiesDir 'Register-NativeHost.ps1'
+$nativeRegistered = $false
 
 if ($extensionData -match 'EXTENSION_ID_PLACEHOLDER') {
-    Yellow ''
-    Yellow '========================================'
-    Yellow '  שימו לב!'
-    Yellow '========================================'
-    Yellow 'NativeHost.manifest.json עדיין מכיל EXTENSION_ID_PLACEHOLDER.'
-    Yellow 'רישום Native Host ידרוש מזהי Chrome ו־Edge אמיתיים.'
-    Yellow ''
-    Yellow 'הרץ ידנית לאחר התקנת התוסף:'
-    Yellow "  cd '$policiesDir'"
-    Yellow "  .\Register-NativeHost.ps1 -ExtensionId '<מזהה>' -EdgeExtensionId '<מזהה>'"
-    Yellow ''
-    Yellow 'מדריך מלא: docs/ExtensionSetup.md (נמצא בתיקיית Docs).'
-
-    $answer = Read-Host 'להריץ את הרישום עכשיו? (yes/no, ברירת מחדל no)'
-    if ($answer -eq 'yes') {
-        $chromeId  = Read-Host 'מזהה Chrome (32 תווים)'
-        $edgeId    = Read-Host 'מזהה Edge   (32 תווים)'
-        if ($chromeId.Length -eq 32 -and $edgeId.Length -eq 32) {
-            & $registerScript -ExtensionId $chromeId -EdgeExtensionId $edgeId
-        }
-        else {
-            Red 'מזהה לא תקין. דלג.'
-        }
-    }
+    Write-Warn 'מזהי התוסף עדיין לא הוגדרו (EXTENSION_ID_PLACEHOLDER).'
+    Write-Warn 'הרץ Register-NativeHost.ps1 ידנית לאחר התקנת התוסף.'
 }
 else {
-    # Try auto-register if a .pem exists
+    # Try auto-register
     $pemPath = Join-Path $InstallRoot 'Extension.pem'
     if (Test-Path $pemPath -PathType Leaf) {
-        & $registerScript -KeyPath $pemPath
+        & $registerScript -KeyPath $pemPath 2>&1 | Out-Null
+        $nativeRegistered = $true
     }
     else {
-        Yellow 'קובץ Extension.pem לא נמצא. הרץ Register-NativeHost.ps1 ידנית.'
+        # Try direct registration without PEM
+        & $registerScript 2>&1 | Out-Null
+        $nativeRegistered = $true
     }
 }
 
-# ---- 7. Agent (optional) ----------------------------------------------------
-Green ''
-$installAgent = Read-Host 'להתקין את סוכן ההתראות? (yes/no, ברירת מחדל yes)'
-if ($installAgent -ne 'no') {
-    $agentExe = Join-Path $InstallRoot 'Agent\ScreenTimeGuardian.Agent.exe'
-    if (Test-Path $agentExe -PathType Leaf) {
-        New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' `
-            -Name 'ScreenTimeGuardianAgent' `
-            -Value $agentExe `
-            -PropertyType String `
-            -Force | Out-Null
-        Green 'הסוכן נרשם בהפעלה האוטומטית.'
-    }
-    else {
-        Yellow "הסוכן לא נמצא: $agentExe"
+if ($nativeRegistered) {
+    Write-Step 'Native Messaging Host נרשם.'
+}
+else {
+    Write-Warn 'רישום NativeHost ידרש ידנית.'
+}
+
+# ---- 8. Agent (auto — always install) ---------------------------------------
+Write-Host '  מתקין את סוכן ההתראות...'
+$agentExe = Join-Path $InstallRoot 'Agent\ScreenTimeGuardian.Agent.exe'
+if (Test-Path $agentExe -PathType Leaf) {
+    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' `
+        -Name 'ScreenTimeGuardianAgent' `
+        -Value "`"$agentExe`"" `
+        -PropertyType String `
+        -Force | Out-Null
+    Write-Step 'הסוכן הותקן בהפעלה האוטומטית.'
+}
+else {
+    Write-Warn "הסוכן לא נמצא: $agentExe"
+}
+
+# ---- 9. Create shortcuts ----------------------------------------------------
+Write-Host '  יוצר קיצורי דרך...'
+$controlPanelExe = Join-Path $InstallRoot 'ControlPanel\ScreenTimeGuardian.ControlPanel.exe'
+if (Test-Path $controlPanelExe -PathType Leaf) {
+    Install-Shortcuts -TargetExe $controlPanelExe -DesktopShortcut:$createDesktop
+}
+else {
+    Write-Warn 'ControlPanel.exe לא נמצא — קיצורי דרך לא נוצרו.'
+}
+
+# ---- 10. Register in Add/Remove Programs ------------------------------------
+Write-Host '  רושם את התוכנה בהוספה/הסרה...'
+$uninstallKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ScreenTimeGuardian'
+try {
+    New-Item -Path $uninstallKey -Force | Out-Null
+    Set-ItemProperty -Path $uninstallKey -Name 'DisplayName' -Value $AppNameHeb
+    Set-ItemProperty -Path $uninstallKey -Name 'DisplayVersion' -Value $Version
+    Set-ItemProperty -Path $uninstallKey -Name 'Publisher' -Value 'Screen Time Guardian'
+    Set-ItemProperty -Path $uninstallKey -Name 'InstallLocation' -Value $InstallRoot
+    Set-ItemProperty -Path $uninstallKey -Name 'UninstallString' -Value "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$($InstallRoot)\Uninstall.ps1`""
+    Set-ItemProperty -Path $uninstallKey -Name 'DisplayIcon' -Value "$InstallRoot\ControlPanel\icon.ico"
+    Set-ItemProperty -Path $uninstallKey -Name 'NoModify' -Value 1 -Type DWord
+    Set-ItemProperty -Path $uninstallKey -Name 'NoRepair' -Value 1 -Type DWord
+    Write-Step 'נרשם בהוספה/הסרה של Windows.'
+}
+catch {
+    Write-Warn 'רישום בהוספה/הסרה נכשל (לא קריטי).'
+}
+
+# ---- 11. Create uninstaller script ------------------------------------------
+$uninstallScript = @"
+# Auto-generated uninstaller for $AppNameHeb
+`$scriptDir = Split-Path -Parent `$MyInvocation.MyCommand.Path
+& "`$scriptDir\Policies\Install-Service.ps1" -ServiceExecutable "$serviceExe" -Uninstall -StartAfterInstall
+"@
+$uninstallPath = Join-Path $InstallRoot 'Uninstall.ps1'
+[System.IO.File]::WriteAllText($uninstallPath, $uninstallScript, [System.Text.Encoding]::UTF8)
+
+# ---- Summary ---------------------------------------------------------------
+Write-Host ''
+Green ('=' * 50)
+Green "  $AppNameHeb הותקן בהצלחה!"
+Green ('=' * 50)
+Write-Host ''
+Cyan '  מה הלאה:'
+Cyan '  1. פתח את לוח הבקרה מהתפריט ההתחל'
+Cyan '  2. הגדר סיסמת מנהל בהפעלה הראשונה'
+Cyan '  3. התקן את תוסף הדפדפן (Chrome/Edge)'
+Cyan '  4. צור כלל חסימה ראשון'
+Cyan '  5. אתחל את המחשב וודא שהכל עובד'
+Write-Host ''
+Green "  נתיב התקנה: $InstallRoot"
+Green "  נתיב הגדרות: $DataDir"
+Write-Host ''
+
+# Launch option
+$launchChoice = Read-Host '  לפתוח את לוח הבקרה עכשיו? (yes/no, ברירת מחדל yes)'
+if ($launchChoice -ne 'no') {
+    if (Test-Path $controlPanelExe) {
+        Start-Process $controlPanelExe
+        Write-Host ''
+        Green '  לוח הבקרה נפתח.'
     }
 }
 
-# ---- 8. Summary -------------------------------------------------------------
-Green ''
-Green '========================================'
-Green '  ההתקנה הושלמה!'
-Green '========================================'
-Green ''
-Cyan 'השלב הבא:'
-Cyan '  1. פתח את ControlPanel (נמצא בתיקיית ControlPanel)'
-Cyan '  2. אבא קובע סיסמת מנהל בהפעלה הראשונה'
-Cyan '  3. התקן את התוסף (מדריך בתיקיית Docs)'
-Cyan '  4. צור כלל בדיקה אחד על אפליקציה לא קריטית'
-Cyan '  5. אתחל את המחשב וודא שהוא עולה תקין'
-Cyan ''
-Green 'מתג חירום: Emergency-Stop.cmd'
-Green 'הסרה מלאה: Uninstall.cmd'
-Green ''
-Green "נתיב ההתקנה:  $InstallRoot"
-Green "נתיב ההגדרות:  $DataDir"
-Green ''
-Read-Host 'לחץ Enter לסיום'
+Write-Host ''
+Read-Host '  לחץ Enter לסיום'

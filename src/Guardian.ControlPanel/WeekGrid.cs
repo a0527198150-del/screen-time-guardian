@@ -29,6 +29,11 @@ public sealed class WeekGrid : FrameworkElement
     private bool _dragging;
     private bool _erase;
 
+    // Keyboard cursor position
+    private int _cursorDayIndex = 0; // 0=Sunday .. 6=Saturday
+    private int _cursorHour = 0;     // 0..23
+    private bool _hasCursor = false;
+
     // Visual constants — tuned for legibility at 700×420 and above.
     private const double HourLabelWidth = 41;
     private const double HeaderHeight = 28;
@@ -102,13 +107,15 @@ public sealed class WeekGrid : FrameworkElement
         var gridTop = HeaderHeight;
 
         // Brushes
-        var freeBrush = new SolidColorBrush(Color.FromRgb(241, 245, 249));   // #F1F5F9
-        var blockedBrush = new SolidColorBrush(Color.FromRgb(14, 124, 134)); // Teal #0E7C86
-        var borderPen = new Pen(new SolidColorBrush(Color.FromRgb(226, 232, 240)), 1.0);
-        var inkBrush = new SolidColorBrush(Color.FromRgb(21, 33, 61));       // Ink #15213D
-        var mutedBrush = new SolidColorBrush(Color.FromRgb(83, 97, 122));    // MutedInk #53617A
-        var headerTypeface = new Typeface("Assistant, Segoe UI");
-        var hourTypeface = new Typeface("Assistant, Segoe UI");
+        var freeBrush = new SolidColorBrush(Color.FromRgb(226, 231, 238));   // #E2E7EE (ClrLine)
+        var blockedBrush = new SolidColorBrush(Color.FromRgb(14, 124, 134)); // Teal #0E7C86 (ClrTeal)
+        var borderPen = new Pen(new SolidColorBrush(Color.FromRgb(226, 231, 238)), 1.0);
+        var inkBrush = new SolidColorBrush(Color.FromRgb(20, 27, 46));       // Ink #141B2E
+        var mutedBrush = new SolidColorBrush(Color.FromRgb(90, 103, 128));   // MutedInk #5A6780
+        var cursorBrush = new SolidColorBrush(Color.FromRgb(14, 124, 134));  // Teal for cursor border
+        var uiFont = (System.Windows.Media.FontFamily)Application.Current.FindResource("FontUi");
+        var headerTypeface = new Typeface(uiFont, FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+        var hourTypeface = new Typeface(uiFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
 
         // Day headers — logical x goes left to right (Sunday=0 to Saturday=6).
         // WPF mirrors the entire control in RTL mode, so Sunday ends up on the
@@ -134,6 +141,7 @@ public sealed class WeekGrid : FrameworkElement
         }
 
         // Cells
+        var cursorPen = new Pen(cursorBrush, 2.0);
         for (var dayIndex = 0; dayIndex < Days.Length; dayIndex++)
         {
             var day = Days[dayIndex];
@@ -155,6 +163,14 @@ public sealed class WeekGrid : FrameworkElement
                     var lightBlocked = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
                     var inner = new Rect(rect.X + 2, rect.Y + 2, Math.Max(1, rect.Width - 4), Math.Max(1, rect.Height - 4));
                     drawingContext.DrawRoundedRectangle(lightBlocked, null, inner, 1.5, 1.5);
+                }
+
+                // Keyboard cursor — 2px Teal border on the focused cell
+                if (_hasCursor && dayIndex == _cursorDayIndex && hour == _cursorHour)
+                {
+                    var cursorRect = new Rect(x + gap - 1, y + gap - 1,
+                        Math.Max(1, cellWidth - gap * 2 + 2), Math.Max(1, cellHeight - gap * 2 + 2));
+                    drawingContext.DrawRectangle(null, cursorPen, cursorRect);
                 }
             }
         }
@@ -224,7 +240,18 @@ public sealed class WeekGrid : FrameworkElement
         _dragging = true;
         _erase = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
         CaptureMouse();
-        Paint(e.GetPosition(this));
+        var point = e.GetPosition(this);
+        Paint(point);
+
+        // Move keyboard cursor to the clicked cell
+        var cell = CellAt(point);
+        if (cell is { } c)
+        {
+            _cursorDayIndex = Array.IndexOf(Days, c.Day);
+            _cursorHour = c.Hour;
+            _hasCursor = true;
+            InvalidateVisual();
+        }
         e.Handled = true;
     }
 
@@ -241,20 +268,93 @@ public sealed class WeekGrid : FrameworkElement
 
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
-        var key = (int)e.Key >= (int)Key.D1 && (int)e.Key <= (int)Key.D7
+        // Number keys 1-7 toggle entire days (legacy behavior)
+        var dayKey = (int)e.Key >= (int)Key.D1 && (int)e.Key <= (int)Key.D7
             ? (int)e.Key - (int)Key.D1
             : (int)e.Key >= (int)Key.NumPad1 && (int)e.Key <= (int)Key.NumPad7
                 ? (int)e.Key - (int)Key.NumPad1
                 : -1;
-        if (key < 0) return;
-        var day = Days[key];
-        var erase = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-        for (var hour = 0; hour < 24; hour++)
+
+        if (dayKey >= 0)
         {
-            if (erase) _blocked.Remove((day, hour)); else _blocked.Add((day, hour));
+            var day = Days[dayKey];
+            var erase = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+            for (var hour = 0; hour < 24; hour++)
+            {
+                if (erase) _blocked.Remove((day, hour)); else _blocked.Add((day, hour));
+            }
+            _hasCursor = true;
+            _cursorDayIndex = dayKey;
+            _cursorHour = 0;
+            InvalidateVisual();
+            ScheduleChanged?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
+            return;
         }
-        InvalidateVisual();
-        ScheduleChanged?.Invoke(this, EventArgs.Empty);
-        e.Handled = true;
+
+        // Arrow keys — move cursor
+        if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down)
+        {
+            if (!_hasCursor)
+            {
+                _hasCursor = true;
+                _cursorDayIndex = 0;
+                _cursorHour = 0;
+            }
+
+            switch (e.Key)
+            {
+                case Key.Left:
+                    _cursorDayIndex = (_cursorDayIndex - 1 + 7) % 7;
+                    break;
+                case Key.Right:
+                    _cursorDayIndex = (_cursorDayIndex + 1) % 7;
+                    break;
+                case Key.Up:
+                    _cursorHour = (_cursorHour - 1 + 24) % 24;
+                    break;
+                case Key.Down:
+                    _cursorHour = (_cursorHour + 1) % 24;
+                    break;
+            }
+
+            InvalidateVisual();
+            e.Handled = true;
+            return;
+        }
+
+        // Space — toggle the focused cell
+        if (e.Key == Key.Space && _hasCursor)
+        {
+            var cell = (Days[_cursorDayIndex], _cursorHour);
+            if (_blocked.Contains(cell))
+                _blocked.Remove(cell);
+            else
+                _blocked.Add(cell);
+
+            InvalidateVisual();
+            ScheduleChanged?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
+            return;
+        }
+
+        // Enter — toggle entire day at cursor (like clicking the header)
+        if (e.Key == Key.Enter && _hasCursor)
+        {
+            var day = Days[_cursorDayIndex];
+            var anyBlocked = false;
+            for (var h = 0; h < 24; h++)
+            {
+                if (_blocked.Contains((day, h))) { anyBlocked = true; break; }
+            }
+            for (var h = 0; h < 24; h++)
+            {
+                if (anyBlocked) _blocked.Remove((day, h)); else _blocked.Add((day, h));
+            }
+            InvalidateVisual();
+            ScheduleChanged?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
+            return;
+        }
     }
 }

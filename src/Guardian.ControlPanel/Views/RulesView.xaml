@@ -1,0 +1,60 @@
+<UserControl x:Class="ScreenTimeGuardian.ControlPanel.RulesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ScreenTimeGuardian.ControlPanel"
+             FlowDirection="RightToLeft">
+
+    <StackPanel Margin="0,0,0,24">
+
+        <!-- Title + primary button -->
+        <DockPanel Margin="0,0,0,16">
+            <Button Content="➕ כלל חדש" Style="{StaticResource ButtonPrimary}"
+                    Click="NewRule_Click"
+                    DockPanel.Dock="Left" Height="44" Padding="20,0" />
+            <TextBlock Text="כללים" Style="{StaticResource TypeDisplay}"
+                       VerticalAlignment="Center" />
+        </DockPanel>
+
+        <!-- Filter tags -->
+        <WrapPanel Margin="0,0,0,20">
+            <RadioButton x:Name="FilterAll" Content="הכל" Style="{StaticResource FilterTag}"
+                         IsChecked="True" Checked="Filter_Changed" />
+            <RadioButton x:Name="FilterApps" Content="אפליקציות"
+                         Style="{StaticResource FilterTag}"
+                         Checked="Filter_Changed" />
+            <RadioButton x:Name="FilterSites" Content="אתרים"
+                         Style="{StaticResource FilterTag}"
+                         Checked="Filter_Changed" />
+            <RadioButton x:Name="FilterAccounts" Content="חשבונות"
+                         Style="{StaticResource FilterTag}"
+                         Checked="Filter_Changed" />
+        </WrapPanel>
+
+        <!-- Rules list -->
+        <ItemsControl x:Name="RulesList">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <local:RuleCard x:Name="Card" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Empty state -->
+        <Border x:Name="EmptyState" Style="{StaticResource Card}"
+                Visibility="Visible">
+            <StackPanel HorizontalAlignment="Center" Margin="0,32">
+                <TextBlock Text="🛡️" FontSize="48" HorizontalAlignment="Center"
+                           Margin="0,0,0,16" />
+                <TextBlock Text="עדיין אין כללים" Style="{StaticResource TypeTitle}"
+                           HorizontalAlignment="Center" Margin="0,0,0,8" />
+                <TextBlock Text="צור את הכלל הראשון כדי להתחיל"
+                           Style="{StaticResource TypeMeta}"
+                           HorizontalAlignment="Center" Margin="0,0,0,24" />
+                <Button Content="➕ כלל חדש" Style="{StaticResource ButtonPrimary}"
+                        Click="NewRule_Click"
+                        HorizontalAlignment="Center" Height="44" Padding="20,0" />
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
+</UserControl>

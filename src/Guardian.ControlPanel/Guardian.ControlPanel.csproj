@@ -9,7 +9,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="Fonts\Assistant-Regular.ttf" />
+    <Resource Include="Assets\Fonts\*.ttf" />
     <Resource Include="icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="Themes\Tokens.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Themes\Controls.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Guardian.Contracts\Guardian.Contracts.csproj" />

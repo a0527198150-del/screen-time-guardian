@@ -1,0 +1,253 @@
+<UserControl x:Class="ScreenTimeGuardian.ControlPanel.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FlowDirection="RightToLeft">
+
+    <StackPanel Margin="0,0,0,24">
+
+        <!-- Title -->
+        <TextBlock Text="הגדרות" Style="{StaticResource TypeDisplay}"
+                   Margin="0,0,0,24" />
+
+        <!-- Safety -->
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Border Cursor="Hand" MouseLeftButtonDown="ToggleGroup_Click"
+                        Padding="0" Margin="-20,-20,-20,16">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="SafetyArrow" Text="◀" FontSize="12"
+                                   Foreground="{StaticResource BrushInkMuted}"
+                                   Margin="0,0,8,0" VerticalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Text="בטיחות" Style="{StaticResource TypeTitle}" />
+                    </StackPanel>
+                </Border>
+                <StackPanel x:Name="SafetyContent" Visibility="Collapsed">
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="תקופות חסד, מצב בטוח, מגבלת פעולות." Margin="0,0,0,12" />
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="תקופת חסד אחרי הפעלת המחשב (שניות):"
+                                   VerticalAlignment="Center" />
+                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="BootGraceBox"
+                                 FlowDirection="LeftToRight" />
+                        <TextBlock Grid.Row="1" Text="תקופת חסד אחרי הפעלת השירות (שניות):"
+                                   VerticalAlignment="Center" Margin="0,8,0,0" />
+                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="ServiceGraceBox"
+                                 FlowDirection="LeftToRight" Margin="0,8,0,0" />
+                        <TextBlock Grid.Row="2" Text="מקסימום פעולות אכיפה בדקה:"
+                                   VerticalAlignment="Center" Margin="0,8,0,0" />
+                        <TextBox Grid.Row="2" Grid.Column="1" x:Name="MaxActionsBox"
+                                 FlowDirection="LeftToRight" Margin="0,8,0,0" />
+                    </Grid>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="התוכנה הזו לא סוגרת תהליכים בכוח. כל האכיפה היא חוקי חומת אש ומפתחות רגיסטרי." />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Password -->
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Border Cursor="Hand" MouseLeftButtonDown="ToggleGroup_Click"
+                        Padding="0" Margin="-20,-20,-20,16">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="PasswordArrow" Text="◀" FontSize="12"
+                                   Foreground="{StaticResource BrushInkMuted}"
+                                   Margin="0,0,8,0" VerticalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Text="סיסמה" Style="{StaticResource TypeTitle}" />
+                    </StackPanel>
+                </Border>
+                <StackPanel x:Name="PasswordContent" Visibility="Collapsed">
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="שינוי סיסמה דורש את הסיסמה הנוכחית. אין מסלול שחזור." Margin="0,0,0,12" />
+                    <TextBlock Text="סיסמה נוכחית:" Style="{StaticResource TypeLabel}" Margin="0,0,0,4" />
+                    <PasswordBox x:Name="CurrentPasswordBox" FlowDirection="LeftToRight" />
+                    <TextBlock Text="סיסמה חדשה:" Style="{StaticResource TypeLabel}" Margin="0,12,0,4" />
+                    <PasswordBox x:Name="NewPasswordBox" FlowDirection="LeftToRight"
+                                 PasswordChanged="NewPasswordBox_Changed" />
+                    <TextBlock x:Name="PasswordStrength" Style="{StaticResource TypeMeta}" Margin="0,2,0,0" />
+                    <TextBlock Text="אימות:" Style="{StaticResource TypeLabel}" Margin="0,12,0,4" />
+                    <PasswordBox x:Name="ConfirmPasswordBox" FlowDirection="LeftToRight"
+                                 PasswordChanged="ConfirmPasswordBox_Changed" />
+                    <TextBlock x:Name="PasswordError" Foreground="{StaticResource BrushRose}"
+                               TextWrapping="Wrap" Margin="0,4,0,0" />
+                    <Button Content="שנה סיסמה" Style="{StaticResource ButtonPrimary}"
+                            Click="ChangePassword_Click"
+                            HorizontalAlignment="Left" Height="40" Padding="20,0"
+                            Margin="0,16,0,0" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Browser Lockdown -->
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Border Cursor="Hand" MouseLeftButtonDown="ToggleGroup_Click"
+                        Padding="0" Margin="-20,-20,-20,16">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="BrowserArrow" Text="◀" FontSize="12"
+                                   Foreground="{StaticResource BrushInkMuted}"
+                                   Margin="0,0,8,0" VerticalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Text="נעילת דפדפנים" Style="{StaticResource TypeTitle}" />
+                    </StackPanel>
+                </Border>
+                <StackPanel x:Name="BrowserContent" Visibility="Collapsed">
+                    <CheckBox x:Name="BlockBrowserLaunchBox"
+                              Style="{StaticResource Switch}"
+                              Content="חסום הפעלה של דפדפנים לא מאושרים" Margin="0,0,0,8" />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="נרשם ב-Image File Execution Options לפי שם קובץ. עובד ב-Windows 10 Home." />
+                    <CheckBox x:Name="ScanHiddenBrowsersBox"
+                              Style="{StaticResource Switch}"
+                              Content="סרוק דיסק ודפדף דפדפנים לא מאושרים" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,12">
+                        <TextBlock Text="תדירות סריקה (דקות):" Style="{StaticResource TypeLabel}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox x:Name="ScanIntervalBox" Width="80"
+                                 FlowDirection="LeftToRight" />
+                    </StackPanel>
+
+                    <!-- Approved browsers list -->
+                    <TextBlock Text="דפדפנים מאושרים" Style="{StaticResource TypeLabel}"
+                               Margin="0,0,0,8" />
+                    <CheckBox x:Name="AllowApprovedBrowsersBox"
+                              Style="{StaticResource Switch}"
+                              Content="אפשר לדפדפנים ברשימה לפעול גם בלי תוסף" Margin="0,0,0,8" />
+                    <ListBox x:Name="ApprovedBrowsersList" Height="120" BorderThickness="0" Background="Transparent" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="זהה אוטומטית" Style="{StaticResource ButtonGhost}"
+                                Height="36" Padding="12,0" Margin="0,0,4,0" />
+                        <Button Content="הוסף ידנית…" Style="{StaticResource ButtonGhost}"
+                                Height="36" Padding="12,0" Margin="0,0,4,0" />
+                        <Button Content="הסר נבחר" Style="{StaticResource ButtonDanger}"
+                                Height="36" Padding="12,0" />
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Change Control -->
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Border Cursor="Hand" MouseLeftButtonDown="ToggleGroup_Click"
+                        Padding="0" Margin="-20,-20,-20,16">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="ChangeArrow" Text="◀" FontSize="12"
+                                   Foreground="{StaticResource BrushInkMuted}"
+                                   Margin="0,0,8,0" VerticalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Text="בקרת שינויים" Style="{StaticResource TypeTitle}" />
+                    </StackPanel>
+                </Border>
+                <StackPanel x:Name="ChangeContent" Visibility="Collapsed">
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="הוספת חסימה נכנסת לתוקף מיד. הורדת חסימה ממתינה את הזמן שנקבע." Margin="0,0,0,12" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="שעות המתנה להקלה:" Style="{StaticResource TypeLabel}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox x:Name="CoolingOffBox" Width="80"
+                                 FlowDirection="LeftToRight" />
+                    </StackPanel>
+
+                    <!-- Pending change -->
+                    <Border Background="{StaticResource BrushAmberSoft}" CornerRadius="8"
+                            Padding="16" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="שינוי ממתין" Style="{StaticResource TypeLabel}"
+                                       Margin="0,0,0,4" />
+                            <TextBlock x:Name="PendingChangeText" Style="{StaticResource TypeBody}"
+                                       Text="אין שינוי ממתין." TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="רענן" Style="{StaticResource ButtonGhost}"
+                                        Height="36" Padding="12,0" Margin="0,0,4,0" />
+                                <Button Content="בטל את השינוי" Style="{StaticResource ButtonDanger}"
+                                        Height="36" Padding="12,0" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Machine-Wide Blocking -->
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Border Cursor="Hand" MouseLeftButtonDown="ToggleGroup_Click"
+                        Padding="0" Margin="-20,-20,-20,16">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="MachineArrow" Text="◀" FontSize="12"
+                                   Foreground="{StaticResource BrushInkMuted}"
+                                   Margin="0,0,8,0" VerticalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Text="חסימה ברמת המחשב" Style="{StaticResource TypeTitle}" />
+                    </StackPanel>
+                </Border>
+                <StackPanel x:Name="MachineContent" Visibility="Collapsed">
+                    <CheckBox x:Name="EnforceForAdministratorsBox"
+                              Style="{StaticResource Switch}"
+                              Content="החל כללי חסימה גם על מנהלים" Margin="0,0,0,8" />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="כבוי כברירת מחדל. כשכבוי, חוקי Firewall לא יחולו על חשבונות Administrators." />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- About -->
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Border Cursor="Hand" MouseLeftButtonDown="ToggleGroup_Click"
+                        Padding="0" Margin="-20,-20,-20,16">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="AboutArrow" Text="◀" FontSize="12"
+                                   Foreground="{StaticResource BrushInkMuted}"
+                                   Margin="0,0,8,0" VerticalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Text="אודות" Style="{StaticResource TypeTitle}" />
+                    </StackPanel>
+                </Border>
+                <StackPanel x:Name="AboutContent" Visibility="Collapsed">
+                    <TextBlock x:Name="VersionText" Style="{StaticResource TypeBody}"
+                               Text="שומר זמן מסך" Margin="0,0,0,4" />
+                    <TextBlock x:Name="InstallPathText" Style="{StaticResource TypeData}"
+                               Foreground="{StaticResource BrushInkMuted}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
+</UserControl>

@@ -111,10 +111,30 @@ public static class Installer
                 RegisterAgent(agentExe);
             }
 
-            // Create Start Menu and Desktop shortcuts
-            CreateShortcuts(serviceExePath);
+            // Ask about desktop shortcut
+            var createDesktop = true;
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "צור קיצור דרך על שולחן העבודה?",
+                    "שומר זמן מסך",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
+                createDesktop = result == System.Windows.MessageBoxResult.Yes;
+            }
+            catch
+            {
+                // MessageBox unavailable (no WPF context) — default to yes
+            }
 
-            return (true, "ההתקנה הושלמה בהצלחה. נוצרו קיצורי דרך בתפריט ההתחל ובשולחן העבודה.");
+            // Create shortcuts
+            CreateShortcuts(serviceExePath, createDesktop);
+
+            // Register in Add/Remove Programs
+            RegisterInAddRemovePrograms(serviceExePath);
+
+            var desktopMsg = createDesktop ? "稳中有增 bureau桌面上 " : string.Empty;
+            return (true, $"ההתקנה הושלמה בהצלחה. נוצרו קיצורי דרך בתפריט ההתחל{desktopMsg}.");
         }
         catch (Exception ex)
         {
@@ -201,14 +221,13 @@ public static class Installer
         }
     }
 
-    private static void CreateShortcuts(string targetPath)
+    private static void CreateShortcuts(string targetPath, bool createDesktop = true)
     {
         var exeDir = GetExeDirectory();
         var iconPath = Path.Combine(exeDir, "icon.ico");
-        var hasIcon = File.Exists(iconPath);
-        var iconArg = hasIcon ? $", {iconPath}" : string.Empty;
+        if (!File.Exists(iconPath)) iconPath = string.Empty;
 
-        // Start Menu shortcut
+        // Start Menu folder + shortcut
         var startMenuDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms),
             "Screen Time Guardian");
@@ -217,9 +236,40 @@ public static class Installer
         CreateShortcut(startMenuShortcut, targetPath, "שומר זמן מסך", iconPath);
 
         // Desktop shortcut
-        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
-        var desktopShortcut = Path.Combine(desktopPath, "שומר זמן מסך.lnk");
-        CreateShortcut(desktopShortcut, targetPath, "שומר זמן מסך", iconPath);
+        if (createDesktop)
+        {
+            var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
+            var desktopShortcut = Path.Combine(desktopPath, "שומר זמן מסך.lnk");
+            CreateShortcut(desktopShortcut, targetPath, "שומר זמן מסך", iconPath);
+        }
+    }
+
+    public static void RemoveShortcuts()
+    {
+        // Remove Start Menu folder
+        var startMenuDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms),
+            "Screen Time Guardian");
+        if (Directory.Exists(startMenuDir))
+        {
+            try { Directory.Delete(startMenuDir, recursive: true); } catch { /* non-critical */ }
+        }
+
+        // Remove Desktop shortcuts
+        var desktopDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
+        var desktopShortcut = Path.Combine(desktopDir, "שומר זמן מסך.lnk");
+        if (File.Exists(desktopShortcut))
+        {
+            try { File.Delete(desktopShortcut); } catch { /* non-critical */ }
+        }
+
+        // Also check per-user desktop
+        var userDesktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var userDesktopShortcut = Path.Combine(userDesktop, "שומר זמן מסך.lnk");
+        if (File.Exists(userDesktopShortcut))
+        {
+            try { File.Delete(userDesktopShortcut); } catch { /* non-critical */ }
+        }
     }
 
     private static void CreateShortcut(string shortcutPath, string targetPath, string description, string? iconPath)
@@ -245,6 +295,36 @@ $sc.Save()
         finally
         {
             try { File.Delete(psFile); } catch { /* non-critical */ }
+        }
+    }
+
+    private static void RegisterInAddRemovePrograms(string serviceExePath)
+    {
+        try
+        {
+            var installDir = GetExeDirectory();
+            var controlPanel = Path.Combine(installDir, "ControlPanel", "ScreenTimeGuardian.ControlPanel.exe");
+            var iconPath = Path.Combine(installDir, "ControlPanel", "icon.ico");
+
+            using var key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ScreenTimeGuardian");
+
+            key?.SetValue("DisplayName", "שומר זמן מסך");
+            key?.SetValue("DisplayVersion", "0.5.0");
+            key?.SetValue("Publisher", "Screen Time Guardian");
+            key?.SetValue("InstallLocation", installDir);
+            key?.SetValue("UninstallString",
+                $"powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"{Path.Combine(installDir, "Uninstall.ps1")}\"");
+            if (File.Exists(iconPath))
+            {
+                key?.SetValue("DisplayIcon", iconPath);
+            }
+            key?.SetValue("NoModify", 1, Microsoft.Win32.RegistryValueKind.DWord);
+            key?.SetValue("NoRepair", 1, Microsoft.Win32.RegistryValueKind.DWord);
+        }
+        catch
+        {
+            // Non-critical: registry registration may fail
         }
     }
 

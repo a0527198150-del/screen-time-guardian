@@ -1,0 +1,161 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ================================================================
+         FONTS — Section 3.1 of the design guide.
+         Font files must be in Assets/Fonts/ with Build Action = Resource.
+         The pack URI embeds the font from the assembly's resources.
+         ================================================================ -->
+
+    <FontFamily x:Key="FontUi">pack://application:,,,/Fonts/#Assistant</FontFamily>
+    <FontFamily x:Key="FontDisplay">pack://application:,,,/Fonts/#Assistant</FontFamily>
+    <FontFamily x:Key="FontData">pack://application:,,,/Fonts/#Assistant</FontFamily>
+
+    <!-- ================================================================
+         COLOR PALETTE — Section 3.4 of the design guide.
+         Ten colors. No gradients anywhere except WeekGrid.
+         No #97757D or cream/serif/black-neon palettes.
+         ================================================================ -->
+
+    <!-- Neutral ink -->
+    <Color x:Key="ClrInk">#141B2E</Color>
+    <Color x:Key="ClrInkMuted">#5A6780</Color>
+    <Color x:Key="ClrCanvas">#F4F6F9</Color>
+    <Color x:Key="ClrSurface">#FFFFFF</Color>
+    <Color x:Key="ClrLine">#E2E7EE</Color>
+
+    <!-- Teal — active, primary action -->
+    <Color x:Key="ClrTeal">#0E7C86</Color>
+    <Color x:Key="ClrTealSoft">#E0F2F1</Color>
+
+    <!-- Amber — pending change, warning -->
+    <Color x:Key="ClrAmber">#B4770F</Color>
+    <Color x:Key="ClrAmberSoft">#FDF3E2</Color>
+
+    <!-- Rose — error, delete -->
+    <Color x:Key="ClrRose">#A93226</Color>
+
+    <!-- Named brushes for convenient usage -->
+    <SolidColorBrush x:Key="BrushInk" Color="{StaticResource ClrInk}" />
+    <SolidColorBrush x:Key="BrushInkMuted" Color="{StaticResource ClrInkMuted}" />
+    <SolidColorBrush x:Key="BrushCanvas" Color="{StaticResource ClrCanvas}" />
+    <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ClrSurface}" />
+    <SolidColorBrush x:Key="BrushLine" Color="{StaticResource ClrLine}" />
+    <SolidColorBrush x:Key="BrushTeal" Color="{StaticResource ClrTeal}" />
+    <SolidColorBrush x:Key="BrushTealSoft" Color="{StaticResource ClrTealSoft}" />
+    <SolidColorBrush x:Key="BrushAmber" Color="{StaticResource ClrAmber}" />
+    <SolidColorBrush x:Key="BrushAmberSoft" Color="{StaticResource ClrAmberSoft}" />
+    <SolidColorBrush x:Key="BrushRose" Color="{StaticResource ClrRose}" />
+
+    <!-- ================================================================
+         TYPOGRAPHY — Section 3.2 of the design guide.
+         Six sizes. No more.
+         ================================================================ -->
+
+    <FontFamily x:Key="TypeDisplayFont">{StaticResource FontDisplay}</FontFamily>
+    <FontFamily x:Key="TypeUiFont">{StaticResource FontUi}</FontFamily>
+    <FontFamily x:Key="TypeDataFont">{StaticResource FontData}</FontFamily>
+
+    <!-- Screen title. One per screen. -->
+    <Style x:Key="TypeDisplay" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontDisplay}" />
+        <Setter Property="FontSize" Value="30" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+    </Style>
+
+    <!-- Card title -->
+    <Style x:Key="TypeTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="19" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+    </Style>
+
+    <!-- Body text -->
+    <Style x:Key="TypeBody" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+    </Style>
+
+    <!-- Field labels -->
+    <Style x:Key="TypeLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+    </Style>
+
+    <!-- Secondary/meta text -->
+    <Style x:Key="TypeMeta" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInkMuted}" />
+    </Style>
+
+    <!-- Data: hours, paths, domains, emails. Always LTR. -->
+    <Style x:Key="TypeData" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontData}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="FlowDirection" Value="LeftToRight" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+    </Style>
+
+    <!-- ================================================================
+         SPACING SCALE — Section 3.3 of the design guide.
+         4 · 8 · 12 · 16 · 24 · 32 · 48. Nothing outside this scale.
+         ================================================================ -->
+
+    <system:Double x:Key="Space4">4</system:Double>
+    <system:Double x:Key="Space8">8</system:Double>
+    <system:Double x:Key="Space12">12</system:Double>
+    <system:Double x:Key="Space16">16</system:Double>
+    <system:Double x:Key="Space20">20</system:Double>
+    <system:Double x:Key="Space24">24</system:Double>
+    <system:Double x:Key="Space32">32</system:Double>
+    <system:Double x:Key="Space48">48</system:Double>
+
+    <!-- ================================================================
+         CORNER RADII — Section 3.3 of the design guide.
+         6 for controls, 12 for cards, 20 for tags.
+         ================================================================ -->
+
+    <CornerRadius x:Key="RadiusControl">6</CornerRadius>
+    <CornerRadius x:Key="RadiusCard">12</CornerRadius>
+    <CornerRadius x:Key="RadiusTag">20</CornerRadius>
+
+    <!-- ================================================================
+         SHADOWS — Section 3.5 of the design guide.
+         Two levels only: ShadowCard for cards, ShadowFloat for dialogs.
+         ================================================================ -->
+
+    <DropShadowEffect x:Key="ShadowCard" BlurRadius="16" ShadowDepth="2"
+                      Direction="270" Opacity="0.06" Color="#141B2E" />
+    <DropShadowEffect x:Key="ShadowFloat" BlurRadius="32" ShadowDepth="8"
+                      Direction="270" Opacity="0.14" Color="#141B2E" />
+
+    <!-- ================================================================
+         BASE WINDOW STYLE
+         ================================================================ -->
+
+    <Style TargetType="Window">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+    </Style>
+
+    <!-- ================================================================
+         BASE TEXTBLOCK STYLE
+         ================================================================ -->
+
+    <Style TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="Margin" Value="0,4,0,4" />
+    </Style>
+
+</ResourceDictionary>

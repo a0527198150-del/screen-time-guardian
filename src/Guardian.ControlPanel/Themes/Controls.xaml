@@ -1,0 +1,442 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:ScreenTimeGuardian.ControlPanel">
+
+    <!-- ====================================================================
+         BUTTON — Section 4.1 of the design guide.
+         ControlTemplate replaces WPF's default Aero template entirely.
+         ==================================================================== -->
+
+    <!-- Base button. The entire visual is defined here: WPF's default template
+         draws its own gradient chrome and an Aero-blue hover trigger, and neither
+         can be overridden with a Setter. Replacing the template is the only way. -->
+    <Style x:Key="ButtonBase" TargetType="Button">
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="20,0" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Chrome"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6">
+                        <ContentPresenter x:Name="Body"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.88" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.74" />
+                            <Setter TargetName="Body" Property="RenderTransform">
+                                <Setter.Value><TranslateTransform Y="1" /></Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Chrome" Property="BorderBrush"
+                                    Value="{StaticResource BrushTeal}" />
+                            <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.4" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- One primary button per screen. Not two. -->
+    <Style x:Key="ButtonPrimary" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="Background" Value="{StaticResource BrushTeal}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style x:Key="ButtonSecondary" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style x:Key="ButtonGhost" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInkMuted}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <Style x:Key="ButtonDanger" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource BrushRose}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- Default button style (for controls that just reference Button by type) -->
+    <Style TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <!-- ====================================================================
+         TEXTBOX — Section 4.2 of the design guide.
+         ⚠ PART_ContentHost is mandatory. Without it, the TextBox breaks.
+         PasswordBox must NOT inherit from this style (it throws).
+         ==================================================================== -->
+
+    <Style TargetType="TextBox">
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="CaretBrush" Value="{StaticResource BrushTeal}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource BrushTeal}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Chrome"
+                            Background="{StaticResource BrushSurface}"
+                            BorderBrush="{StaticResource BrushLine}"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      VerticalAlignment="Center"
+                                      Margin="{TemplateBinding Padding}"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="BorderBrush"
+                                    Value="{StaticResource BrushInkMuted}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Chrome" Property="BorderBrush"
+                                    Value="{StaticResource BrushTeal}" />
+                            <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- PasswordBox: does NOT inherit TextBox template. Keep simple, matching visual. -->
+    <Style TargetType="PasswordBox">
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="CaretBrush" Value="{StaticResource BrushTeal}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource BrushTeal}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+    </Style>
+
+    <!-- ====================================================================
+         SWITCH (CheckBox) — Section 4.3 of the design guide.
+         Every checkbox becomes a toggle switch. Larger, clearer, modern.
+         ⚠ Verify knob moves correctly in RTL. Fix To= value if needed.
+         ==================================================================== -->
+
+    <Style x:Key="Switch" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal">
+                        <Border x:Name="Track" Width="46" Height="26" CornerRadius="13"
+                                Background="{StaticResource BrushLine}"
+                                VerticalAlignment="Center">
+                            <Ellipse x:Name="Knob" Width="20" Height="20" Fill="White"
+                                     HorizontalAlignment="Left" Margin="3,0,0,0">
+                                <Ellipse.RenderTransform>
+                                    <TranslateTransform x:Name="KnobShift" X="0" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Border>
+                        <ContentPresenter Margin="12,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background"
+                                    Value="{StaticResource BrushTeal}" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="KnobShift"
+                                                         Storyboard.TargetProperty="X"
+                                                         To="20" Duration="0:0:0.16">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="KnobShift"
+                                                         Storyboard.TargetProperty="X"
+                                                         To="0" Duration="0:0:0.16" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Track" Property="BorderBrush"
+                                    Value="{StaticResource BrushTeal}" />
+                            <Setter TargetName="Track" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Default checkbox style (for inline checkboxes that keep the standard look) -->
+    <Style TargetType="CheckBox">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- ====================================================================
+         LISTBOXITEM — Section 4.4 of the design guide.
+         Card-like item: Surface background, corner radius 12, padding 20,
+         bottom margin 12, hover adds shadow, selected adds Teal border.
+         ==================================================================== -->
+
+    <Style TargetType="ListBoxItem">
+        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="20" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect BlurRadius="8" ShadowDepth="1" Direction="270"
+                                                      Opacity="0.08" Color="#141B2E" />
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush"
+                                    Value="{StaticResource BrushTeal}" />
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ====================================================================
+         LISTBOX — Section 4.4 of the design guide.
+         Transparent background, no visible border.
+         ==================================================================== -->
+
+    <Style TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+    </Style>
+
+    <!-- ====================================================================
+         TOOLTIP — Section 4.4 of the design guide.
+         Ink background, white text, corner radius 6.
+         ==================================================================== -->
+
+    <Style TargetType="ToolTip">
+        <Setter Property="Background" Value="{StaticResource BrushInk}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ====================================================================
+         SCROLLBAR — Section 4.4 of the design guide.
+         Width 8, thumb only (no arrows), corner radius 4,
+         appears on hover. Color #DD2D9C is the WPF default we override.
+         ==================================================================== -->
+
+    <Style TargetType="ScrollBar">
+        <Setter Property="Width" Value="8" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- ====================================================================
+         COMBOBOX — Section 4.4 of the design guide.
+         Most ugly WPF control. Needs full template including ToggleButton + Popup.
+         ==================================================================== -->
+
+    <Style TargetType="ComboBox">
+        <Setter Property="Height" Value="40" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- ====================================================================
+         GROUPBOX
+         ==================================================================== -->
+
+    <Style TargetType="GroupBox">
+        <Setter Property="Padding" Value="20" />
+        <Setter Property="Margin" Value="0,0,0,24" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="15" />
+    </Style>
+
+    <!-- ====================================================================
+         TABCONTROL / TABITEM — Section 5: no TabControl in the new UI.
+         Kept for backward compatibility only; the new UI uses navigation sidebar.
+         ==================================================================== -->
+
+    <Style TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style TargetType="TabItem">
+        <Setter Property="Visibility" Value="Collapsed" />
+    </Style>
+
+    <!-- ====================================================================
+         CARD STYLES — Used across all views.
+         ==================================================================== -->
+
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="20" />
+        <Setter Property="Margin" Value="0,0,0,24" />
+        <Setter Property="Effect" Value="{StaticResource ShadowCard}" />
+    </Style>
+
+    <!-- Hint / secondary text style -->
+    <Style x:Key="Hint" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInkMuted}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+        <Setter Property="LineHeight" Value="20" />
+    </Style>
+
+    <!-- Filter tag style (for the rules view) -->
+    <Style x:Key="FilterTag" TargetType="RadioButton">
+        <Setter Property="FontFamily" Value="{StaticResource FontUi}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource BrushInkMuted}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="Margin" Value="0,0,4,4" />
+        <Setter Property="GroupName" Value="FilterGroup" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bd"
+                            Background="Transparent"
+                            CornerRadius="20"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{StaticResource BrushTealSoft}" />
+                            <Setter Property="Foreground" Value="{StaticResource BrushInk}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{StaticResource BrushTealSoft}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- WeekGrid style -->
+    <Style x:Key="WeekGridCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="Margin" Value="0,0,0,16" />
+        <Setter Property="Effect" Value="{StaticResource ShadowCard}" />
+    </Style>
+
+    <Style TargetType="local:WeekGrid">
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="Margin" Value="0,8" />
+    </Style>
+
+</ResourceDictionary>

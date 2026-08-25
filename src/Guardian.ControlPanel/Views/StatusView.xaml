@@ -7,50 +7,50 @@
         <StackPanel Margin="24" MaxWidth="900" HorizontalAlignment="Center">
             <!-- Header -->
             <TextBlock Text="מה קורה עכשיו" FontSize="32" FontWeight="Bold"
-                       FontFamily="Assistant, Segoe UI, Arial" Margin="0,0,0,4" />
+                       FontFamily="{StaticResource FontUi}" Margin="0,0,0,4" />
             <TextBlock Text="תמונה קצרה וברורה של האכיפה ושל השינוי הבא."
-                       Foreground="{DynamicResource MutedInk}" FontSize="15" Margin="0,0,0,24" />
+                       Foreground="{StaticResource BrushInkMuted}" FontSize="15" Margin="0,0,0,24" />
 
             <!-- Enforcement Status Card -->
-            <Border x:Name="EnforcementCard" Style="{DynamicResource ActiveCard}">
+            <Border x:Name="EnforcementCard" Style="{StaticResource Card}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Ellipse Width="10" Height="10" Fill="{DynamicResource Teal}" Margin="0,0,10,0"
+                        <Ellipse Width="10" Height="10" Fill="{StaticResource BrushTeal}" Margin="0,0,10,0"
                                  VerticalAlignment="Center" />
                         <TextBlock x:Name="EnforcementTitle" Text="אכיפה פעילה כרגע"
                                    FontSize="20" FontWeight="SemiBold"
-                                   FontFamily="Assistant, Segoe UI, Arial" />
+                                   FontFamily="{StaticResource FontUi}" />
                     </StackPanel>
                     <TextBlock x:Name="EnforcementReason" TextWrapping="Wrap"
-                               Foreground="{DynamicResource MutedInk}" FontSize="14"
+                               Foreground="{StaticResource BrushInkMuted}" FontSize="14"
                                Margin="20,0,0,0" />
                 </StackPanel>
             </Border>
 
             <!-- Active Blocks Card -->
-            <Border Style="{DynamicResource StatusCard}">
+            <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBlock Text="חסום כרגע" FontSize="20" FontWeight="SemiBold"
-                                   FontFamily="Assistant, Segoe UI, Arial" />
+                                   FontFamily="{StaticResource FontUi}" />
                     </StackPanel>
                     <ListBox x:Name="ActiveRulesListBox" BorderThickness="0"
                              Background="Transparent" />
                     <TextBlock x:Name="NoActiveText" Text="אין חסימות פעילות כרגע."
-                               Foreground="{DynamicResource MutedInk}" FontSize="14"
+                               Foreground="{StaticResource BrushInkMuted}" FontSize="14"
                                Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
 
             <!-- Week Grid Card -->
-            <Border Style="{DynamicResource StatusCard}">
+            <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                         <TextBlock Text="לוח השבוע" FontSize="20" FontWeight="SemiBold"
-                                   FontFamily="Assistant, Segoe UI, Arial" />
+                                   FontFamily="{StaticResource FontUi}" />
                     </StackPanel>
                     <TextBlock Text="תצוגה לקריאה בלבד של חלונות החסימה."
-                               Foreground="{DynamicResource MutedInk}" FontSize="14"
+                               Foreground="{StaticResource BrushInkMuted}" FontSize="14"
                                Margin="0,2,0,12" />
                     <local:WeekGrid x:Name="StatusWeekGrid" Height="480" MinHeight="340"
                                     IsHitTestVisible="False" />
@@ -58,14 +58,14 @@
             </Border>
 
             <!-- Upcoming Card -->
-            <Border Style="{DynamicResource StatusCard}">
+            <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBlock Text="הבא בתור" FontSize="20" FontWeight="SemiBold"
-                                   FontFamily="Assistant, Segoe UI, Arial" />
+                                   FontFamily="{StaticResource FontUi}" />
                     </StackPanel>
                     <TextBlock x:Name="UpcomingText" Text="אין אירוע מתוזמן קרוב."
-                               Foreground="{DynamicResource MutedInk}" TextWrapping="Wrap"
+                               Foreground="{StaticResource BrushInkMuted}" TextWrapping="Wrap"
                                FontSize="14" Margin="0,2,0,0" />
                 </StackPanel>
             </Border>
