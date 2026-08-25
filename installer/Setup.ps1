@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.5.3'
+$script:Version     = '0.5.4'
 $script:AppName     = 'Screen Time Guardian'
 $script:AppNameHeb  = 'שומר זמן מסך'
 
@@ -416,13 +416,27 @@ Write-Step 'תיקיית נתונים מאובטחת.'
 
 # ---- 4. Stop existing service ----------------------------------------------
 $existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-if ($existingService -and $existingService.Status -ne 'Stopped') {
+if ($existingService) {
     Write-Host '  עוצר שירות קיים...'
-    Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 3
+    if ($existingService.Status -ne 'Stopped') {
+        Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
+    }
+    # מחכה עד שהשירות נעצר לגמרי — רק אז קבצי ה-exe שלו משתחררים
+    for ($i = 0; $i -lt 15; $i++) {
+        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if (-not $svc -or $svc.Status -eq 'Stopped') { break }
+        Start-Sleep -Seconds 1
+    }
+    Start-Sleep -Seconds 2
 }
 
-# ---- 5. Copy files ----------------------------------------------------------
+# ---- 4b. Stop every ScreenTimeGuardian process ------------------------------
+Get-Process -ErrorAction SilentlyContinue | Where-Object {
+    $_.ProcessName -match '^ScreenTimeGuardian\.'
+} | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 3
+
+# ---- 5. Copy files (עדכון במקום — אין צורך בהסרה ידנית) ---------------------
 $sourceFull = [System.IO.Path]::GetFullPath($SourceFolder).TrimEnd('\')
 $targetFull = [System.IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
 
@@ -430,17 +444,38 @@ if ($sourceFull -eq $targetFull) {
     Write-Step 'הקבצים כבר במקום.'
 }
 else {
-    Write-Host "  מעתיק אל $InstallRoot..."
+    Write-Host "  מעדכן את הקבצים ב-$InstallRoot..."
+    $freshCopy = $false
     if (Test-Path $InstallRoot) {
-        # עוצר תהליכים שעשויים לנעול קבצים (סוכן/לוח בקרה)
-        Get-Process -ErrorAction SilentlyContinue | Where-Object {
-            $_.ProcessName -match '^ScreenTimeGuardian\.(Agent|ControlPanel|NativeHost|Updater)$'
-        } | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 2
-        Remove-Item -Path $InstallRoot -Recurse -Force -ErrorAction Stop
+        # מנסה למחוק את הגרסה הישנה עם ניסיונות חוזרים — אחרי שעצרנו את כל
+        # התהליכים, קבצים נעולים (clrjit.dll וכו') משתחררים תוך שניות.
+        for ($attempt = 0; $attempt -lt 10; $attempt++) {
+            try {
+                Remove-Item -Path $InstallRoot -Recurse -Force -ErrorAction Stop
+                $freshCopy = $true
+                break
+            }
+            catch {
+                Start-Sleep -Seconds 2
+            }
+        }
+        if (-not $freshCopy) {
+            # עדיין יש קבצים נעולים — מעדכן במקום: robocopy מנסה שוב לכל קובץ
+            # נעול וכותב מעל כל השאר. זה עדיין עדכון מלא, בלי הסרה ידנית.
+            Write-Warn 'קבצים מסוימים נעולים — מעדכן במקום (robocopy).'
+            robocopy $SourceFolder $InstallRoot /MIR /R:5 /W:3 /NFL /NDL /NJH /NJS | Out-Null
+            if ($LASTEXITCODE -ge 8) {
+                Write-Warn "robocopy סיים עם קוד $LASTEXITCODE — הרץ שוב את המתקין אחרי אתחול כדי להשלים."
+            }
+        }
     }
-    Copy-Item -Path $SourceFolder -Destination $InstallRoot -Recurse -Force
-    Write-Step 'הקבצים הועתקו.'
+    else {
+        $freshCopy = $true
+    }
+    if ($freshCopy) {
+        Copy-Item -Path $SourceFolder -Destination $InstallRoot -Recurse -Force
+    }
+    Write-Step 'הקבצים עודכנו.'
 }
 
 $policiesDir = Join-Path $InstallRoot 'Policies'
