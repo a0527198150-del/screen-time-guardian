@@ -248,9 +248,9 @@ public partial class RuleWizard : Window
             // Set style via resource lookup
             if (Application.Current.TryFindResource("ButtonSecondary") is Style btnStyle)
                 discoveredBtn.Style = btnStyle;
-            _step1Detail.Children.Add(_siteDomainBox);
-            _step1Detail.Children.Add(hint);
-            _step1Detail.Children.Add(discoveredBtn);
+            _step1Detail?.Children.Add(_siteDomainBox);
+            _step1Detail?.Children.Add(hint);
+            _step1Detail?.Children.Add(discoveredBtn);
         }
         else if (type == "account")
         {
@@ -260,7 +260,7 @@ public partial class RuleWizard : Window
                 FlowDirection = FlowDirection.LeftToRight,
                 Margin = new Thickness(0, 0, 0, 8)
             };
-            _step1Detail.Children.Add(_accountEmailBox);
+            _step1Detail?.Children.Add(_accountEmailBox);
         }
         else if (type == "app")
         {
@@ -272,7 +272,7 @@ public partial class RuleWizard : Window
             };
             if (Application.Current.TryFindResource("ButtonSecondary") is Style btnStyle)
                 browseBtn.Style = btnStyle;
-            _step1Detail.Children.Add(browseBtn);
+            _step1Detail?.Children.Add(browseBtn);
         }
     }
 

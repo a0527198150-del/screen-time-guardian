@@ -237,7 +237,6 @@
         <Setter Property="Background" Value="{StaticResource BrushSurface}" />
         <Setter Property="BorderBrush" Value="{StaticResource BrushLine}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Padding" Value="20" />
         <Setter Property="Margin" Value="0,0,0,12" />
         <Setter Property="MinHeight" Value="40" />
@@ -251,7 +250,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="{TemplateBinding CornerRadius}"
+                            CornerRadius="12"
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="True">
                         <ContentPresenter />
