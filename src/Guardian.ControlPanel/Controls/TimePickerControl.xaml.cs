@@ -5,66 +5,53 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace ScreenTimeGuardian.ControlPanel.Dialogs;
+namespace ScreenTimeGuardian.ControlPanel;
 
 /// <summary>
-/// Analog clock time picker. Two-step selection: pick an hour, then a minute.
-/// 24-hour layout: outer ring shows hours 0–11, inner ring hours 12–23.
-/// The minute ring is shown after the hour is chosen.
+/// Inline analog clock for picking an hour and a minute, hosted directly in the
+/// wizard (no separate window). Two-step selection: pick an hour — outer ring
+/// shows 0–11, inner ring 12–23 — then a minute (every 5 minutes).
 ///
 /// Selection is computed geometrically from the click position (angle and
-/// distance from the center), so it is immune to FlowDirection/RTL quirks.
+/// distance from the center), so it works regardless of FlowDirection.
 /// </summary>
-public partial class TimePickerDialog : Window
+public partial class TimePickerControl : UserControl
 {
-    private const double CenterX = 126;
-    private const double CenterY = 126;
-    private const double OuterRadius = 98;   // hours 0–11 and minute ticks
-    private const double InnerRadius = 62;   // hours 12–23
-    private const double MarkerSize = 34;    // hit area of one marker
+    private const double Center = 110;
+    private const double OuterRadius = 86;   // hours 0–11 and minute ticks
+    private const double InnerRadius = 54;   // hours 12–23
+    private const double MarkerSize = 30;    // hit area of one marker
 
     private readonly SolidColorBrush _teal = new(Color.FromRgb(14, 124, 134));
     private readonly SolidColorBrush _tealSoft = new(Color.FromRgb(224, 242, 241));
     private readonly SolidColorBrush _ink = new(Color.FromRgb(20, 27, 46));
 
-    private int _hour;
+    private int _hour = 22;
     private int _minute;
     private bool _minuteMode;
 
-    /// <summary>The time chosen by the user (valid when DialogResult is true).</summary>
+    /// <summary>The time selected so far (valid once SelectionCompleted fires).</summary>
     public TimeSpan SelectedTime => new(_hour % 24, _minute, 0);
 
-    public TimePickerDialog(int initialHour = 22, int initialMinute = 0)
+    /// <summary>Raised when the user picks a minute (selection is complete).</summary>
+    public event EventHandler? SelectionCompleted;
+
+    public TimePickerControl()
     {
         InitializeComponent();
-        _hour = Math.Clamp(initialHour, 0, 23);
-        _minute = Math.Clamp(initialMinute, 0, 59);
-        UpdateReadout();
         BuildHourFace();
     }
 
-    private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
-
-    private void Ok_Click(object sender, RoutedEventArgs e) => DialogResult = true;
-
-    private void Readout_Click(object sender, RoutedEventArgs e)
+    /// <summary>Reset the control to the given time and show the hour face.</summary>
+    public void Initialize(TimeSpan time)
     {
-        _minuteMode = !_minuteMode;
-        RebuildFace();
-    }
-
-    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Escape) { DialogResult = false; e.Handled = true; }
-        else if (e.Key == Key.Enter) { DialogResult = true; e.Handled = true; }
+        _hour = Math.Clamp(time.Hours, 0, 23);
+        _minute = Math.Clamp(time.Minutes, 0, 59);
+        _minuteMode = false;
+        BuildHourFace();
     }
 
     // ================================================================ face
-
-    private void RebuildFace()
-    {
-        if (_minuteMode) BuildMinuteFace(); else BuildHourFace();
-    }
 
     private void BuildHourFace()
     {
@@ -89,6 +76,7 @@ public partial class TimePickerDialog : Window
 
         _minuteMode = false;
         ModeText.Text = "בחר שעה";
+        UpdateReadout();
     }
 
     private void BuildMinuteFace()
@@ -106,6 +94,7 @@ public partial class TimePickerDialog : Window
 
         _minuteMode = true;
         ModeText.Text = "בחר דקה";
+        UpdateReadout();
     }
 
     private Border CreateMarker(string label, double radius, double angleDeg,
@@ -117,7 +106,7 @@ public partial class TimePickerDialog : Window
         {
             Text = label,
             FontFamily = (FontFamily)FindResource(isHour ? "FontUi" : "FontData"),
-            FontSize = isHour ? 14 : 12,
+            FontSize = isHour ? 13 : 11,
             FontWeight = selected ? FontWeights.Bold : FontWeights.Normal,
             Foreground = selected ? _teal : _ink,
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -152,8 +141,8 @@ public partial class TimePickerDialog : Window
             RenderTransformOrigin = new Point(0, 0.5)
         };
         hand.RenderTransform = new RotateTransform(angleDeg);
-        Canvas.SetLeft(hand, CenterX);
-        Canvas.SetTop(hand, CenterY - 1.5);
+        Canvas.SetLeft(hand, Center);
+        Canvas.SetTop(hand, Center - 1.5);
         ClockCanvas.Children.Add(hand);
     }
 
@@ -161,19 +150,19 @@ public partial class TimePickerDialog : Window
     {
         var dot = new Ellipse
         {
-            Width = 8,
-            Height = 8,
+            Width = 7,
+            Height = 7,
             Fill = _teal
         };
-        Canvas.SetLeft(dot, CenterX - 4);
-        Canvas.SetTop(dot, CenterY - 4);
+        Canvas.SetLeft(dot, Center - 3.5);
+        Canvas.SetTop(dot, Center - 3.5);
         ClockCanvas.Children.Add(dot);
     }
 
     private static (double X, double Y) Polar(double radius, double angleDeg)
     {
         var radians = angleDeg * Math.PI / 180.0;
-        return (CenterX + radius * Math.Cos(radians), CenterY + radius * Math.Sin(radians));
+        return (Center + radius * Math.Cos(radians), Center + radius * Math.Sin(radians));
     }
 
     // ================================================================ input
@@ -181,8 +170,8 @@ public partial class TimePickerDialog : Window
     private void ClockCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         var point = e.GetPosition(ClockCanvas);
-        var dx = point.X - CenterX;
-        var dy = point.Y - CenterY;
+        var dx = point.X - Center;
+        var dy = point.Y - Center;
         var distance = Math.Sqrt(dx * dx + dy * dy);
 
         // Outside the outer ring (or in the dead center) — ignore.
@@ -193,9 +182,11 @@ public partial class TimePickerDialog : Window
 
         if (_minuteMode)
         {
+            // Snap to the 5-minute marks that are drawn on the dial.
             _minute = (int)Math.Round(angle / 6.0) % 60;
-            BuildMinuteFace();   // re-render with the new selection highlight
-            UpdateReadout();
+            _minute = (int)(Math.Round(_minute / 5.0) * 5) % 60;
+            BuildMinuteFace();
+            SelectionCompleted?.Invoke(this, EventArgs.Empty);
             return;
         }
 
@@ -203,9 +194,7 @@ public partial class TimePickerDialog : Window
         var step = (int)Math.Round(angle / 30.0) % 12;
         _hour = distance <= InnerRadius + MarkerSize / 2 ? 12 + step : step;
         _hour %= 24;
-        _minuteMode = true;
         BuildMinuteFace();
-        UpdateReadout();
     }
 
     private void UpdateReadout()

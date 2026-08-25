@@ -1,0 +1,29 @@
+<UserControl x:Class="ScreenTimeGuardian.ControlPanel.TimePickerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FlowDirection="RightToLeft">
+
+    <StackPanel>
+
+        <!-- Live digital readout -->
+        <TextBlock x:Name="ReadoutText" Text="22:00"
+                   FontFamily="{StaticResource FontData}" FontSize="32"
+                   FontWeight="SemiBold" Foreground="{StaticResource BrushInk}"
+                   HorizontalAlignment="Center" Margin="0,0,0,2" />
+
+        <TextBlock x:Name="ModeText" Text="בחר שעה"
+                   Style="{StaticResource TypeMeta}"
+                   HorizontalAlignment="Center" Margin="0,0,0,10" />
+
+        <!-- Clock face -->
+        <Border Width="220" Height="220" CornerRadius="110"
+                BorderBrush="{StaticResource BrushLine}" BorderThickness="1"
+                Background="{StaticResource BrushCanvas}"
+                HorizontalAlignment="Center">
+            <Canvas x:Name="ClockCanvas" Width="220" Height="220"
+                    FlowDirection="LeftToRight" Background="Transparent"
+                    MouseLeftButtonDown="ClockCanvas_MouseLeftButtonDown" />
+        </Border>
+
+    </StackPanel>
+</UserControl>

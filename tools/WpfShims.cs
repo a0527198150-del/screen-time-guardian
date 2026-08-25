@@ -145,6 +145,25 @@ namespace System.Windows.Controls
         public Thickness? BorderThickness { get; set; }
         public Thickness? Padding { get; set; }
         public double FontSize { get; set; }
+        public CornerRadius CornerRadius { get; set; }
+    }
+
+    public class UserControl : Control
+    {
+        public void InitializeComponent() { }
+    }
+
+    public class Canvas : Panel
+    {
+        public static void SetLeft(UIElement element, double value) { }
+        public static void SetTop(UIElement element, double value) { }
+        public static double GetLeft(UIElement element) => 0;
+        public static double GetTop(UIElement element) => 0;
+    }
+
+    public struct CornerRadius
+    {
+        public CornerRadius(double uniformLength) { }
     }
 
     public class TextBlock : FrameworkElement { public string Text { get; set; } = string.Empty; public Brush? Foreground { get; set; } }

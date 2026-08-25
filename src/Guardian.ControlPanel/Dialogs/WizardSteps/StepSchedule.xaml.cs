@@ -1,7 +1,6 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using ScreenTimeGuardian.ControlPanel.Dialogs;
 
 namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 {
@@ -21,6 +20,8 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
         public string StartTime => $"{_startHour:00}:{_startMinute:00}";
         public string EndTime => $"{_endHour:00}:{_endMinute:00}";
 
+        private bool _clockForStart = true;
+
         public StepSchedule()
         {
             InitializeComponent();
@@ -29,6 +30,7 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
                 UpdateSummary();
                 NotifyValidityChanged();
             };
+            ClockControl.SelectionCompleted += ClockControl_SelectionCompleted;
             Loaded += (_, _) =>
             {
                 UpdateTimeButtons();
@@ -43,20 +45,37 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
         }
 
         private void PickStartTime_Click(object sender, RoutedEventArgs e)
-            => PickTime(ref _startHour, ref _startMinute);
+            => OpenClock(forStart: true);
 
         private void PickEndTime_Click(object sender, RoutedEventArgs e)
-            => PickTime(ref _endHour, ref _endMinute);
+            => OpenClock(forStart: false);
 
-        private void PickTime(ref int hour, ref int minute)
+        private void OpenClock(bool forStart)
         {
-            var dialog = new TimePickerDialog(hour, minute) { Owner = Window.GetWindow(this) };
-            if (dialog.ShowDialog() == true)
+            _clockForStart = forStart;
+            ClockControl.Initialize(forStart
+                ? new TimeSpan(_startHour, _startMinute, 0)
+                : new TimeSpan(_endHour, _endMinute, 0));
+            ClockPanel.Visibility = Visibility.Visible;
+        }
+
+        private void ClockControl_SelectionCompleted(object? sender, EventArgs e)
+        {
+            var selected = ClockControl.SelectedTime;
+            if (_clockForStart)
             {
-                hour = dialog.SelectedTime.Hours;
-                minute = dialog.SelectedTime.Minutes;
-                UpdateTimeButtons();
+                _startHour = selected.Hours;
+                _startMinute = selected.Minutes;
             }
+            else
+            {
+                _endHour = selected.Hours;
+                _endMinute = selected.Minutes;
+            }
+
+            ClockPanel.Visibility = Visibility.Collapsed;
+            UpdateTimeButtons();
+            NotifyValidityChanged();
         }
 
         private void ApplyTime_Click(object sender, RoutedEventArgs e)
