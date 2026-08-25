@@ -131,8 +131,7 @@ namespace System.Windows.Controls
     public class TextBlock : FrameworkElement { public string Text { get; set; } = string.Empty; public Brush? Foreground { get; set; } }
     public class TextBox : Control { public string Text { get; set; } = string.Empty; }
     public class PasswordBox : Control { public string Password { get; set; } = string.Empty; }
-    public class ButtonBase : Control { public object? Content { get; set; } }
-    public class Button : ButtonBase { }
+    public class Button : Control { public object? Content { get; set; } }
     public class CheckBox : Control { public bool? IsChecked { get; set; } public object? Content { get; set; } }
 
     public class ItemCollection : IEnumerable

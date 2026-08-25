@@ -111,7 +111,7 @@ public partial class MainWindow : Window
 
     private bool _isBusy;
 
-    private async Task RunWithLockAsync(Func<Task> action, ButtonBase? button = null)
+    private async Task RunWithLockAsync(Func<Task> action, Button? button = null)
     {
         if (_isBusy) return;
         _isBusy = true;
