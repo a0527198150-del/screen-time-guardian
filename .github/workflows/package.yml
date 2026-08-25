@@ -55,3 +55,29 @@ jobs:
           name: ScreenTimeGuardian-${{ github.ref_name }}
           path: artifacts/ScreenTimeGuardian.exe
           if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Screen Time Guardian ${{ github.ref_name }}"
+          body: |
+            ## Screen Time Guardian ${{ github.ref_name }}
+
+            ### התקנה
+            1. הורד את `ScreenTimeGuardian.exe`
+            2. לחץ לחיצה ימנית → **הפעל כמנהל**
+            3. בצע את שלבי ההתקנה
+            4. פתח את לוח הבקרה מהתפריט ההתחל
+
+            ### מה חדש בגרסה זו
+            - ממשק חדש לגמרי — 3 מסכים במקום 8 לשוניות
+            - אשף creation לכללים ב-3 שלבים
+            - תבניות פקד מותאמות אישית (אין Aero כחול בריחוף)
+            - מתקין מקצועי בסגנון Google עם קיצורי דרך
+            - ניווט מקלדת מלא בלוח הזמנים
+            - תמיכה מלאה ב-RTL
+          files: artifacts/ScreenTimeGuardian.exe
+          draft: false
+          prerelease: false
