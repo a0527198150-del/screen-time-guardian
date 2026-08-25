@@ -101,34 +101,27 @@ public partial class SettingsView : UserControl
     {
         if (sender is not Border toggleBorder) return;
 
-        // toggleBorder -> toggleHeader (StackPanel) -> cardStack (StackPanel) -> card (Border)
-        var toggleHeader = toggleBorder.Parent as StackPanel;
-        var cardStack = toggleHeader?.Parent as StackPanel;
-        var card = cardStack?.Parent as Border;
-        if (card?.Child is not StackPanel cardContent) return;
+        // The clicked Border sits directly inside the card's content StackPanel,
+        // whose children are [toggleBorder, contentPanel].
+        if (toggleBorder.Parent is not StackPanel cardContent) return;
 
-        // cardContent has two children: toggleHeader and contentPanel
         foreach (var child in cardContent.Children)
         {
-            if (child is StackPanel content && child != toggleHeader)
-            {
-                content.Visibility = content.Visibility == Visibility.Visible
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
+            if (ReferenceEquals(child, toggleBorder)) continue;
+            if (child is not StackPanel content) continue;
 
-                // Rotate arrow
-                if (toggleHeader?.Children[0] is StackPanel arrowStack &&
-                    arrowStack.Children.Count > 0 &&
-                    arrowStack.Children[0] is TextBlock arrow)
-                {
-                    var rotate = arrow.RenderTransform as System.Windows.Media.RotateTransform;
-                    if (rotate is not null)
-                    {
-                        rotate.Angle = content.Visibility == Visibility.Visible ? 0 : -90;
-                    }
-                }
-                break;
+            var show = content.Visibility != Visibility.Visible;
+            content.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+
+            // Rotate the arrow (first child of the toggle's horizontal StackPanel)
+            if (toggleBorder.Child is StackPanel header &&
+                header.Children.Count > 0 &&
+                header.Children[0] is TextBlock arrow &&
+                arrow.RenderTransform is System.Windows.Media.RotateTransform rotate)
+            {
+                rotate.Angle = show ? 0 : -90;
             }
+            break;
         }
     }
 

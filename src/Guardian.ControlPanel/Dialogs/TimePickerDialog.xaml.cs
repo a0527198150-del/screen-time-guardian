@@ -11,6 +11,9 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs;
 /// Analog clock time picker. Two-step selection: pick an hour, then a minute.
 /// 24-hour layout: outer ring shows hours 0–11, inner ring hours 12–23.
 /// The minute ring is shown after the hour is chosen.
+///
+/// Selection is computed geometrically from the click position (angle and
+/// distance from the center), so it is immune to FlowDirection/RTL quirks.
 /// </summary>
 public partial class TimePickerDialog : Window
 {
@@ -27,7 +30,6 @@ public partial class TimePickerDialog : Window
     private int _hour;
     private int _minute;
     private bool _minuteMode;
-    private Border? _selectedMinuteMarker;
 
     /// <summary>The time chosen by the user (valid when DialogResult is true).</summary>
     public TimeSpan SelectedTime => new(_hour % 24, _minute, 0);
@@ -40,8 +42,6 @@ public partial class TimePickerDialog : Window
         UpdateReadout();
         BuildHourFace();
     }
-
-    private void Overlay_Click(object sender, MouseButtonEventArgs e) => DialogResult = false;
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
@@ -63,8 +63,6 @@ public partial class TimePickerDialog : Window
 
     private void RebuildFace()
     {
-        ClockCanvas.Children.Clear();
-        _selectedMinuteMarker = null;
         if (_minuteMode) BuildMinuteFace(); else BuildHourFace();
     }
 
@@ -78,17 +76,15 @@ public partial class TimePickerDialog : Window
         // Hours 0–11 on the outer ring (0 at the top).
         for (var hour = 0; hour < 12; hour++)
         {
-            var marker = CreateMarker(hour.ToString(), OuterRadius, hour * 30 - 90,
-                hour == _hour, isHour: true, value: hour);
-            ClockCanvas.Children.Add(marker);
+            ClockCanvas.Children.Add(CreateMarker(hour.ToString(), OuterRadius, hour * 30 - 90,
+                hour == _hour, isHour: true));
         }
 
         // Hours 12–23 on the inner ring (12 at the top).
         for (var hour = 12; hour < 24; hour++)
         {
-            var marker = CreateMarker(hour.ToString(), InnerRadius, (hour - 12) * 30 - 90,
-                hour == _hour, isHour: true, value: hour);
-            ClockCanvas.Children.Add(marker);
+            ClockCanvas.Children.Add(CreateMarker(hour.ToString(), InnerRadius, (hour - 12) * 30 - 90,
+                hour == _hour, isHour: true));
         }
 
         _minuteMode = false;
@@ -98,16 +94,14 @@ public partial class TimePickerDialog : Window
     private void BuildMinuteFace()
     {
         ClockCanvas.Children.Clear();
-        _selectedMinuteMarker = null;
 
         DrawCenterDot();
         DrawHand(_minute * 6 - 90, OuterRadius);
 
         for (var minute = 0; minute < 60; minute += 5)
         {
-            var marker = CreateMarker(minute.ToString("00"), OuterRadius, minute * 6 - 90,
-                minute == _minute, isHour: false, value: minute);
-            ClockCanvas.Children.Add(marker);
+            ClockCanvas.Children.Add(CreateMarker(minute.ToString("00"), OuterRadius, minute * 6 - 90,
+                minute == _minute, isHour: false));
         }
 
         _minuteMode = true;
@@ -115,7 +109,7 @@ public partial class TimePickerDialog : Window
     }
 
     private Border CreateMarker(string label, double radius, double angleDeg,
-        bool selected, bool isHour, int value)
+        bool selected, bool isHour)
     {
         var (x, y) = Polar(radius, angleDeg);
 
@@ -136,18 +130,11 @@ public partial class TimePickerDialog : Window
             Height = MarkerSize,
             CornerRadius = new CornerRadius(MarkerSize / 2),
             Background = selected ? _tealSoft : Brushes.Transparent,
-            Cursor = Cursors.Hand,
-            Child = text,
-            Tag = value
+            Child = text
         };
 
         Canvas.SetLeft(border, x - MarkerSize / 2);
         Canvas.SetTop(border, y - MarkerSize / 2);
-
-        if (selected && !isHour)
-        {
-            _selectedMinuteMarker = border;
-        }
 
         return border;
     }
@@ -194,53 +181,30 @@ public partial class TimePickerDialog : Window
     private void ClockCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         var point = e.GetPosition(ClockCanvas);
-        Border? best = null;
-        var bestDistance = double.MaxValue;
+        var dx = point.X - CenterX;
+        var dy = point.Y - CenterY;
+        var distance = Math.Sqrt(dx * dx + dy * dy);
 
-        foreach (var child in ClockCanvas.Children)
-        {
-            if (child is not Border marker) continue;
+        // Outside the outer ring (or in the dead center) — ignore.
+        if (distance < 12 || distance > OuterRadius + MarkerSize / 2) return;
 
-            var left = Canvas.GetLeft(marker) + MarkerSize / 2;
-            var top = Canvas.GetTop(marker) + MarkerSize / 2;
-            var distance = Math.Sqrt((point.X - left) * (point.X - left)
-                + (point.Y - top) * (point.Y - top));
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = marker;
-            }
-        }
-
-        if (best is null || best.Tag is not int value || bestDistance > 26) return;
+        // Angle measured clockwise from 12 o'clock.
+        var angle = (Math.Atan2(dy, dx) * 180.0 / Math.PI + 90.0 + 360.0) % 360.0;
 
         if (_minuteMode)
         {
-            _minute = value;
-            if (_selectedMinuteMarker is not null)
-            {
-                _selectedMinuteMarker.Background = Brushes.Transparent;
-                if (_selectedMinuteMarker.Child is TextBlock tb)
-                {
-                    tb.Foreground = _ink;
-                    tb.FontWeight = FontWeights.Normal;
-                }
-            }
-            _selectedMinuteMarker = best;
-            best.Background = _tealSoft;
-            if (best.Child is TextBlock selectedText)
-            {
-                selectedText.Foreground = _teal;
-                selectedText.FontWeight = FontWeights.Bold;
-            }
+            _minute = (int)Math.Round(angle / 6.0) % 60;
+            BuildMinuteFace();   // re-render with the new selection highlight
             UpdateReadout();
             return;
         }
 
-        // Hour mode: select the hour and advance to the minute face.
-        _hour = value;
+        // Hour mode: inner ring = 12–23, outer ring = 0–11.
+        var step = (int)Math.Round(angle / 30.0) % 12;
+        _hour = distance <= InnerRadius + MarkerSize / 2 ? 12 + step : step;
+        _hour %= 24;
         _minuteMode = true;
-        RebuildFace();
+        BuildMinuteFace();
         UpdateReadout();
     }
 

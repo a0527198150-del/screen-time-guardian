@@ -5,8 +5,13 @@ namespace System.Windows
     using System.Windows.Media;
 
     public class DependencyObject { }
-    public class UIElement : DependencyObject { public bool IsEnabled { get; set; } public double ActualHeight { get; } }
-    public class FrameworkElement : UIElement { public object? Tag { get; set; } public event RoutedEventHandler? Loaded; }
+    public class UIElement : DependencyObject { public bool IsEnabled { get; set; } public double ActualWidth { get; } public double ActualHeight { get; } }
+    public class FrameworkElement : UIElement
+    {
+        public object? Tag { get; set; }
+        public event RoutedEventHandler? Loaded;
+        protected virtual Size MeasureOverride(Size availableSize) => new Size(availableSize.Width, availableSize.Height);
+    }
 
     public delegate void RoutedEventHandler(object sender, RoutedEventArgs e);
     public class RoutedEventArgs : EventArgs { public RoutedEventArgs() { } }
@@ -45,6 +50,20 @@ namespace System.Windows
     }
 
     public struct Rect { public double Left; public double Top; public double Bottom; public double Right; }
+
+    public struct Size
+    {
+        public Size(double width, double height) { Width = width; Height = height; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+
+    public struct Point
+    {
+        public Point(double x, double y) { X = x; Y = y; }
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
 
     public class Window : FrameworkElement
     {

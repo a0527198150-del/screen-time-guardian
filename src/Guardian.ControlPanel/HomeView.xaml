@@ -61,7 +61,7 @@
                                Text="תצוגה לקריאה בלבד של כל החסימות"
                                Margin="0,0,0,12" />
                     <local:WeekGrid x:Name="StatusWeekGrid" Height="420" MinHeight="340"
-                                    IsHitTestVisible="False" />
+                                    FlowDirection="LeftToRight" IsHitTestVisible="False" />
                 </StackPanel>
             </Border>
 

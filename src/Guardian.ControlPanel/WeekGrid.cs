@@ -9,13 +9,10 @@ namespace ScreenTimeGuardian.ControlPanel;
 /// <summary>
 /// Keyboard and pointer editor for a seven-day, twenty-four-hour schedule.
 ///
-/// RTL note: The parent Window sets FlowDirection="RightToLeft", which causes
-/// WPF to mirror all rendering automatically. The x-coordinates used here are
-/// in LOGICAL space — x=0 is the left side of the control's logical coordinate
-/// system, which WPF renders on the RIGHT side of the screen in RTL mode.
-/// We draw days left-to-right (Sunday on the left logically), and WPF mirrors
-/// them so Sunday appears on the right visually — which is the correct Hebrew
-/// order. No manual x-reversal is needed.
+/// The grid is always rendered LeftToRight (set in the consuming XAML) so that
+/// drawing coordinates, mouse coordinates and hit-testing share one coordinate
+/// space with no RTL mirroring to reconcile. Sunday is the leftmost column;
+/// the hour-label column sits on the left, next to the cells.
 /// </summary>
 public sealed class WeekGrid : FrameworkElement
 {
@@ -61,6 +58,17 @@ public sealed class WeekGrid : FrameworkElement
         MouseMove += OnMouseMove;
         MouseLeftButtonUp += OnMouseUp;
         KeyDown += OnKeyDown;
+    }
+
+    /// <summary>
+    /// Claim the full available size (falling back to the design size inside
+    /// infinite-width containers) so the control always renders at a usable size.
+    /// </summary>
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var width = double.IsInfinity(availableSize.Width) ? 740 : availableSize.Width;
+        var height = double.IsInfinity(availableSize.Height) ? 220 : availableSize.Height;
+        return new Size(width, height);
     }
 
     public void Refresh() => Rebuild();
@@ -283,11 +291,9 @@ public sealed class WeekGrid : FrameworkElement
 
         if (cellWidth <= 0 || cellHeight <= 0 || point.X < gridLeft || point.Y < gridTop) return null;
 
-        // In RTL mode, WPF mirrors coordinates. point.X=0 is the RIGHT edge
-        // of the visible control, and it increases to the LEFT. The gridLeft
-        // offset is also mirrored, so we subtract from the mirrored width.
-        var mirroredX = width - point.X;
-        var dayIndex = (int)((mirroredX - gridLeft) / cellWidth);
+        // The grid renders LeftToRight, so mouse coordinates map directly:
+        // day 0 (Sunday) is the leftmost column next to the hour labels.
+        var dayIndex = (int)((point.X - gridLeft) / cellWidth);
         if (dayIndex is < 0 or >= 7) return null;
         var day = Days[dayIndex];
         var hour = (int)((point.Y - gridTop) / cellHeight);

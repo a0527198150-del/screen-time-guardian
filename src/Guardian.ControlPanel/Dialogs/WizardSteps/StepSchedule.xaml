@@ -24,7 +24,8 @@
         <!-- WeekGrid container -->
         <Border Background="{StaticResource BrushSurface}" BorderBrush="{StaticResource BrushLine}"
                 BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,12">
-            <local:WeekGrid x:Name="ScheduleGrid" Height="220" />
+            <local:WeekGrid x:Name="ScheduleGrid" Height="220"
+                            FlowDirection="LeftToRight" />
         </Border>
 
         <!-- Precise time fields (collapsed by default) -->
