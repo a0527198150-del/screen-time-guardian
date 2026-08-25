@@ -49,6 +49,12 @@ public partial class RulesView : UserControl
 
     private void ApplyFilter()
     {
+        // Filter_Changed can fire while XAML is still being parsed, before the
+        // control tree (and thus RulesList) has been built. Guard against that so
+        // startup does not crash with a NullReferenceException.
+        if (RulesList is null || _appRules is null || _siteRules is null || _accountRules is null)
+            return;
+
         RulesList.Items.Clear();
 
         IEnumerable<ScheduledRule> items = _currentFilter switch
@@ -164,6 +170,11 @@ public partial class RulesView : UserControl
 
     private void Filter_Changed(object sender, RoutedEventArgs e)
     {
+        // The radio buttons may not be instantiated yet when this is raised during
+        // XAML parsing. Only read them when the control tree is fully built.
+        if (FilterAll is null)
+            return;
+
         _currentFilter = FilterAll.IsChecked == true ? "all"
             : FilterApps.IsChecked == true ? "apps"
             : FilterSites.IsChecked == true ? "sites"
