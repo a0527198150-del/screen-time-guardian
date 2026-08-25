@@ -337,7 +337,7 @@ public partial class MainWindow : Window
             var upcomingResponse = await _pipeClient.GetUpcomingAsync(_applicationPassword);
 
             var status = statusResponse.Ok ? statusResponse.Status : null;
-            var upcoming = upcomingResponse.Ok ? upcomingResponse.Upcoming : Array.Empty<UpcomingEvent>();
+            var upcoming = upcomingResponse.Ok ? upcomingResponse.Upcoming.ToList() : new List<UpcomingEvent>();
 
             // Update Shell status dot
             ShellControl.UpdateStatus(
@@ -413,5 +413,5 @@ public partial class MainWindow : Window
             or UnauthorizedAccessException
             or ArgumentException
             or IOException
-            or TimeoutException;
+            or System.TimeoutException;
 }

@@ -12,7 +12,6 @@ public partial class SettingsView : UserControl
     private bool _suppressEvents;
 
     public event EventHandler? PasswordChangeRequested;
-    public event EventHandler? SettingsChanged;
 
     public SettingsView()
     {

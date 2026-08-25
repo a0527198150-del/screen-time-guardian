@@ -17,7 +17,7 @@ public partial class RuleWizard : Window
     private readonly List<DayOfWeek> _selectedDays = new();
     private string _startTime = "23:00";
     private string _endTime = "07:00";
-    private bool _allDay;
+    private bool _allDay = false;
 
     // Step 1 UI elements (created in code to avoid massive XAML)
     private StackPanel? _step1Content;
@@ -62,7 +62,7 @@ public partial class RuleWizard : Window
 
         var dialog = new ConfirmDialog
         {
-            Title = "לצWithoutלשמור?",
+            DialogTitleText = "לצאת בלי לשמור?",
             Message = "יש לך שינויים שלא נשמרו. לצאת?",
             ConfirmText = "צא",
             CancelText = " המשך לערוך"
@@ -242,7 +242,7 @@ public partial class RuleWizard : Window
             var discoveredBtn = new Button
             {
                 Content = "הוסף מרשימת אתרים שהתגלו",
-                Height = 36, Padding = new Thickness(16, 0),
+                Height = 36, Padding = new Thickness(16, 0, 16, 0),
                 Margin = new Thickness(0, 0, 0, 8)
             };
             // Set style via resource lookup
@@ -267,7 +267,7 @@ public partial class RuleWizard : Window
             var browseBtn = new Button
             {
                 Content = "בחר קובץ exe…",
-                Height = 40, Padding = new Thickness(20, 0),
+                Height = 40, Padding = new Thickness(20, 0, 20, 0),
                 Margin = new Thickness(0, 0, 0, 8)
             };
             if (Application.Current.TryFindResource("ButtonSecondary") is Style btnStyle)
@@ -309,7 +309,7 @@ public partial class RuleWizard : Window
                 Content = label,
                 Style = (Style)FindResource("ButtonSecondary"),
                 Height = 36,
-                Padding = new Thickness(16, 0),
+                Padding = new Thickness(16, 0, 16, 0),
                 Margin = new Thickness(0, 0, 8, 8)
             };
             btn.Click += (_, _) => { _selectedDays.Clear(); _selectedDays.AddRange(days); };
