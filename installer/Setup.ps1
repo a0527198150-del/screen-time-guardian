@@ -149,7 +149,9 @@ function New-Shortcut {
 "@
 
     $psFile = Join-Path $env:TEMP "stg_shortcut_$([System.IO.Path]::GetRandomFileName()).ps1"
-    [System.IO.File]::WriteAllText($psFile, $script, [System.Text.Encoding]::UTF8)
+    # UTF-8 with BOM: Windows PowerShell 5.1 parses a BOM-less file as ANSI and
+    # mangles the Hebrew shortcut name into '????'.
+    [System.IO.File]::WriteAllText($psFile, $script, [System.Text.UTF8Encoding]::new($true))
     try {
         $result = Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$psFile`"" -Wait -NoNewWindow -PassThru
     }
@@ -407,15 +409,7 @@ if (-not $allOk) {
 }
 Write-Step 'החבילה תקינה.'
 
-# ---- 2. Ask user preferences (Google-style — minimal questions) -----------
-Write-Host ''
-Write-Host '  הגדרות התקנה:' -ForegroundColor Cyan
-Write-Host ''
-
-$desktopChoice = Read-Host '  ליצור קיצור דרך על שולחן העבודה? (yes/no, ברירת מחדל yes)'
-$createDesktop = ($desktopChoice -ne 'no')
-
-# ---- 3. Secure data directory ----------------------------------------------
+# ---- 2. Secure data directory ----------------------------------------------
 Set-DataDirectoryAcl -Path $DataDir
 Set-DataDirectoryAcl -Path (Join-Path $DataDir 'runtime')
 Write-Step 'תיקיית נתונים מאובטחת.'
@@ -526,11 +520,11 @@ else {
     Write-Warn "הסוכן לא נמצא: $agentExe"
 }
 
-# ---- 9. Create shortcuts ----------------------------------------------------
-Write-Host '  יוצר קיצורי דרך...'
+# ---- 9. Create shortcuts (automatic — desktop + Start menu) -----------------
+Write-Host '  יוצר קיצורי דרך (שולחן עבודה + תפריט התחל)...'
 $controlPanelExe = Join-Path $InstallRoot 'ControlPanel\ScreenTimeGuardian.ControlPanel.exe'
 if (Test-Path $controlPanelExe -PathType Leaf) {
-    Install-Shortcuts -TargetExe $controlPanelExe -DesktopShortcut:$createDesktop
+    Install-Shortcuts -TargetExe $controlPanelExe -DesktopShortcut
 }
 else {
     Write-Warn 'ControlPanel.exe לא נמצא — קיצורי דרך לא נוצרו.'
