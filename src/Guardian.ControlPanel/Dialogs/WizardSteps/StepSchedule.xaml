@@ -33,27 +33,33 @@
                 FontSize="13" Foreground="{StaticResource BrushInkMuted}"
                 AutomationProperties.Name="שעות מדויקות" />
         <StackPanel x:Name="TimePanel" Visibility="Collapsed" Margin="16,8,16,12">
-            <WrapPanel>
+            <StackPanel Orientation="Horizontal">
                 <TextBlock Text="משעה:" VerticalAlignment="Center" Margin="0,0,8,0"
                            FontFamily="{StaticResource FontUi}" FontSize="13"
                            Foreground="{StaticResource BrushInkMuted}" />
-                <TextBox x:Name="TxtStartHour" Width="50" Text="22" Margin="0,0,4,0"
-                         HorizontalContentAlignment="Center" MaxLength="2" />
-                <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"
-                           FontFamily="{StaticResource FontData}" FontSize="15" />
-                <TextBox x:Name="TxtStartMin" Width="50" Text="00" Margin="0,0,16,0"
-                         HorizontalContentAlignment="Center" MaxLength="2" />
+                <Button x:Name="BtnStartTime" Content="22:00"
+                        Style="{StaticResource ButtonSecondary}"
+                        Click="PickStartTime_Click" Height="36" Width="84"
+                        FontFamily="{StaticResource FontData}" FontSize="15"
+                        AutomationProperties.Name="שעת התחלה" />
 
-                <TextBlock Text="עד שעה:" VerticalAlignment="Center" Margin="0,0,8,0"
+                <TextBlock Text="עד שעה:" VerticalAlignment="Center"
+                           Margin="20,0,8,0"
                            FontFamily="{StaticResource FontUi}" FontSize="13"
                            Foreground="{StaticResource BrushInkMuted}" />
-                <TextBox x:Name="TxtEndHour" Width="50" Text="07" Margin="0,0,4,0"
-                         HorizontalContentAlignment="Center" MaxLength="2" />
-                <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"
-                           FontFamily="{StaticResource FontData}" FontSize="15" />
-                <TextBox x:Name="TxtEndMin" Width="50" Text="00"
-                         HorizontalContentAlignment="Center" MaxLength="2" />
-            </WrapPanel>
+                <Button x:Name="BtnEndTime" Content="07:00"
+                        Style="{StaticResource ButtonSecondary}"
+                        Click="PickEndTime_Click" Height="36" Width="84"
+                        FontFamily="{StaticResource FontData}" FontSize="15"
+                        AutomationProperties.Name="שעת סיום" />
+            </StackPanel>
+            <TextBlock Text="השעות יחולו על כל ימי השבוע."
+                       Style="{StaticResource TypeMeta}" Margin="0,8,0,0" />
+            <Button x:Name="BtnApplyTime" Content="החל שעות אלה על כל השבוע"
+                    Style="{StaticResource ButtonGhost}"
+                    Click="ApplyTime_Click" Height="36" Padding="12,0"
+                    HorizontalAlignment="Left" Margin="0,8,0,0"
+                    FontSize="13" Foreground="{StaticResource BrushInkMuted}" />
         </StackPanel>
 
         <!-- Summary line -->

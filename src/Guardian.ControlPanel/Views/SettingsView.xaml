@@ -5,9 +5,15 @@
 
     <StackPanel Margin="0,0,0,24">
 
-        <!-- Title -->
-        <TextBlock Text="הגדרות" Style="{StaticResource TypeDisplay}"
-                   Margin="0,0,0,24" />
+        <!-- Title + save -->
+        <DockPanel Margin="0,0,0,24">
+            <Button Content="שמור הגדרות" Style="{StaticResource ButtonPrimary}"
+                    Click="Save_Click" DockPanel.Dock="Left" Height="40"
+                    Padding="20,0"
+                    AutomationProperties.Name="שמור הגדרות" />
+            <TextBlock Text="הגדרות" Style="{StaticResource TypeDisplay}"
+                       VerticalAlignment="Center" />
+        </DockPanel>
 
         <!-- Safety -->
         <Border Style="{StaticResource Card}">
@@ -136,14 +142,32 @@
                     <CheckBox x:Name="AllowApprovedBrowsersBox"
                               Style="{StaticResource Switch}"
                               Content="אפשר לדפדפנים ברשימה לפעול גם בלי תוסף" Margin="0,0,0,8" />
-                    <ListBox x:Name="ApprovedBrowsersList" Height="120" BorderThickness="0" Background="Transparent" />
+                    <ListBox x:Name="ApprovedBrowsersList" Height="120"
+                             BorderThickness="0" Background="Transparent"
+                             SelectionMode="Extended">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           FontFamily="{StaticResource FontData}"
+                                           FontSize="12"
+                                           FlowDirection="LeftToRight"
+                                           TextTrimming="CharacterEllipsis" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Button Content="זהה אוטומטית" Style="{StaticResource ButtonGhost}"
-                                Height="36" Padding="12,0" Margin="0,0,4,0" />
+                                Height="36" Padding="12,0" Margin="0,0,4,0"
+                                Click="IdentifyBrowsers_Click"
+                                AutomationProperties.Name="זהה דפדפנים אוטומטית" />
                         <Button Content="הוסף ידנית…" Style="{StaticResource ButtonGhost}"
-                                Height="36" Padding="12,0" Margin="0,0,4,0" />
+                                Height="36" Padding="12,0" Margin="0,0,4,0"
+                                Click="AddBrowser_Click"
+                                AutomationProperties.Name="הוסף דפדפן ידנית" />
                         <Button Content="הסר נבחר" Style="{StaticResource ButtonDanger}"
-                                Height="36" Padding="12,0" />
+                                Height="36" Padding="12,0"
+                                Click="RemoveBrowser_Click"
+                                AutomationProperties.Name="הסר דפדפן נבחר" />
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
@@ -186,9 +210,13 @@
                                        Text="אין שינוי ממתין." TextWrapping="Wrap" />
                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                 <Button Content="רענן" Style="{StaticResource ButtonGhost}"
-                                        Height="36" Padding="12,0" Margin="0,0,4,0" />
+                                        Height="36" Padding="12,0" Margin="0,0,4,0"
+                                        Click="RefreshPending_Click"
+                                        AutomationProperties.Name="רענן שינוי ממתין" />
                                 <Button Content="בטל את השינוי" Style="{StaticResource ButtonDanger}"
-                                        Height="36" Padding="12,0" />
+                                        Height="36" Padding="12,0"
+                                        Click="CancelPending_Click"
+                                        AutomationProperties.Name="בטל שינוי ממתין" />
                             </StackPanel>
                         </StackPanel>
                     </Border>

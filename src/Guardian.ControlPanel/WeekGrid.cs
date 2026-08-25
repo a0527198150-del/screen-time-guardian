@@ -166,25 +166,47 @@ public sealed class WeekGrid : FrameworkElement
 
         // Day headers — logical x goes left to right (Sunday=0 to Saturday=6).
         // WPF mirrors the entire control in RTL mode, so Sunday ends up on the
-        // right side of the screen automatically.
+        // right side of the screen automatically. Today's column is highlighted
+        // in teal with a small underline so the current day is always easy to spot.
+        var today = DateTimeOffset.Now.DayOfWeek;
         for (var dayIndex = 0; dayIndex < Days.Length; dayIndex++)
         {
             var day = Days[dayIndex];
             var x = gridLeft + dayIndex * cellWidth;
+            var isToday = day == today;
+            var headerBrush = isToday ? new SolidColorBrush(Color.FromRgb(14, 124, 134)) : inkBrush;
             var label = new FormattedText(HebrewDays.Name(day), CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight, headerTypeface, 13, inkBrush, 1.0);
-            label.TextAlignment = TextAlignment.Center;
-            label.MaxTextWidth = cellWidth;
-            drawingContext.DrawText(label, new Point(x, 6));
+                FlowDirection.LeftToRight, headerTypeface, 13, headerBrush, 1.0)
+            {
+                TextAlignment = TextAlignment.Center,
+                MaxTextWidth = cellWidth
+            };
+            var labelY = (HeaderHeight - label.Height) / 2.0;
+            drawingContext.DrawText(label, new Point(x, labelY));
+
+            if (isToday)
+            {
+                var underlineWidth = Math.Min(cellWidth * 0.5, 46);
+                var underline = new Rect(x + (cellWidth - underlineWidth) / 2.0,
+                    HeaderHeight - 3.5, underlineWidth, 2.5);
+                drawingContext.DrawRoundedRectangle(headerBrush, null, underline, 1.25, 1.25);
+            }
         }
 
-        // Hour labels — always LTR regardless of parent FlowDirection.
+        // Hour labels — always LTR regardless of parent FlowDirection. Each label
+        // is right-aligned inside its fixed column so the "00:00"–"23:00" numbers
+        // form one tidy column next to the grid.
         for (var hour = 0; hour < 24; hour++)
         {
             var y = gridTop + hour * cellHeight;
             var label = new FormattedText($"{hour:00}:00", CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight, hourTypeface, 11, mutedBrush, 1.0);
-            drawingContext.DrawText(label, new Point(2, y + cellHeight * 0.14));
+                FlowDirection.LeftToRight, hourTypeface, 11, mutedBrush, 1.0)
+            {
+                TextAlignment = TextAlignment.Right,
+                MaxTextWidth = HourLabelWidth - 4
+            };
+            drawingContext.DrawText(label,
+                new Point(0, y + (cellHeight - label.Height) / 2.0));
         }
 
         // Cells

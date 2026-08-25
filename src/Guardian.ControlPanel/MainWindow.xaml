@@ -6,56 +6,93 @@
         MinHeight="480" MinWidth="800"
         FlowDirection="RightToLeft"
         KeyboardNavigation.TabNavigation="Continue"
-        Background="#F4F6F9"
+        Background="{StaticResource BrushCanvas}"
         WindowStartupLocation="CenterScreen"
         Icon="icon.ico">
 
     <Grid>
-        <Grid.RowDefinitions>
-            <!-- Auth bar (shown before authentication) -->
-            <RowDefinition Height="Auto" />
-            <!-- Shell content -->
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
 
-        <!-- Authentication bar -->
-        <Border x:Name="AuthBar" Grid.Row="0" Background="{StaticResource BrushSurface}"
-                BorderBrush="{StaticResource BrushLine}" BorderThickness="0,0,0,1"
-                Padding="20,12" Visibility="Visible">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="180" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+        <!-- ============================================================
+             AUTH VIEW — centered login card. Shown until the app
+             password is verified (or set on first run).
+             ============================================================ -->
+        <Grid x:Name="AuthView" Visibility="Visible">
+            <Border Background="{StaticResource BrushCanvas}">
+                <Border Width="420" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Background="{StaticResource BrushSurface}"
+                        BorderBrush="{StaticResource BrushLine}" BorderThickness="1"
+                        CornerRadius="16" Padding="40,36"
+                        Effect="{StaticResource ShadowFloat}">
+                    <StackPanel>
 
-                <TextBlock Grid.Column="0" Text="שומר זמן מסך"
-                           FontSize="17" FontWeight="SemiBold"
-                           Foreground="{StaticResource BrushTeal}"
-                           VerticalAlignment="Center" Margin="0,0,20,0"
-                           FontFamily="{StaticResource FontUi}" />
+                        <!-- Brand mark -->
+                        <Border Width="72" Height="72" CornerRadius="36"
+                                Background="{StaticResource BrushTealSoft}"
+                                HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <TextBlock Text="🛡️" FontSize="34"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
 
-                <PasswordBox Grid.Column="1" x:Name="AppPasswordBox"
-                             FlowDirection="LeftToRight"
-                             VerticalAlignment="Center"
-                             FontFamily="{StaticResource FontUi}" />
+                        <TextBlock Text="שומר זמן מסך" Style="{StaticResource TypeDisplay}"
+                                   FontSize="28" HorizontalAlignment="Center"
+                                   Margin="0,0,0,6" />
 
-                <Button Grid.Column="2" x:Name="AuthButton" Content="אמת / הגדר"
-                        Style="{StaticResource ButtonPrimary}"
-                        Click="AuthButton_Click" Margin="0,0,8,0" />
+                        <TextBlock Text="בקרת זמן מסך וחסימות"
+                                   Style="{StaticResource TypeMeta}"
+                                   FontSize="14" HorizontalAlignment="Center"
+                                   Margin="0,0,0,28" />
 
-                <TextBlock Grid.Column="4" x:Name="HeaderStatus"
-                           VerticalAlignment="Center" Margin="16,0,0,0"
-                           Foreground="{StaticResource BrushInkMuted}"
-                           FontSize="13" FontFamily="{StaticResource FontUi}"
-                           MaxWidth="400" TextWrapping="Wrap" />
-            </Grid>
-        </Border>
+                        <!-- Password -->
+                        <TextBlock Text="סיסמה" Style="{StaticResource TypeLabel}"
+                                   Margin="0,0,0,6" />
+                        <Grid Height="42">
+                            <PasswordBox x:Name="AppPasswordBox"
+                                         FlowDirection="LeftToRight"
+                                         FontFamily="{StaticResource FontUi}"
+                                         FontSize="15"
+                                         VerticalContentAlignment="Center"
+                                         Padding="14,0"
+                                         PasswordChanged="AppPasswordBox_PasswordChanged"
+                                         KeyDown="AppPasswordBox_KeyDown" />
+                            <TextBlock x:Name="PasswordPlaceholder"
+                                       Text="הזן סיסמה"
+                                       FontFamily="{StaticResource FontUi}"
+                                       FontSize="15"
+                                       Foreground="{StaticResource BrushInkMuted}"
+                                       VerticalAlignment="Center"
+                                       Margin="14,0,0,0"
+                                       IsHitTestVisible="False" />
+                        </Grid>
 
-        <!-- Shell navigation + content -->
-        <local:Shell x:Name="ShellControl" Grid.Row="1"
-                     Visibility="Collapsed" />
+                        <!-- Status / error -->
+                        <TextBlock x:Name="AuthStatus"
+                                   FontFamily="{StaticResource FontUi}"
+                                   FontSize="13"
+                                   Foreground="{StaticResource BrushInkMuted}"
+                                   TextWrapping="Wrap" MinHeight="34"
+                                   Margin="0,10,0,0" />
+
+                        <!-- Primary action -->
+                        <Button x:Name="AuthButton" Content="כניסה"
+                                Style="{StaticResource ButtonPrimary}"
+                                Click="AuthButton_Click" Height="44"
+                                FontSize="15" FontWeight="SemiBold"
+                                HorizontalAlignment="Stretch" />
+
+                        <TextBlock Text="בהפעלה הראשונה הסיסמה שתוזן תיקבע כסיסמת הניהול."
+                                   Style="{StaticResource TypeMeta}"
+                                   FontSize="12" HorizontalAlignment="Center"
+                                   TextWrapping="Wrap" Margin="0,16,0,0" />
+
+                    </StackPanel>
+                </Border>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================
+             SHELL — full app after authentication.
+             ============================================================ -->
+        <local:Shell x:Name="ShellControl" Visibility="Collapsed" />
     </Grid>
 </Window>

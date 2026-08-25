@@ -23,6 +23,9 @@ public partial class MainWindow : Window
 
         // Wire up Shell navigation
         ShellControl.Settings.PasswordChangeRequested += Settings_PasswordChangeRequested;
+        ShellControl.Settings.SaveRequested += (_, _) => _ = SaveAsync();
+        ShellControl.Settings.RefreshPendingRequested += (_, _) => _ = RefreshConfigurationAsync();
+        ShellControl.Settings.CancelPendingRequested += (_, _) => _ = CancelPendingChangeAsync();
         ShellControl.Rules.NewRuleRequested += Rules_NewRuleRequested;
         ShellControl.Rules.EditAppRuleRequested += Rules_EditAppRuleRequested;
         ShellControl.Rules.EditSiteRuleRequested += Rules_EditSiteRuleRequested;
@@ -30,6 +33,7 @@ public partial class MainWindow : Window
         ShellControl.Rules.DeleteRuleRequested += Rules_DeleteRuleRequested;
         ShellControl.Rules.ToggleRuleRequested += Rules_ToggleRuleRequested;
         ShellControl.Rules.Snackbar = ShellControl.Snackbar;
+        ShellControl.Settings.Snackbar = ShellControl.Snackbar;
         ShellControl.Home.NewRuleRequested += Rules_NewRuleRequested;
     }
 
@@ -48,8 +52,25 @@ public partial class MainWindow : Window
         LoadWindowState();
 
         SetHeaderStatus("יש להזין את סיסמת האפליקציה. בהפעלה הראשונה הסיסמה תיקבע כסיסמת הניהול.", false);
+        AppPasswordBox.Focus();
 
         Closing += (_, _) => SaveWindowState();
+    }
+
+    private void AppPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        PasswordPlaceholder.Visibility = AppPasswordBox.Password.Length == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void AppPasswordBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            AuthButton_Click(sender, e);
+            e.Handled = true;
+        }
     }
 
     private static readonly string WindowStatePath = Path.Combine(
@@ -149,8 +170,8 @@ public partial class MainWindow : Window
                 _authenticated = true;
                 _configuration = response.Configuration;
 
-                // Show Shell, hide auth bar
-                AuthBar.Visibility = Visibility.Collapsed;
+                // Show Shell, hide the login view
+                AuthView.Visibility = Visibility.Collapsed;
                 ShellControl.Visibility = Visibility.Visible;
 
                 // Set password for child views
@@ -236,6 +257,7 @@ public partial class MainWindow : Window
             }
             ShellControl.Rules.Show(_configuration);
             ShellControl.Home.Show(_configuration, null, Array.Empty<UpcomingEvent>());
+            _ = SaveAsync();
         }
     }
 
@@ -251,6 +273,7 @@ public partial class MainWindow : Window
             rule.Targets = edited.Targets;
             ShellControl.Rules.Show(_configuration);
             ShellControl.Home.Show(_configuration, null, Array.Empty<UpcomingEvent>());
+            _ = SaveAsync();
         }
     }
 
@@ -265,6 +288,7 @@ public partial class MainWindow : Window
             rule.Windows = edited.Windows;
             ShellControl.Rules.Show(_configuration);
             ShellControl.Home.Show(_configuration, null, Array.Empty<UpcomingEvent>());
+            _ = SaveAsync();
         }
     }
 
@@ -280,6 +304,7 @@ public partial class MainWindow : Window
             rule.Sites = edited.Sites;
             ShellControl.Rules.Show(_configuration);
             ShellControl.Home.Show(_configuration, null, Array.Empty<UpcomingEvent>());
+            _ = SaveAsync();
         }
     }
 
@@ -299,11 +324,12 @@ public partial class MainWindow : Window
         }
         ShellControl.Rules.Show(_configuration);
         ShellControl.Home.Show(_configuration, null, Array.Empty<UpcomingEvent>());
+        _ = SaveAsync();
     }
 
     private void Rules_ToggleRuleRequested(object? sender, ScheduledRule rule)
     {
-        ShellControl.Home.Show(_configuration, null, Array.Empty<UpcomingEvent>());
+        _ = SaveAsync();
     }
 
     // ==================== Keyboard navigation ====================
@@ -355,7 +381,7 @@ public partial class MainWindow : Window
             }
             else
             {
-                HeaderStatus.Text = string.Empty;
+                ShellControl.ClearMessage();
             }
         }
         catch (Exception ex) when (IsExpected(ex))
@@ -402,10 +428,58 @@ public partial class MainWindow : Window
 
     private void SetHeaderStatus(string message, bool isError)
     {
-        HeaderStatus.Text = message;
-        HeaderStatus.Foreground = isError
+        if (_authenticated)
+        {
+            ShellControl.ShowMessage(message, isError);
+            return;
+        }
+
+        AuthStatus.Text = message;
+        AuthStatus.Foreground = isError
             ? new SolidColorBrush(Color.FromRgb(169, 50, 38))  // Rose
             : new SolidColorBrush(Color.FromRgb(90, 103, 128)); // MutedInk
+    }
+
+    private async Task RefreshConfigurationAsync()
+    {
+        try
+        {
+            EnsureAuthenticated();
+            var response = await _pipeClient.GetConfigurationAsync(_applicationPassword);
+            if (!response.Ok || response.Configuration is null)
+            {
+                throw new UnauthorizedAccessException(response.Error);
+            }
+
+            _configuration = response.Configuration;
+            LoadAllViews();
+            SetHeaderStatus("המצב רענון.", false);
+        }
+        catch (Exception ex) when (IsExpected(ex))
+        {
+            SetHeaderStatus(ex.Message, true);
+        }
+    }
+
+    private async Task CancelPendingChangeAsync()
+    {
+        try
+        {
+            EnsureAuthenticated();
+            var response = await _pipeClient.CancelPendingChangeAsync(_applicationPassword);
+            if (!response.Ok || response.Configuration is null)
+            {
+                throw new UnauthorizedAccessException(response.Error);
+            }
+
+            _configuration = response.Configuration;
+            LoadAllViews();
+            SetHeaderStatus("השינוי הממתין בוטל.", false);
+        }
+        catch (Exception ex) when (IsExpected(ex))
+        {
+            SetHeaderStatus(ex.Message, true);
+        }
     }
 
     private static bool IsExpected(Exception exception) =>

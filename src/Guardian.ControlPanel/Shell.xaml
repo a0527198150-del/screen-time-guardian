@@ -6,162 +6,147 @@
              Background="{StaticResource BrushCanvas}">
 
     <Grid>
-        <Grid.ColumnDefinitions>
-            <!-- Content area -->
-            <ColumnDefinition Width="*" />
-            <!-- Sidebar -->
-            <ColumnDefinition Width="240" />
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <!-- Top navigation header -->
+            <RowDefinition Height="Auto" />
+            <!-- Transient message strip -->
+            <RowDefinition Height="Auto" />
+            <!-- Active page -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
         <!-- ============================================================
-             CONTENT AREA — max width 900, centered, 32px padding.
+             HEADER — brand on the right, page tabs in the center,
+             service status on the left.
              ============================================================ -->
-        <Border Grid.Column="1" Background="{StaticResource BrushCanvas}">
-            <Grid>
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel MaxWidth="900" HorizontalAlignment="Center"
-                                Margin="32" VerticalAlignment="Top">
+        <Border Grid.Row="0" Background="{StaticResource BrushSurface}"
+                BorderBrush="{StaticResource BrushLine}" BorderThickness="0,0,0,1">
+            <Grid Margin="16,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                        <!-- HomeView -->
-                        <local:HomeView x:Name="HomeViewControl"
-                                        Visibility="Visible" />
+                <!-- Brand (right in RTL) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock Text="🛡️" FontSize="20" Margin="0,0,8,0"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="שומר זמן מסך" FontSize="17" FontWeight="SemiBold"
+                               Foreground="{StaticResource BrushTeal}"
+                               FontFamily="{StaticResource FontUi}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
 
-                        <!-- RulesView -->
-                        <local:RulesView x:Name="RulesViewControl"
-                                          Visibility="Collapsed" />
+                <!-- Page tabs (center) -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
 
-                        <!-- SettingsView -->
-                        <local:SettingsView x:Name="SettingsViewControl"
-                                             Visibility="Collapsed" />
-
-                    </StackPanel>
-                </ScrollViewer>
-            </Grid>
-        </Border>
-
-        <!-- ============================================================
-             SIDEBAR — 240px, Ink background, RTL.
-             Three nav items, status dot at bottom.
-             ============================================================ -->
-        <Border Grid.Column="0" Background="{StaticResource BrushInk}">
-            <DockPanel Margin="0,32,0,32">
-
-                <!-- Status dot — always at bottom, always visible -->
-                <Border DockPanel.Dock="Bottom" Margin="0,0,0,0"
-                        HorizontalAlignment="Right" Padding="20,12">
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse x:Name="StatusDot" Width="10" Height="10"
-                                 Fill="{StaticResource BrushTeal}"
-                                 VerticalAlignment="Center" Margin="0,0,10,0" />
-                        <TextBlock x:Name="StatusLabel" Text="אכיפה פעילה"
-                                   Foreground="#94A3B8" FontSize="13"
-                                   FontFamily="{StaticResource FontUi}"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                </Border>
-
-                <!-- Brand -->
-                <TextBlock DockPanel.Dock="Top" Text="שומר זמן מסך"
-                           Foreground="White" FontSize="19"
-                           FontWeight="SemiBold"
-                           FontFamily="{StaticResource FontUi}"
-                           Margin="20,0,20,32"
-                           HorizontalAlignment="Right" />
-
-                <!-- Navigation items -->
-                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
-                    <Border x:Name="NavHome" Cursor="Hand" Padding="0"
-                            CornerRadius="0" Margin="0,0,0,2"
+                    <Border x:Name="NavHome" Cursor="Hand" CornerRadius="20"
+                            Padding="16,8" Margin="0,0,4,0"
                             AutomationProperties.Name="בית">
                         <Border.Background>
                             <SolidColorBrush x:Name="NavHomeBg" Color="Transparent" />
                         </Border.Background>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="3" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Orientation="Horizontal"
-                                        Margin="20,12" VerticalAlignment="Center">
-                                <TextBlock Text="&#x1F3E0;" FontSize="18" Margin="0,0,12,0"
-                                           VerticalAlignment="Center" />
-                                <TextBlock Text="בית" Foreground="#94A3B8" FontSize="15"
-                                           FontWeight="SemiBold"
-                                           FontFamily="{StaticResource FontUi}"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                            <Border Grid.Column="1" Width="3"
-                                    HorizontalAlignment="Right" CornerRadius="2">
-                                <Border.Background>
-                                    <SolidColorBrush x:Name="NavHomeIndicator" Color="Transparent" />
-                                </Border.Background>
-                            </Border>
-                        </Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x1F3E0;" FontSize="15" Margin="0,0,8,0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="NavHomeText" Text="בית" FontSize="14"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource FontUi}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </Border>
 
-                    <Border x:Name="NavRules" Cursor="Hand" Padding="0"
-                            CornerRadius="0" Margin="0,0,0,2"
+                    <Border x:Name="NavRules" Cursor="Hand" CornerRadius="20"
+                            Padding="16,8" Margin="0,0,4,0"
                             AutomationProperties.Name="כללים">
                         <Border.Background>
                             <SolidColorBrush x:Name="NavRulesBg" Color="Transparent" />
                         </Border.Background>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="3" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Orientation="Horizontal"
-                                        Margin="20,12" VerticalAlignment="Center">
-                                <TextBlock Text="&#x2696;" FontSize="18" Margin="0,0,12,0"
-                                           VerticalAlignment="Center" />
-                                <TextBlock Text="כללים" Foreground="#94A3B8" FontSize="15"
-                                           FontWeight="SemiBold"
-                                           FontFamily="{StaticResource FontUi}"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                            <Border Grid.Column="1" Width="3"
-                                    HorizontalAlignment="Right" CornerRadius="2">
-                                <Border.Background>
-                                    <SolidColorBrush x:Name="NavRulesIndicator" Color="Transparent" />
-                                </Border.Background>
-                            </Border>
-                        </Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x2696;" FontSize="15" Margin="0,0,8,0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="NavRulesText" Text="כללים" FontSize="14"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource FontUi}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </Border>
 
-                    <Border x:Name="NavSettings" Cursor="Hand" Padding="0"
-                            CornerRadius="0" Margin="0,0,0,2"
+                    <Border x:Name="NavSettings" Cursor="Hand" CornerRadius="20"
+                            Padding="16,8"
                             AutomationProperties.Name="הגדרות">
                         <Border.Background>
                             <SolidColorBrush x:Name="NavSettingsBg" Color="Transparent" />
                         </Border.Background>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="3" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Orientation="Horizontal"
-                                        Margin="20,12" VerticalAlignment="Center">
-                                <TextBlock Text="&#x2699;" FontSize="18" Margin="0,0,12,0"
-                                           VerticalAlignment="Center" />
-                                <TextBlock Text="הגדרות" Foreground="#94A3B8" FontSize="15"
-                                           FontWeight="SemiBold"
-                                           FontFamily="{StaticResource FontUi}"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                            <Border Grid.Column="1" Width="3"
-                                    HorizontalAlignment="Right" CornerRadius="2">
-                                <Border.Background>
-                                    <SolidColorBrush x:Name="NavSettingsIndicator" Color="Transparent" />
-                                </Border.Background>
-                            </Border>
-                        </Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x2699;" FontSize="15" Margin="0,0,8,0"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="NavSettingsText" Text="הגדרות" FontSize="14"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource FontUi}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </Border>
+
                 </StackPanel>
-            </DockPanel>
+
+                <!-- Service status (left in RTL) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            VerticalAlignment="Center" HorizontalAlignment="Left">
+                    <Ellipse x:Name="StatusDot" Width="10" Height="10"
+                             Fill="{StaticResource BrushTeal}"
+                             VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock x:Name="StatusLabel" Text="אכיפה פעילה"
+                               Foreground="{StaticResource BrushInkMuted}" FontSize="13"
+                               FontFamily="{StaticResource FontUi}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
         </Border>
 
+        <!-- ============================================================
+             MESSAGE STRIP — transient feedback (save results, errors).
+             ============================================================ -->
+        <Border x:Name="MessageBar" Grid.Row="1" Visibility="Collapsed"
+                Padding="20,8" Background="{StaticResource BrushTealSoft}">
+            <TextBlock x:Name="MessageText" FontSize="13"
+                       FontFamily="{StaticResource FontUi}"
+                       Foreground="{StaticResource BrushInk}" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- ============================================================
+             PAGES — each destination is its own full page.
+             ============================================================ -->
+        <Grid Grid.Row="2">
+            <ScrollViewer x:Name="HomeScroll" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
+                <StackPanel MaxWidth="980" HorizontalAlignment="Center"
+                            Margin="32,24,32,32">
+                    <local:HomeView x:Name="HomeViewControl" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="RulesScroll" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
+                <StackPanel MaxWidth="980" HorizontalAlignment="Center"
+                            Margin="32,24,32,32">
+                    <local:RulesView x:Name="RulesViewControl" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="SettingsScroll" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
+                <StackPanel MaxWidth="980" HorizontalAlignment="Center"
+                            Margin="32,24,32,32">
+                    <local:SettingsView x:Name="SettingsViewControl" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
         <!-- Snackbar — floats above everything -->
-        <local:Snackbar x:Name="Snackbar" Grid.ColumnSpan="2" />
+        <local:Snackbar x:Name="Snackbar" Grid.RowSpan="3" />
     </Grid>
 </UserControl>

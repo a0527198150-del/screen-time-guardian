@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using ScreenTimeGuardian.Contracts;
 
@@ -9,9 +8,8 @@ namespace ScreenTimeGuardian.ControlPanel;
 public partial class Shell : UserControl
 {
     private static readonly SolidColorBrush TealBrush = new(Color.FromRgb(14, 124, 134)); // #0E7C86
-    private static readonly SolidColorBrush WhiteBrush = new(Colors.White);
+    private static readonly SolidColorBrush TealSoftBrush = new(Color.FromRgb(224, 242, 241)); // #E0F2F1
     private static readonly SolidColorBrush MutedBrush = new(Color.FromRgb(148, 163, 184)); // #94A3B8
-    private static readonly SolidColorBrush TransparentBrush = new(Colors.Transparent);
 
     private int _currentNav = -1;
 
@@ -27,30 +25,41 @@ public partial class Shell : UserControl
     public void NavigateTo(int index)
     {
         _currentNav = index;
+        ClearMessage();
 
-        HomeViewControl.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
-        RulesViewControl.Visibility = index == 1 ? Visibility.Visible : Visibility.Collapsed;
-        SettingsViewControl.Visibility = index == 2 ? Visibility.Visible : Visibility.Collapsed;
+        HomeScroll.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+        RulesScroll.Visibility = index == 1 ? Visibility.Visible : Visibility.Collapsed;
+        SettingsScroll.Visibility = index == 2 ? Visibility.Visible : Visibility.Collapsed;
 
-        UpdateNavIndicator(NavHome, NavHomeBg, NavHomeIndicator, index == 0);
-        UpdateNavIndicator(NavRules, NavRulesBg, NavRulesIndicator, index == 1);
-        UpdateNavIndicator(NavSettings, NavSettingsBg, NavSettingsIndicator, index == 2);
+        UpdateNavIndicator(NavHome, NavHomeBg, NavHomeText, index == 0);
+        UpdateNavIndicator(NavRules, NavRulesBg, NavRulesText, index == 1);
+        UpdateNavIndicator(NavSettings, NavSettingsBg, NavSettingsText, index == 2);
     }
 
     private static void UpdateNavIndicator(Border nav, SolidColorBrush bgBrush,
-        SolidColorBrush indicatorBrush, bool active)
+        TextBlock label, bool active)
     {
-        bgBrush.Color = active ? Color.FromArgb(20, 255, 255, 255) : Colors.Transparent; // 8% white
-        indicatorBrush.Color = active ? TealBrush.Color : Colors.Transparent;
-
-        if (nav.Child is Grid grid && grid.Children.Count > 0 && grid.Children[0] is StackPanel sp)
-        {
-            foreach (var tb in sp.Children.OfType<TextBlock>())
-            {
-                tb.Foreground = active ? WhiteBrush : MutedBrush;
-            }
-        }
+        bgBrush.Color = active ? TealSoftBrush.Color : Colors.Transparent;
+        label.Foreground = active ? TealBrush : MutedBrush;
     }
+
+    /// <summary>
+    /// Shows a transient message strip under the header. Teal for information,
+    /// rose for errors. Cleared automatically when navigating to another page.
+    /// </summary>
+    public void ShowMessage(string message, bool isError)
+    {
+        MessageText.Text = message;
+        MessageBar.Background = isError
+            ? new SolidColorBrush(Color.FromRgb(252, 233, 230)) // RoseSoft
+            : TealSoftBrush;
+        MessageText.Foreground = isError
+            ? new SolidColorBrush(Color.FromRgb(169, 50, 38))   // Rose
+            : new SolidColorBrush(Color.FromRgb(20, 27, 46));   // Ink
+        MessageBar.Visibility = Visibility.Visible;
+    }
+
+    public void ClearMessage() => MessageBar.Visibility = Visibility.Collapsed;
 
     /// <summary>
     /// Updates the status dot color and label based on the service status.

@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using ScreenTimeGuardian.ControlPanel.Dialogs;
 
 namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 {
@@ -12,13 +13,63 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 
         private bool _suppressEvents;
 
-        public string StartTime => $"{TxtStartHour.Text.PadLeft(2, '0')}:{TxtStartMin.Text.PadLeft(2, '0')}";
-        public string EndTime => $"{TxtEndHour.Text.PadLeft(2, '0')}:{TxtEndMin.Text.PadLeft(2, '0')}";
+        private int _startHour = 22;
+        private int _startMinute;
+        private int _endHour = 7;
+        private int _endMinute;
+
+        public string StartTime => $"{_startHour:00}:{_startMinute:00}";
+        public string EndTime => $"{_endHour:00}:{_endMinute:00}";
 
         public StepSchedule()
         {
             InitializeComponent();
-            Loaded += (_, _) => UpdateSummary();
+            ScheduleGrid.ScheduleChanged += (_, _) =>
+            {
+                UpdateSummary();
+                NotifyValidityChanged();
+            };
+            Loaded += (_, _) =>
+            {
+                UpdateTimeButtons();
+                UpdateSummary();
+            };
+        }
+
+        private void UpdateTimeButtons()
+        {
+            BtnStartTime.Content = StartTime;
+            BtnEndTime.Content = EndTime;
+        }
+
+        private void PickStartTime_Click(object sender, RoutedEventArgs e)
+            => PickTime(ref _startHour, ref _startMinute);
+
+        private void PickEndTime_Click(object sender, RoutedEventArgs e)
+            => PickTime(ref _endHour, ref _endMinute);
+
+        private void PickTime(ref int hour, ref int minute)
+        {
+            var dialog = new TimePickerDialog(hour, minute) { Owner = Window.GetWindow(this) };
+            if (dialog.ShowDialog() == true)
+            {
+                hour = dialog.SelectedTime.Hours;
+                minute = dialog.SelectedTime.Minutes;
+                UpdateTimeButtons();
+            }
+        }
+
+        private void ApplyTime_Click(object sender, RoutedEventArgs e)
+        {
+            _suppressEvents = true;
+            ScheduleGrid.ClearAll();
+            for (var day = 0; day < 7; day++)
+            {
+                ScheduleGrid.SetDayHours(day, _startHour, _endHour);
+            }
+            _suppressEvents = false;
+            NotifyValidityChanged();
+            UpdateSummary();
         }
 
         /// <summary>

@@ -1,6 +1,8 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.Win32;
 using ScreenTimeGuardian.Contracts;
 
 namespace ScreenTimeGuardian.ControlPanel;
@@ -8,10 +10,29 @@ namespace ScreenTimeGuardian.ControlPanel;
 public partial class SettingsView : UserControl
 {
     private ConfigurationDocument? _configuration;
+    private List<string>? _approvedPaths;
     private string _applicationPassword = "";
     private bool _suppressEvents;
 
     public event EventHandler? PasswordChangeRequested;
+    public event EventHandler? SaveRequested;
+    public event EventHandler? RefreshPendingRequested;
+    public event EventHandler? CancelPendingRequested;
+
+    public Snackbar? Snackbar { get; set; }
+
+    /// <summary>Well-known browser executables in standard install locations.</summary>
+    private static readonly string[] BrowserCandidates =
+    {
+        @"Google\Chrome\Application\chrome.exe",
+        @"Microsoft\Edge\Application\msedge.exe",
+        @"Mozilla Firefox\firefox.exe",
+        @"BraveSoftware\Brave-Browser\Application\brave.exe",
+        @"Opera\launcher.exe",
+        @"Vivaldi\Application\vivaldi.exe",
+        @"Yandex\YandexBrowser\Application\browser.exe",
+        @"Tor Browser\Browser\firefox.exe"
+    };
 
     public SettingsView()
     {
@@ -43,9 +64,10 @@ public partial class SettingsView : UserControl
         // Pending change
         PendingChangeText.Text = config.PendingChange?.ToString() ?? "אין שינוי ממתין.";
 
-        // Approved browsers
+        // Approved browsers — bind directly to the real list so edits persist
         AllowApprovedBrowsersBox.IsChecked = config.BrowserLockdown.AllowApprovedBrowsersWithoutExtension;
-        ApprovedBrowsersList.ItemsSource = config.BrowserLockdown.ApprovedBrowserPaths.ToList();
+        _approvedPaths = config.BrowserLockdown.ApprovedBrowserPaths;
+        RefreshApprovedList();
 
         VersionText.Text = $"שומר זמן מסך · גרסה {config.SchemaVersion}";
         InstallPathText.Text = Installer.GetExeDirectory();
@@ -109,6 +131,121 @@ public partial class SettingsView : UserControl
             }
         }
     }
+
+    // ==================== Approved browsers ====================
+
+    private void RefreshApprovedList()
+    {
+        if (_approvedPaths is null) return;
+        ApprovedBrowsersList.ItemsSource = null;
+        ApprovedBrowsersList.ItemsSource = _approvedPaths.ToList();
+    }
+
+    private void AddApprovedPath(string path)
+    {
+        if (_approvedPaths is null) return;
+        var trimmed = path.Trim();
+        if (trimmed.Length == 0 || _approvedPaths.Any(existing =>
+                string.Equals(existing, trimmed, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+        _approvedPaths.Add(trimmed);
+    }
+
+    private void IdentifyBrowsers_Click(object sender, RoutedEventArgs e)
+    {
+        var found = new List<string>();
+
+        foreach (var path in BrowserIdentification.DefaultApprovedPaths())
+        {
+            found.Add(path);
+        }
+
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var roots = new[] { programFiles, programFilesX86, localAppData }
+            .Where(root => !string.IsNullOrWhiteSpace(root));
+
+        foreach (var root in roots)
+        {
+            foreach (var relative in BrowserCandidates)
+            {
+                var candidate = Path.Combine(root, relative);
+                if (File.Exists(candidate))
+                {
+                    found.Add(candidate);
+                }
+            }
+        }
+
+        // All candidates come from curated, existence-checked locations — no
+        // metadata sanity check needed (Identify does not cover Chrome/Edge).
+        var added = 0;
+        foreach (var path in found.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var before = _approvedPaths?.Count ?? 0;
+            AddApprovedPath(path);
+            if ((_approvedPaths?.Count ?? 0) > before) added++;
+        }
+
+        RefreshApprovedList();
+        Snackbar?.Show(added > 0
+            ? $"נמצאו {added} דפדפנים והוספו לרשימה."
+            : "לא נמצאו דפדפנים חדשים.");
+    }
+
+    private void AddBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "תוכניות (*.exe)|*.exe|כל הקבצים (*.*)|*.*",
+            Title = "בחר קובץ דפדפן"
+        };
+        if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(dialog.FileName)) return;
+
+        if (!File.Exists(dialog.FileName))
+        {
+            Snackbar?.Show("הקובץ לא נמצא.");
+            return;
+        }
+
+        AddApprovedPath(dialog.FileName);
+        RefreshApprovedList();
+        Snackbar?.Show("הדפדפן נוסף לרשימה.");
+    }
+
+    private void RemoveBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        if (_approvedPaths is null || ApprovedBrowsersList.SelectedItems.Count == 0) return;
+
+        var toRemove = ApprovedBrowsersList.SelectedItems.Cast<string>().ToList();
+        foreach (var path in toRemove)
+        {
+            _approvedPaths.RemoveAll(existing =>
+                string.Equals(existing, path, StringComparison.OrdinalIgnoreCase));
+        }
+        RefreshApprovedList();
+        Snackbar?.Show(toRemove.Count == 1
+            ? "הדפדפן הוסר מהרשימה."
+            : $"{toRemove.Count} דפדפנים הוסרו מהרשימה.");
+    }
+
+    // ==================== Pending change ====================
+
+    private void RefreshPending_Click(object sender, RoutedEventArgs e)
+        => RefreshPendingRequested?.Invoke(this, EventArgs.Empty);
+
+    private void CancelPending_Click(object sender, RoutedEventArgs e)
+        => CancelPendingRequested?.Invoke(this, EventArgs.Empty);
+
+    // ==================== Save ====================
+
+    private void Save_Click(object sender, RoutedEventArgs e)
+        => SaveRequested?.Invoke(this, EventArgs.Empty);
+
+    // ==================== Password ====================
 
     private void NewPasswordBox_Changed(object sender, RoutedEventArgs e)
     {
