@@ -115,12 +115,12 @@ public static class Installer
             var createDesktop = true;
             try
             {
-                var result = System.Windows.MessageBox.Show(
+                var dialogResult = System.Windows.MessageBox.Show(
                     "צור קיצור דרך על שולחן העבודה?",
                     "שומר זמן מסך",
                     System.Windows.MessageBoxButton.YesNo,
                     System.Windows.MessageBoxImage.Question);
-                createDesktop = result == System.Windows.MessageBoxResult.Yes;
+                createDesktop = dialogResult == System.Windows.MessageBoxResult.Yes;
             }
             catch
             {

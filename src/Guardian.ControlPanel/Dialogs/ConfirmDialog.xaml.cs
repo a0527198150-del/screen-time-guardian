@@ -5,7 +5,7 @@ namespace ScreenTimeGuardian.ControlPanel;
 
 public partial class ConfirmDialog : Window
 {
-    public string Title
+    public string DialogTitleText
     {
         get => DialogTitle.Text;
         set => DialogTitle.Text = value;

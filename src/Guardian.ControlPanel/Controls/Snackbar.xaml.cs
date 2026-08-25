@@ -27,7 +27,6 @@ public partial class Snackbar : UserControl
 
         // Stop any existing timer
         _hideTimer?.Stop();
-        _hideTimer?.Dispose();
 
         // Make visible
         IsHitTestVisible = true;

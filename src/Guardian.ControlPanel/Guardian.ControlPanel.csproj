@@ -3,6 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>ScreenTimeGuardian.ControlPanel</AssemblyName>
     <RootNamespace>ScreenTimeGuardian.ControlPanel</RootNamespace>
     <ApplicationIcon>icon.ico</ApplicationIcon>
