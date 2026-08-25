@@ -21,19 +21,21 @@ jobs:
         run: |
           cd extension
           npm init -y > /dev/null 2>&1
-          npm install crx3 --save-dev > /dev/null 2>&1
+          # Pin crx3: v2 changed the CLI (no "pack" subcommand; srcPaths are positional).
+          npm install crx3@2.0.0 --save-dev > /dev/null 2>&1
 
           # Write private key from secret
-          mkdir -p ../keys
+          mkdir -p ../keys ../artifacts
           echo "${{ secrets.EXTENSION_PRIVATE_KEY }}" > ../keys/extension.pem
 
           # Read version from manifest
           VERSION=$(node -p "require('./manifest.json').version")
 
-          npx crx3 pack \
-            --zipPath "../artifacts/extension.crx" \
+          npx crx3 \
+            --zipPath "../artifacts/extension.zip" \
             --keyPath "../keys/extension.pem" \
-            --crxPath "../artifacts/extension.crx3"
+            --crxPath "../artifacts/extension.crx" \
+            .
 
           # Also save the raw extension folder
           mkdir -p ../artifacts/extension
