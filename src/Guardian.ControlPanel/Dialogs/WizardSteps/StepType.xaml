@@ -1,0 +1,104 @@
+<UserControl x:Class="Guardian.ControlPanel.Dialogs.WizardSteps.StepType"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Guardian.ControlPanel">
+
+    <StackPanel x:Root="Root">
+
+        <!-- Error message (hidden by default) -->
+        <Border x:Name="ErrorBorder" Background="#FDECEA" CornerRadius="6"
+                Padding="12" Margin="0,0,0,16" Visibility="Collapsed">
+            <TextBlock x:Name="ErrorText" Text="בחר סוג כלל"
+                       Foreground="{StaticResource BrushRose}"
+                       FontFamily="{StaticResource FontUi}" FontSize="13" />
+        </Border>
+
+        <!-- Three type cards -->
+        <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,16">
+
+            <!-- App -->
+            <Border x:Name="CardApp" Width="160" Height="120" Margin="0,0,12,0"
+                    Background="{StaticResource BrushSurface}" BorderBrush="{StaticResource BrushLine}"
+                    BorderThickness="1" CornerRadius="12" Cursor="Hand"
+                    MouseLeftButtonDown="CardApp_Click"
+                    AutomationProperties.Name="בחירת אפליקציה">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="📱" FontSize="32" HorizontalAlignment="Center" />
+                    <TextBlock Text="אפליקציה" FontFamily="{StaticResource FontUi}" FontSize="15"
+                               FontWeight="SemiBold" Foreground="{StaticResource BrushInk}"
+                               HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    <TextBlock Text="Google Play / exe" FontFamily="{StaticResource FontUi}" FontSize="12"
+                               Foreground="{StaticResource BrushInkMuted}"
+                               HorizontalAlignment="Center" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Site -->
+            <Border x:Name="CardSite" Width="160" Height="120" Margin="0,0,12,0"
+                    Background="{StaticResource BrushSurface}" BorderBrush="{StaticResource BrushLine}"
+                    BorderThickness="1" CornerRadius="12" Cursor="Hand"
+                    MouseLeftButtonDown="CardSite_Click"
+                    AutomationProperties.Name="בחירת אתר">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="🌐" FontSize="32" HorizontalAlignment="Center" />
+                    <TextBlock Text="אתר" FontFamily="{StaticResource FontUi}" FontSize="15"
+                               FontWeight="SemiBold" Foreground="{StaticResource BrushInk}"
+                               HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    <TextBlock Text="כתובת אינטרנט" FontFamily="{StaticResource FontUi}" FontSize="12"
+                               Foreground="{StaticResource BrushInkMuted}"
+                               HorizontalAlignment="Center" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Account -->
+            <Border x:Name="CardAccount" Width="160" Height="120"
+                    Background="{StaticResource BrushSurface}" BorderBrush="{StaticResource BrushLine}"
+                    BorderThickness="1" CornerRadius="12" Cursor="Hand"
+                    MouseLeftButtonDown="CardAccount_Click"
+                    AutomationProperties.Name="בחירת חשבון">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="👤" FontSize="32" HorizontalAlignment="Center" />
+                    <TextBlock Text="חשבון" FontFamily="{StaticResource FontUi}" FontSize="15"
+                               FontWeight="SemiBold" Foreground="{StaticResource BrushInk}"
+                               HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    <TextBlock Text="Google / Gmail" FontFamily="{StaticResource FontUi}" FontSize="12"
+                               Foreground="{StaticResource BrushInkMuted}"
+                               HorizontalAlignment="Center" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+        </WrapPanel>
+
+        <!-- Conditional fields based on selection -->
+        <StackPanel x:Name="AppField" Visibility="Collapsed" Margin="0,0,0,12">
+            <TextBlock Text="קובץ aplikace:" FontFamily="{StaticResource FontUi}" FontSize="13"
+                       Foreground="{StaticResource BrushInkMuted}" Margin="0,0,0,4" />
+            <Button x:Name="BtnBrowseApp" Content="בחר קובץ exe…" Style="{StaticResource ButtonSecondary}"
+                    Click="BtnBrowseApp_Click" Height="40" HorizontalAlignment="Left"
+                    AutomationProperties.Name="בחירת קובץ אפליקציה" />
+        </StackPanel>
+
+        <StackPanel x:Name="SiteField" Visibility="Collapsed" Margin="0,0,0,12">
+            <TextBlock Text="כתובת האתר:" FontFamily="{StaticResource FontUi}" FontSize="13"
+                       Foreground="{StaticResource BrushInkMuted}" Margin="0,0,0,4" />
+            <TextBox x:Name="TxtSiteUrl" Height="40" FontFamily="{StaticResource FontData}"
+                     FontSize="13" FlowDirection="LeftToRight"
+                     Foreground="{StaticResource BrushInk}" />
+            <TextBlock Text="לדוגמה: youtube.com" FontFamily="{StaticResource FontUi}" FontSize="12"
+                       Foreground="{StaticResource BrushInkMuted}" Margin="0,4,0,0" />
+            <Button x:Name="BtnDiscoveredSites" Content="הוסף מרשימת אתרים שהתגלו"
+                    Style="{StaticResource ButtonGhost}" Click="BtnDiscoveredSites_Click"
+                    Height="36" HorizontalAlignment="Left" Margin="0,4,0,0"
+                    FontFamily="{StaticResource FontUi}" FontSize="13"
+                    Foreground="{StaticResource BrushInkMuted}"
+                    AutomationProperties.Name="הוסף מרשימת אתרים שהתגלו" />
+        </StackPanel>
+
+        <StackPanel x:Name="AccountField" Visibility="Collapsed" Margin="0,0,0,12">
+            <TextBlock Text="כתובת מייל:" FontFamily="{StaticResource FontUi}" FontSize="13"
+                       Foreground="{StaticResource BrushInkMuted}" Margin="0,0,0,4" />
+            <TextBox x:Name="TxtEmail" Height="40" FontFamily="{StaticResource FontData}"
+                     FontSize="13" FlowDirection="LeftToRight"
+                     Foreground="{StaticResource BrushInk}" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,62 @@
+<UserControl x:Class="Guardian.ControlPanel.Dialogs.WizardSteps.StepSchedule"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Guardian.ControlPanel">
+
+    <StackPanel x:Root="Root" Margin="0,0,0,0">
+
+        <!-- Shortcut buttons row -->
+        <WrapPanel Margin="0,0,0,12">
+            <Button x:Name="BtnShabbat" Content="שבת" Style="{StaticResource ButtonSecondary}"
+                    Margin="0,0,8,0" Click="BtnShortcut_Click" Tag="shabbat"
+                    AutomationProperties.Name="קיצור דרך: שבת" />
+            <Button x:Name="BtnWorkHours" Content="שעות עבודה" Style="{StaticResource ButtonSecondary}"
+                    Margin="0,0,8,0" Click="BtnShortcut_Click" Tag="work"
+                    AutomationProperties.Name="קיצור דרך: שעות עבודה" />
+            <Button x:Name="BtnNightHours" Content="שעות לילה" Style="{StaticResource ButtonSecondary}"
+                    Margin="0,0,8,0" Click="BtnShortcut_Click" Tag="night"
+                    AutomationProperties.Name="קיצור דרך: שעות לילה" />
+            <Button x:Name="BtnAllTime" Content="כל הזמן" Style="{StaticResource ButtonSecondary}"
+                    Click="BtnShortcut_Click" Tag="all"
+                    AutomationProperties.Name="קיצור דרך: כל הזמן" />
+        </WrapPanel>
+
+        <!-- WeekGrid container -->
+        <Border Background="{StaticResource BrushSurface}" BorderBrush="{StaticResource BrushLine}"
+                BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,12">
+            <local:WeekGrid x:Name="ScheduleGrid" Height="220" />
+        </Border>
+
+        <!-- Collapsible precise time inputs -->
+        <Expander x:Name="TimeExpander" Header="שעות מדויקות" Margin="0,0,0,12"
+                  Expanded="TimeExpander_Expanded" Collapsed="TimeExpander_Collapsed">
+            <StackPanel Margin="16,8,16,0">
+                <WrapPanel>
+                    <TextBlock Text="משעה:" VerticalAlignment="Center" Margin="0,0,8,0"
+                               FontFamily="{StaticResource FontUi}" FontSize="13"
+                               Foreground="{StaticResource BrushInkMuted}" />
+                    <TextBox x:Name="TxtStartHour" Width="50" Text="22" Margin="0,0,4,0"
+                             HorizontalContentAlignment="Center" MaxLength="2" />
+                    <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"
+                               FontFamily="{StaticResource FontData}" FontSize="15" />
+                    <TextBox x:Name="TxtStartMin" Width="50" Text="00" Margin="0,0,16,0"
+                             HorizontalContentAlignment="Center" MaxLength="2" />
+
+                    <TextBlock Text="עד שעה:" VerticalAlignment="Center" Margin="0,0,8,0"
+                               FontFamily="{StaticResource FontUi}" FontSize="13"
+                               Foreground="{StaticResource BrushInkMuted}" />
+                    <TextBox x:Name="TxtEndHour" Width="50" Text="07" Margin="0,0,4,0"
+                             HorizontalContentAlignment="Center" MaxLength="2" />
+                    <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"
+                               FontFamily="{StaticResource FontData}" FontSize="15" />
+                    <TextBox x:Name="TxtEndMin" Width="50" Text="00"
+                             HorizontalContentAlignment="Center" MaxLength="2" />
+                </WrapPanel>
+            </StackPanel>
+        </Expander>
+
+        <!-- Summary line -->
+        <TextBlock x:Name="SummaryText" FontFamily="{StaticResource FontUi}" FontSize="13"
+                   Foreground="{StaticResource BrushInkMuted}" Margin="0,8,0,0" />
+    </StackPanel>
+</UserControl>
