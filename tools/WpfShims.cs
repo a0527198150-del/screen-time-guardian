@@ -11,6 +11,24 @@ namespace System.Windows
     public delegate void RoutedEventHandler(object sender, RoutedEventArgs e);
     public class RoutedEventArgs : EventArgs { public RoutedEventArgs() { } }
 
+    public class DependencyPropertyChangedEventArgs { public object? OldValue; public object? NewValue; }
+
+    public static class Keyboard
+    {
+        public static ModifierKeys Modifiers => ModifierKeys.None;
+    }
+
+    [Flags]
+    public enum ModifierKeys { None = 0, Alt = 1, Control = 2, Shift = 4, Windows = 8 }
+
+    public class KeyEventArgs : RoutedEventArgs
+    {
+        public Key Key { get; set; }
+        public bool Handled { get; set; }
+    }
+
+    public enum Key { None = 0, Escape = 13, Enter = 18, Delete = 127, S = 83, N = 78, F = 70 }
+
     public enum MessageBoxButton { OK, OKCancel, YesNo, YesNoCancel }
     public enum MessageBoxImage { None, Question, Warning, Information, Error }
     public enum MessageBoxResult { None, OK, Cancel, Yes, No }
@@ -33,11 +51,22 @@ namespace System.Windows
         public string Title { get; set; } = string.Empty;
         public double Left { get; set; }
         public double Top { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double MinWidth { get; set; }
+        public double MinHeight { get; set; }
+        public Visibility Visibility { get; set; }
+        public Window? Owner { get; set; }
+        public bool? DialogResult { get; set; }
         public bool ShowActivated { get; set; }
+        public event System.ComponentModel.CancelEventHandler? Closing;
         public void Show() { }
+        public bool? ShowDialog() => false;
         public void Close() { }
         public void InitializeComponent() { }
     }
+
+    public enum Visibility { Visible, Hidden, Collapsed }
 
     public class StartupEventArgs : EventArgs { }
 
@@ -50,11 +79,37 @@ namespace System.Windows
 namespace System.Windows.Media
 {
     public class Brush { }
+    public class SolidColorBrush : Brush
+    {
+        public SolidColorBrush() { }
+        public SolidColorBrush(Color color) { }
+        public Color Color { get; set; }
+    }
+    public struct Color
+    {
+        public static Color FromRgb(byte r, byte g, byte b) => default;
+        public byte R; public byte G; public byte B; public byte A;
+    }
+    public class Thickness
+    {
+        public double Left; public double Top; public double Right; public double Bottom;
+        public Thickness(double uniformLength) { Left = Top = Right = Bottom = uniformLength; }
+        public Thickness(double left, double top, double right, double bottom) { Left = left; Top = top; Right = right; Bottom = bottom; }
+    }
+    public class FontFamily { public FontFamily(string name) { } }
+    public class Typeface { public Typeface(FontFamily family, object style, object weight, object stretch) { } }
+    public enum FontStyles { Normal }
+    public enum FontWeights { Normal, SemiBold, Bold }
+    public enum FontStretches { Normal }
+    public class RenderTransform { }
+    public class TranslateTransform : RenderTransform { public TranslateTransform() { } public TranslateTransform(double x, double y) { } public double X { get; set; } public double Y { get; set; } }
     public static class Brushes
     {
         public static Brush DarkRed => new();
         public static Brush DarkGreen => new();
         public static Brush Black => new();
+        public static Brush White => new();
+        public static Brush Transparent => new();
     }
 }
 
@@ -63,12 +118,21 @@ namespace System.Windows.Controls
     using System.Collections;
     using System.Windows.Media;
 
-    public class Control : FrameworkElement { }
+    public class Control : FrameworkElement
+    {
+        public Brush? Background { get; set; }
+        public Brush? Foreground { get; set; }
+        public Brush? BorderBrush { get; set; }
+        public Thickness? BorderThickness { get; set; }
+        public Thickness? Padding { get; set; }
+        public double FontSize { get; set; }
+    }
 
     public class TextBlock : FrameworkElement { public string Text { get; set; } = string.Empty; public Brush? Foreground { get; set; } }
     public class TextBox : Control { public string Text { get; set; } = string.Empty; }
     public class PasswordBox : Control { public string Password { get; set; } = string.Empty; }
-    public class Button : Control { public object? Content { get; set; } }
+    public class ButtonBase : Control { public object? Content { get; set; } }
+    public class Button : ButtonBase { }
     public class CheckBox : Control { public bool? IsChecked { get; set; } public object? Content { get; set; } }
 
     public class ItemCollection : IEnumerable
@@ -109,6 +173,12 @@ namespace System.Windows.Controls
     public class SelectionChangedEventArgs : System.Windows.RoutedEventArgs { }
 }
 
+namespace System.Windows.Input
+{
+    public class MouseEventArgs : System.Windows.RoutedEventArgs { }
+    public class MouseButtonEventArgs : MouseEventArgs { }
+}
+
 namespace System.Windows.Threading
 {
     public class DispatcherTimer
@@ -146,4 +216,18 @@ namespace System.Windows.Forms
     }
 
     public static class ApplicationConfiguration { public static void Initialize() { } }
+
+    public class Screen
+    {
+        public ScreenBounds Bounds { get; set; } = new();
+        public static Screen[] AllScreens => Array.Empty<Screen>();
+    }
+
+    public class ScreenBounds
+    {
+        public int Left { get; set; }
+        public int Top { get; set; }
+        public int Right { get; set; }
+        public int Bottom { get; set; }
+    }
 }
