@@ -38,6 +38,9 @@ public partial class HomeView : UserControl
         var safe = status?.SafeMode == true;
         var active = status?.EnforcementActive == true;
 
+        // The re-enable button appears only while enforcement is parked in safe mode.
+        ConfirmSafeModeButton.Visibility = safe ? Visibility.Visible : Visibility.Collapsed;
+
         // 1. Status card — background changes based on state
         if (safe)
         {
@@ -45,11 +48,6 @@ public partial class HomeView : UserControl
             StatusTitle.Text = "האכיפה מושהית";
             StatusTitle.Foreground = new SolidColorBrush(Color.FromRgb(180, 119, 15)); // Amber
             StatusReason.Text = status?.Reason ?? "";
-            ConfirmSafeModeButton.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            ConfirmSafeModeButton.Visibility = Visibility.Collapsed;
         }
         else if (active)
         {
