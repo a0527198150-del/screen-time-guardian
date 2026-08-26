@@ -3,7 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ScreenTimeGuardian.ControlPanel">
 
-    <StackPanel Margin="0,0,0,0">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="0,0,8,0">
 
         <!-- Shortcut buttons row -->
         <WrapPanel Margin="0,0,0,12">
@@ -24,7 +26,7 @@
         <!-- WeekGrid container -->
         <Border Background="{StaticResource BrushSurface}" BorderBrush="{StaticResource BrushLine}"
                 BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,12">
-            <local:WeekGrid x:Name="ScheduleGrid" Height="220"
+            <local:WeekGrid x:Name="ScheduleGrid" Height="420" MinHeight="420"
                             FlowDirection="LeftToRight" />
         </Border>
 
@@ -76,5 +78,6 @@
         <!-- Summary line -->
         <TextBlock x:Name="SummaryText" FontFamily="{StaticResource FontUi}" FontSize="13"
                    Foreground="{StaticResource BrushInkMuted}" Margin="0,8,0,0" />
-    </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
