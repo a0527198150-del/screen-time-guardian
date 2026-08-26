@@ -242,6 +242,15 @@
                     </StackPanel>
                 </Border>
                 <StackPanel x:Name="MachineContent" Visibility="Collapsed">
+                    <CheckBox x:Name="WebsiteEnforcementBox"
+                              Style="{StaticResource Switch}"
+                              Content="הפעל אכיפת אתרים בפועל" Margin="0,0,0,8" />
+                    <CheckBox x:Name="AllowMachineWideBox"
+                              Style="{StaticResource Switch}"
+                              Content="החל חסימת אתרים על כל חשבונות המחשב" Margin="0,0,0,8" />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="שני המתגים נדרשים כדי שכללי אתרים יחסמו בפועל. האכיפה מתבצעת דרך חוקי Firewall ל-FQDN של האתר."
+                               TextWrapping="Wrap" Margin="0,0,0,12" />
                     <CheckBox x:Name="EnforceForAdministratorsBox"
                               Style="{StaticResource Switch}"
                               Content="החל כללי חסימה גם על מנהלים" Margin="0,0,0,8" />

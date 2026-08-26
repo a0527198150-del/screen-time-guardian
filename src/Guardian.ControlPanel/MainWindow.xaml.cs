@@ -226,10 +226,20 @@ public partial class MainWindow : Window
             LoadAllViews();
             await RefreshStatusAsync();
 
-            SetHeaderStatus(
-                response.Notice.Length > 0 ? response.Notice
-                : "ההגדרות נשמרו. השירות יחיל אותן תוך 15 שניות.",
-                response.Notice.Contains("ממתין"));
+            // If site rules exist but machine-wide website enforcement is off, the
+            // rules save but never block. Tell the operator exactly that.
+            var siteRulesPending = _configuration.Websites.Count > 0
+                && (!_configuration.AllowMachineWideWebsiteBlocking
+                    || _configuration.WebsiteEnforcement != WebsiteEnforcementMode.Enforced);
+            var message = response.Notice.Length > 0
+                ? response.Notice
+                : "ההגדרות נשמרו. השירות יחיל אותן תוך 15 שניות.";
+            if (siteRulesPending)
+            {
+                message = "⚠ יש כללי אתרים שמורים, אבל חסימת האתרים כבויה. הפעל אותה ב: הגדרות ← חסימה ברמת המחשב.";
+            }
+
+            SetHeaderStatus(message, siteRulesPending || response.Notice.Contains("ממתין"));
         }
         catch (Exception ex) when (IsExpected(ex))
         {

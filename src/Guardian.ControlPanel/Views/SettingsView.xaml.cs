@@ -59,6 +59,8 @@ public partial class SettingsView : UserControl
 
         CoolingOffBox.Text = config.ChangeControl.CoolingOffHours.ToString();
 
+        WebsiteEnforcementBox.IsChecked = config.WebsiteEnforcement == WebsiteEnforcementMode.Enforced;
+        AllowMachineWideBox.IsChecked = config.AllowMachineWideWebsiteBlocking;
         EnforceForAdministratorsBox.IsChecked = config.EnforceForAdministrators;
 
         // Pending change
@@ -88,6 +90,10 @@ public partial class SettingsView : UserControl
         config.BrowserLockdown.ScanIntervalMinutes = Math.Clamp(ParseInt(ScanIntervalBox.Text, 10), 1, 1440);
 
         config.ChangeControl.CoolingOffHours = Math.Clamp(ParseInt(CoolingOffBox.Text, 0), 0, 8760);
+        config.WebsiteEnforcement = WebsiteEnforcementBox.IsChecked == true
+            ? WebsiteEnforcementMode.Enforced
+            : WebsiteEnforcementMode.AuditOnly;
+        config.AllowMachineWideWebsiteBlocking = AllowMachineWideBox.IsChecked == true;
         config.EnforceForAdministrators = EnforceForAdministratorsBox.IsChecked == true;
         config.BrowserLockdown.AllowApprovedBrowsersWithoutExtension = AllowApprovedBrowsersBox.IsChecked == true;
     }
