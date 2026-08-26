@@ -153,6 +153,27 @@ public sealed class PolicyEngine
             domain = domain[2..];
         }
 
+        // Tolerate a pasted URL: strip the scheme and "www." so that
+        // "https://www.youtube.com/watch?v=..." becomes "youtube.com".
+        foreach (var prefix in new[] { "https://", "http://" })
+        {
+            if (domain.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                domain = domain[prefix.Length..];
+                break;
+            }
+        }
+        while (domain.StartsWith("www.", StringComparison.Ordinal))
+        {
+            domain = domain[4..];
+        }
+
+        // Cut any path or port the user pasted after the host name.
+        var slash = domain.IndexOf('/');
+        if (slash >= 0) domain = domain[..slash];
+        var colon = domain.IndexOf(':');
+        if (colon >= 0) domain = domain[..colon];
+
         return domain.TrimEnd('.');
     }
 }

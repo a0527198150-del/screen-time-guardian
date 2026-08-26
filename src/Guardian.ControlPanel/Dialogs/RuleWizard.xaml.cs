@@ -85,11 +85,49 @@ public partial class RuleWizard : Window
         if (windows.Count == 0)
             windows.Add(new ScheduleWindow { Enabled = true, AllDay = false, Start = "23:00", End = "07:00" });
 
+        // The rule must carry the target the user picked in step 1, or it is an
+        // empty shell: it appears in the list but never matches anything and
+        // therefore never blocks. Every rule type carries its own payload.
+        var value = _stepType.GetIdentifiedValue();
+
         Result = _stepType.SelectedType switch
         {
-            StepType.RuleType.App => new ApplicationRule { Name = "כלל חדש", Enabled = true, Windows = windows },
-            StepType.RuleType.Site => new WebsiteRule { Name = "אתר חדש", Enabled = true, Windows = windows },
-            StepType.RuleType.Account => new GoogleAccountRule { Name = "חשבון חדש", Enabled = true, Windows = windows },
+            StepType.RuleType.App => new ApplicationRule
+            {
+                Name = "כלל חדש",
+                Enabled = true,
+                Windows = windows,
+                Targets = string.IsNullOrWhiteSpace(value)
+                    ? new List<AppTarget>()
+                    : new List<AppTarget>
+                    {
+                        new()
+                        {
+                            DisplayName = System.IO.Path.GetFileNameWithoutExtension(value),
+                            ExecutablePath = value
+                        }
+                    }
+            },
+            StepType.RuleType.Site => new WebsiteRule
+            {
+                Name = "אתר חדש",
+                Enabled = true,
+                Windows = windows,
+                Domain = value
+            },
+            StepType.RuleType.Account => new GoogleAccountRule
+            {
+                Name = "חשבון חדש",
+                Enabled = true,
+                Windows = windows,
+                Email = value,
+                Services = new List<string>
+                {
+                    "gmail", "drive", "docs", "calendar", "meet", "photos",
+                    "search", "youtube", "gemini", "maps", "translate",
+                    "keep", "news", "finance", "groups"
+                }
+            },
             _ => null
         };
     }
