@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.5.6'
+$script:Version     = '0.5.7'
 $script:AppName     = 'Screen Time Guardian'
 $script:AppNameHeb  = 'שומר זמן מסך'
 
@@ -588,7 +588,8 @@ catch {
 $uninstallScript = @"
 # Auto-generated uninstaller for $AppNameHeb
 `$scriptDir = Split-Path -Parent `$MyInvocation.MyCommand.Path
-& "`$scriptDir\Policies\Install-Service.ps1" -ServiceExecutable "$serviceExe" -Uninstall -StartAfterInstall
+& "`$scriptDir\Policies\Uninstall-Service.ps1"
+Read-Host 'ההסרה הושלמה. לחץ Enter לסיום'
 "@
 $uninstallPath = Join-Path $InstallRoot 'Uninstall.ps1'
 [System.IO.File]::WriteAllText($uninstallPath, $uninstallScript, [System.Text.Encoding]::UTF8)
