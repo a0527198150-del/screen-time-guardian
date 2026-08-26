@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.5.9'
+$script:Version     = '0.5.10'
 $script:AppName     = 'Screen Time Guardian'
 $script:AppNameHeb  = 'שומר זמן מסך'
 
@@ -134,29 +134,26 @@ function New-Shortcut {
         [string]$IconPath = ''
     )
 
+    # Create the shortcut directly in this process. Earlier versions wrote a
+    # temporary .ps1 and ran it in a child PowerShell, and the Hebrew name was
+    # mangled to '????' somewhere in that hop regardless of the file's BOM.
+    # In-process COM keeps the original in-memory string, so the shortcut name
+    # comes out exactly as typed in the installer.
     $workDir = Split-Path $TargetPath -Parent
-    $iconArg = ''
-    if ($IconPath -and (Test-Path $IconPath)) {
-        $iconArg = "`n`$sc.IconLocation = '$IconPath'"
-    }
-
-    $script = @"
-`$sc = (New-Object -ComObject WScript.Shell).CreateShortcut('$ShortcutPath')
-`$sc.TargetPath = '$TargetPath'
-`$sc.WorkingDirectory = '$workDir'
-`$sc.Description = '$Description'$iconArg
-`$sc.Save()
-"@
-
-    $psFile = Join-Path $env:TEMP "stg_shortcut_$([System.IO.Path]::GetRandomFileName()).ps1"
-    # UTF-8 with BOM: Windows PowerShell 5.1 parses a BOM-less file as ANSI and
-    # mangles the Hebrew shortcut name into '????'.
-    [System.IO.File]::WriteAllText($psFile, $script, [System.Text.UTF8Encoding]::new($true))
+    $shell = New-Object -ComObject WScript.Shell
     try {
-        $result = Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$psFile`"" -Wait -NoNewWindow -PassThru
+        $sc = $shell.CreateShortcut($ShortcutPath)
+        $sc.TargetPath = $TargetPath
+        $sc.WorkingDirectory = $workDir
+        $sc.Description = $Description
+        if ($IconPath -and (Test-Path $IconPath)) {
+            $sc.IconLocation = $IconPath
+        }
+        $sc.Save()
+        [System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($sc) | Out-Null
     }
     finally {
-        Remove-Item $psFile -ErrorAction SilentlyContinue
+        [System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) | Out-Null
     }
 }
 
