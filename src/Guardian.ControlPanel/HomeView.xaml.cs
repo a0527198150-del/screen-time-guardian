@@ -9,6 +9,9 @@ public partial class HomeView : UserControl
 {
     public event EventHandler? NewRuleRequested;
 
+    /// <summary>Raised when the operator confirms they want enforcement back on after a safe-mode trip.</summary>
+    public event EventHandler? ConfirmSafeModeRequested;
+
     public HomeView()
     {
         InitializeComponent();
@@ -42,6 +45,11 @@ public partial class HomeView : UserControl
             StatusTitle.Text = "האכיפה מושהית";
             StatusTitle.Foreground = new SolidColorBrush(Color.FromRgb(180, 119, 15)); // Amber
             StatusReason.Text = status?.Reason ?? "";
+            ConfirmSafeModeButton.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            ConfirmSafeModeButton.Visibility = Visibility.Collapsed;
         }
         else if (active)
         {
@@ -114,5 +122,10 @@ public partial class HomeView : UserControl
     private void WelcomeNewRule_Click(object sender, RoutedEventArgs e)
     {
         NewRuleRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ConfirmSafeMode_Click(object sender, RoutedEventArgs e)
+    {
+        ConfirmSafeModeRequested?.Invoke(this, EventArgs.Empty);
     }
 }

@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.5.8'
+$script:Version     = '0.5.9'
 $script:AppName     = 'Screen Time Guardian'
 $script:AppNameHeb  = 'שומר זמן מסך'
 
@@ -435,6 +435,19 @@ Get-Process -ErrorAction SilentlyContinue | Where-Object {
     $_.ProcessName -match '^ScreenTimeGuardian\.'
 } | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 3
+
+# ---- 4c. Reset crash/safe-mode markers (update flow) -------------------------
+# The service is being stopped deliberately as part of an install, so the crash
+# marker (boot.marker) and any automatic safe-mode flag (safemode.flag) must not
+# survive into the next start - otherwise enforcement stays disabled after every
+# update. The manual SAFEMODE kill switch in the ProgramData root is left alone
+# on purpose: an administrator who tripped it by hand keeps it tripped.
+$stgRuntimeDir = Join-Path $DataDir 'runtime'
+if (Test-Path $stgRuntimeDir -PathType Container) {
+    Remove-Item -Path (Join-Path $stgRuntimeDir 'boot.marker') -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $stgRuntimeDir 'safemode.flag') -Force -ErrorAction SilentlyContinue
+    Write-Step 'סממני מצב בטוח אופסו.'
+}
 
 # ---- 5. Copy files (עדכון במקום — אין צורך בהסרה ידנית) ---------------------
 $sourceFull = [System.IO.Path]::GetFullPath($SourceFolder).TrimEnd('\')

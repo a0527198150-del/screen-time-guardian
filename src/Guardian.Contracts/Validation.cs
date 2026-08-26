@@ -20,13 +20,21 @@ public static partial class ConfigurationValidation
 
     public static bool IsValidEmail(string value)
     {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
         try
         {
             var address = new MailAddress(value.Trim());
             return string.Equals(address.Address, value.Trim(), StringComparison.OrdinalIgnoreCase);
         }
-        catch (FormatException)
+        catch (Exception exception) when (exception is FormatException or ArgumentException)
         {
+            // MailAddress throws ArgumentException on an empty input, not
+            // FormatException. Treating both as "invalid" keeps the sanitizer
+            // from crashing the whole save over one empty email field.
             return false;
         }
     }

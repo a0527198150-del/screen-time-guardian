@@ -35,6 +35,7 @@ public partial class MainWindow : Window
         ShellControl.Rules.Snackbar = ShellControl.Snackbar;
         ShellControl.Settings.Snackbar = ShellControl.Snackbar;
         ShellControl.Home.NewRuleRequested += Rules_NewRuleRequested;
+        ShellControl.Home.ConfirmSafeModeRequested += Home_ConfirmSafeModeRequested;
     }
 
     private void OnWindowLoaded(object sender, RoutedEventArgs e)
@@ -438,6 +439,27 @@ public partial class MainWindow : Window
         AuthStatus.Foreground = isError
             ? new SolidColorBrush(Color.FromRgb(169, 50, 38))  // Rose
             : new SolidColorBrush(Color.FromRgb(90, 103, 128)); // MutedInk
+    }
+
+    private async void Home_ConfirmSafeModeRequested(object? sender, EventArgs e)
+    {
+        try
+        {
+            EnsureAuthenticated();
+            var response = await _pipeClient.ClearSafeModeAsync(_applicationPassword);
+            if (!response.Ok)
+            {
+                SetHeaderStatus(response.Error, true);
+                return;
+            }
+
+            SetHeaderStatus("האכיפה הופעלה מחדש.", false);
+            await RefreshStatusAsync();
+        }
+        catch (Exception ex) when (IsExpected(ex))
+        {
+            SetHeaderStatus(ex.Message, true);
+        }
     }
 
     private async Task RefreshConfigurationAsync()

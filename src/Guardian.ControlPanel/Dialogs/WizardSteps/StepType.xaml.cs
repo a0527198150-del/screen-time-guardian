@@ -10,7 +10,13 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
     {
         public event EventHandler? ValidityChanged;
 
-        public bool IsValid => SelectedType != RuleType.None;
+        public bool IsValid => SelectedType switch
+        {
+            RuleType.App => !string.IsNullOrWhiteSpace(SelectedValue),
+            RuleType.Site => !string.IsNullOrWhiteSpace(TxtSiteUrl.Text.Trim()),
+            RuleType.Account => !string.IsNullOrWhiteSpace(TxtEmail.Text.Trim()),
+            _ => false
+        };
 
         public RuleType SelectedType { get; private set; } = RuleType.None;
         public string? SelectedValue { get; private set; }
@@ -79,10 +85,17 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
         }
 
         /// <summary>
-        /// Show inline error when user clicks Next without selecting a type.
+        /// Show inline error when user clicks Next without a complete selection.
         /// </summary>
         public void ShowError()
         {
+            ErrorText.Text = SelectedType switch
+            {
+                RuleType.App => "יש לבחור קובץ אפליקציה (.exe)",
+                RuleType.Site => "יש להזין כתובת אתר",
+                RuleType.Account => "יש להזין כתובת אימייל",
+                _ => "בחר סוג כלל"
+            };
             ErrorBorder.Visibility = Visibility.Visible;
         }
 

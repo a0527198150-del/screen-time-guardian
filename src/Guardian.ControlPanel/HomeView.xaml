@@ -35,6 +35,13 @@
                     <TextBlock x:Name="StatusReason" Style="{StaticResource TypeBody}"
                                Foreground="{StaticResource BrushInkMuted}"
                                TextWrapping="Wrap" />
+                    <Button x:Name="ConfirmSafeModeButton"
+                            Style="{StaticResource ButtonPrimary}"
+                            Content="✓ אשר והפעל את האכיפה מחדש"
+                            Click="ConfirmSafeMode_Click"
+                            Margin="0,16,0,0"
+                            HorizontalAlignment="Stretch" Height="44"
+                            Visibility="Collapsed" />
                 </StackPanel>
             </Border>
 
