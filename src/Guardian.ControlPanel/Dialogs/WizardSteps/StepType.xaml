@@ -99,6 +99,66 @@
             <TextBox x:Name="TxtEmail" Height="40" FontFamily="{StaticResource FontData}"
                      FontSize="13" FlowDirection="LeftToRight"
                      Foreground="{StaticResource BrushInk}" />
+
+            <TextBlock Text="מה לחסום עבור החשבון הזה:"
+                       FontFamily="{StaticResource FontUi}" FontSize="13"
+                       Foreground="{StaticResource BrushInkMuted}" Margin="0,12,0,8" />
+            <WrapPanel x:Name="ServicesPanel">
+                <CheckBox x:Name="ChkGmail" Content="Gmail ✉️" Tag="gmail" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkDrive" Content="Drive 🗂️" Tag="drive" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkDocs" Content="Docs / Sheets / Slides 📄" Tag="docs" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkCalendar" Content="Calendar 📅" Tag="calendar" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkChat" Content="Chat 💬" Tag="chat" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkMeet" Content="Meet 🎥" Tag="meet" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkPhotos" Content="Photos 🖼️" Tag="photos" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkSearch" Content="חיפוש 🔍" Tag="search" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkYoutube" Content="YouTube ▶️" Tag="youtube" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkGemini" Content="Gemini ✨" Tag="gemini" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkMaps" Content="Maps 🗺️" Tag="maps" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkTranslate" Content="Translate 🌐" Tag="translate" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkKeep" Content="Keep 📝" Tag="keep" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkNews" Content="News 📰" Tag="news" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkFinance" Content="Finance 📈" Tag="finance" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkGroups" Content="Groups 👥" Tag="groups" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+                <CheckBox x:Name="ChkOne" Content="Google One 💾" Tag="one" IsChecked="True"
+                          Margin="0,0,16,8" FontFamily="{StaticResource FontUi}" FontSize="13"
+                          Foreground="{StaticResource BrushInk}" />
+            </WrapPanel>
+            <TextBlock Text="התוסף חוסם את השירותים המסומנים רק כשמחוברים לחשבון הזה."
+                       FontFamily="{StaticResource FontUi}" FontSize="12"
+                       Foreground="{StaticResource BrushInkMuted}" Margin="0,4,0,0" />
         </StackPanel>
     </StackPanel>
 </UserControl>

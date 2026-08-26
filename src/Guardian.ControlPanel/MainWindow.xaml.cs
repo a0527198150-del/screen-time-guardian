@@ -305,7 +305,7 @@ public partial class MainWindow : Window
 
     private void Rules_EditAccountRuleRequested(object? sender, GoogleAccountRule rule)
     {
-        var wizard = new RuleWizard { Owner = this };
+        var wizard = new RuleWizard(rule) { Owner = this };
         if (wizard.ShowDialog() == true && wizard.Result is GoogleAccountRule edited)
         {
             rule.Email = edited.Email;

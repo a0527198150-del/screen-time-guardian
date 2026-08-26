@@ -25,6 +25,12 @@
                            Foreground="{StaticResource BrushInkMuted}"
                            Margin="28,0,0,4" />
 
+                <!-- Row 2b: What is blocked (account rules only) -->
+                <TextBlock x:Name="BlockScope" Style="{StaticResource TypeBody}"
+                           Foreground="{StaticResource BrushInkMuted}"
+                           Margin="28,0,0,4" Visibility="Collapsed"
+                           TextWrapping="Wrap" />
+
                 <!-- Row 3: Schedule summary + status tag -->
                 <StackPanel Orientation="Horizontal" Margin="28,0,0,0">
                     <TextBlock x:Name="ScheduleSummary" Style="{StaticResource TypeBody}"

@@ -1,8 +1,10 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ScreenTimeGuardian.Contracts;
 
 namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 {
@@ -14,7 +16,8 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
         {
             RuleType.App => !string.IsNullOrWhiteSpace(SelectedValue),
             RuleType.Site => !string.IsNullOrWhiteSpace(TxtSiteUrl.Text.Trim()),
-            RuleType.Account => !string.IsNullOrWhiteSpace(TxtEmail.Text.Trim()),
+            RuleType.Account => !string.IsNullOrWhiteSpace(TxtEmail.Text.Trim())
+                && GetSelectedServices().Count > 0,
             _ => false
         };
 
@@ -93,7 +96,9 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
             {
                 RuleType.App => "יש לבחור קובץ אפליקציה (.exe)",
                 RuleType.Site => "יש להזין כתובת אתר",
-                RuleType.Account => "יש להזין כתובת אימייל",
+                RuleType.Account => string.IsNullOrWhiteSpace(TxtEmail.Text.Trim())
+                    ? "יש להזין כתובת אימייל"
+                    : "יש לבחור לפחות שירות אחד לחסימה",
                 _ => "בחר סוג כלל"
             };
             ErrorBorder.Visibility = Visibility.Visible;
@@ -111,6 +116,41 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
                 RuleType.Account => TxtEmail.Text.Trim(),
                 _ => ""
             };
+        }
+
+        /// <summary>
+        /// The Google service keys the parent picked for this account rule.
+        /// </summary>
+        public System.Collections.Generic.List<string> GetSelectedServices()
+        {
+            var services = new System.Collections.Generic.List<string>();
+            if (ServicesPanel is null) return services;
+            foreach (var child in ServicesPanel.Children)
+            {
+                if (child is CheckBox box && box.IsChecked == true && box.Tag is string key
+                    && !string.IsNullOrWhiteSpace(key))
+                {
+                    services.Add(key);
+                }
+            }
+            return services;
+        }
+
+        /// <summary>
+        /// Prefill the step for editing an existing account rule: email, services
+        /// and the account card selection.
+        /// </summary>
+        public void LoadForEdit(GoogleAccountRule rule)
+        {
+            TxtEmail.Text = rule.Email ?? string.Empty;
+            foreach (var child in ServicesPanel.Children)
+            {
+                if (child is CheckBox box && box.Tag is string key)
+                {
+                    box.IsChecked = rule.Services.Contains(key, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+            SelectCard(CardAccount, RuleType.Account);
         }
     }
 }

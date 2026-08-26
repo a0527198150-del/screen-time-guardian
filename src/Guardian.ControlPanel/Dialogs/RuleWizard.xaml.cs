@@ -15,12 +15,21 @@ public partial class RuleWizard : Window
     private bool _hasChanges;
     public ScheduledRule? Result { get; private set; }
 
-    public RuleWizard()
+    public RuleWizard(GoogleAccountRule? existing = null)
     {
         InitializeComponent();
         _stepType.ValidityChanged += (_, _) => { };
         _stepSchedule.ValidityChanged += (_, _) => { };
         _stepConfirm.SaveRequested += (_, _) => { CreateRule(); DialogResult = true; Close(); };
+
+        if (existing is not null)
+        {
+            // Edit mode: restore the email, the picked services and the schedule
+            // instead of presenting a blank wizard that would wipe the rule.
+            _stepType.LoadForEdit(existing);
+            _stepSchedule.LoadWindows(existing.Windows);
+        }
+
         ShowStep(1);
     }
 
@@ -64,6 +73,11 @@ public partial class RuleWizard : Window
             StepType.RuleType.App => "אפליקציה", StepType.RuleType.Site => "אתר",
             StepType.RuleType.Account => "חשבון Google", _ => "כלל"
         };
+        if (_stepType.SelectedType == StepType.RuleType.Account)
+        {
+            var count = _stepType.GetSelectedServices().Count;
+            return $"כלל מסוג \"{typeName}\" (חסימת {count} שירותים) ייחסם ב{_stepSchedule.GetSummary()}";
+        }
         return $"כלל מסוג \"{typeName}\" ייחסם ב{_stepSchedule.GetSummary()}";
     }
 
@@ -121,12 +135,7 @@ public partial class RuleWizard : Window
                 Enabled = true,
                 Windows = windows,
                 Email = value,
-                Services = new List<string>
-                {
-                    "gmail", "drive", "docs", "calendar", "meet", "photos",
-                    "search", "youtube", "gemini", "maps", "translate",
-                    "keep", "news", "finance", "groups"
-                }
+                Services = _stepType.GetSelectedServices()
             },
             _ => null
         };

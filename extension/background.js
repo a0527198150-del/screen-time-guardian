@@ -94,6 +94,21 @@ function callNative(message, timeoutMs = 4000) {
  * not exist in a Hebrew interface (it reads "חשבון Google:") - so identification
  * silently failed every single time. This endpoint is language independent.
  */
+function collectEmails(value, out) {
+  if (typeof value === 'string') {
+    const match = value.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/);
+    if (match) out.push(match[0].toLowerCase());
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectEmails(item, out);
+    return;
+  }
+  if (value && typeof value === 'object') {
+    for (const key of Object.keys(value)) collectEmails(value[key], out);
+  }
+}
+
 async function readSignedInAccounts() {
   const now = Date.now();
   if (now - accountCache.at < ACCOUNT_CACHE_MS) {
@@ -110,20 +125,37 @@ async function readSignedInAccounts() {
 
     if (response.ok) {
       const text = await response.text();
-      const cleaned = text.replace(/^\)\]\}'/, '').trim();
-      const data = JSON.parse(cleaned);
-      const rows = Array.isArray(data) && Array.isArray(data[1]) ? data[1] : [];
-      for (const row of rows) {
-        const candidate = Array.isArray(row) ? row.find((v) => typeof v === 'string' && v.includes('@')) : null;
-        if (candidate) emails.push(candidate.toLowerCase());
+      const cleaned = text.replace(/^\s*\)\]\}'\s*/, '').trim();
+      if (cleaned.startsWith('[') || cleaned.startsWith('{')) {
+        const data = JSON.parse(cleaned);
+        collectEmails(data, emails);
+        // A valid account-list payload is always a deeply nested array. If we got
+        // an unexpected shape (or zero emails), treat it as an identity failure
+        // rather than as proof that the browser has no accounts.
+        available = emails.length > 0 || /\[\[\s*\[/.test(cleaned);
       }
-      available = true;
     }
   } catch (error) {
     console.debug('ListAccounts failed', error);
   }
 
-  accountCache = { at: now, emails, primary: emails[0] || '', available };
+  // Second source: the browser profile email. Without the identity.email
+  // permission this returns an empty string - harmless, just skipped.
+  try {
+    if (chrome.identity && chrome.identity.getProfileUserInfo) {
+      const profile = await chrome.identity.getProfileUserInfo();
+      const profileEmail = String(profile.email || '').trim().toLowerCase();
+      if (profileEmail && !emails.includes(profileEmail)) {
+        emails.unshift(profileEmail);
+      }
+      if (!available && profileEmail) available = true;
+    }
+  } catch (error) {
+    console.debug('getProfileUserInfo failed', error);
+  }
+
+  const unique = [...new Set(emails)];
+  accountCache = { at: now, emails: unique, primary: unique[0] || '', available };
   return accountCache;
 }
 

@@ -49,6 +49,21 @@ public partial class RuleCard : UserControl
             _ => ""
         };
 
+        // What exactly is blocked (account rules)
+        BlockScope.Visibility = Visibility.Collapsed;
+        if (rule is GoogleAccountRule account)
+        {
+            var labels = account.Services
+                .Where(key => GoogleServices.Names.ContainsKey(key))
+                .Select(GoogleServices.Label)
+                .ToList();
+            if (labels.Count > 0)
+            {
+                BlockScope.Text = "חסום: " + string.Join(" · ", labels);
+                BlockScope.Visibility = Visibility.Visible;
+            }
+        }
+
         // Schedule summary
         var activeWindows = rule.Windows.Where(w => w.Enabled && w.Days.Count > 0).ToList();
         var now = DateTimeOffset.Now;

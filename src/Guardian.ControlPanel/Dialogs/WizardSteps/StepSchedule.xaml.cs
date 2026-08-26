@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using ScreenTimeGuardian.Contracts;
 
 namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
 {
@@ -85,6 +88,34 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
             for (var day = 0; day < 7; day++)
             {
                 ScheduleGrid.SetDayHours(day, _startHour, _endHour);
+            }
+            _suppressEvents = false;
+            NotifyValidityChanged();
+            UpdateSummary();
+        }
+
+        /// <summary>
+        /// Show an existing rule's schedule in the grid (edit mode).
+        /// </summary>
+        public void LoadWindows(IEnumerable<ScheduleWindow> windows)
+        {
+            _suppressEvents = true;
+            ScheduleGrid.ClearAll();
+            foreach (var window in windows.Where(w => w.Enabled && w.Days.Count > 0))
+            {
+                foreach (var day in window.Days)
+                {
+                    var dayIndex = (int)day; // DayOfWeek.Sunday == 0, matches the grid
+                    if (window.AllDay)
+                    {
+                        ScheduleGrid.SetDayHours(dayIndex, 0, 24);
+                    }
+                    else if (TimeOnly.TryParse(window.Start, out var start)
+                             && TimeOnly.TryParse(window.End, out var end))
+                    {
+                        ScheduleGrid.SetDayHours(dayIndex, start.Hour, end.Hour);
+                    }
+                }
             }
             _suppressEvents = false;
             NotifyValidityChanged();
