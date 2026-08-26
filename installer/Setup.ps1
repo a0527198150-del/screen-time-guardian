@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.5.13'
+$script:Version     = '0.5.14'
 $script:AppName     = 'Screen Time Guardian'
 $script:AppNameHeb  = 'שומר זמן מסך'
 
@@ -134,27 +134,52 @@ function New-Shortcut {
         [string]$IconPath = ''
     )
 
-    # Create the shortcut directly in this process. Earlier versions wrote a
-    # temporary .ps1 and ran it in a child PowerShell, and the Hebrew name was
-    # mangled to '????' somewhere in that hop regardless of the file's BOM.
-    # In-process COM keeps the original in-memory string, so the shortcut name
-    # comes out exactly as typed in the installer.
+    # Create the shortcut directly in this process with WScript.Shell COM.
+    #
+    # On Windows installs whose system locale is not Hebrew, WSH converts the
+    # shortcut path through the ANSI code page internally, so a Hebrew .lnk name
+    # comes out as '????' and Save() throws FileNotFoundException - in the child
+    # process version AND in this in-process version. The English fallback name
+    # is pure ASCII and always survives, so a shortcut is still created and the
+    # installer never dies on this step.
     $workDir = Split-Path $TargetPath -Parent
+    $shortcutFolder = Split-Path $ShortcutPath -Parent
+    $candidates = @($ShortcutPath)
+    $englishFallback = Join-Path $shortcutFolder "$AppName.lnk"
+    if (-not [string]::Equals($englishFallback, $ShortcutPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $candidates += $englishFallback
+    }
+
     $shell = New-Object -ComObject WScript.Shell
+    $created = $null
     try {
-        $sc = $shell.CreateShortcut($ShortcutPath)
-        $sc.TargetPath = $TargetPath
-        $sc.WorkingDirectory = $workDir
-        $sc.Description = $Description
-        if ($IconPath -and (Test-Path $IconPath)) {
-            $sc.IconLocation = $IconPath
+        foreach ($path in $candidates) {
+            try {
+                $sc = $shell.CreateShortcut($path)
+                $sc.TargetPath = $TargetPath
+                $sc.WorkingDirectory = $workDir
+                $sc.Description = $Description
+                if ($IconPath -and (Test-Path $IconPath)) {
+                    $sc.IconLocation = $IconPath
+                }
+                $sc.Save()
+                [System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($sc) | Out-Null
+                $created = $path
+                break
+            }
+            catch {
+                Write-Warn "  לא ניתן לשמור קיצור דרך `"$path`" — מנסה שם חלופי: $($_.Exception.Message)"
+            }
         }
-        $sc.Save()
-        [System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($sc) | Out-Null
     }
     finally {
         [System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) | Out-Null
     }
+
+    if ($null -eq $created) {
+        Write-Warn "  לא ניתן היה ליצור קיצור דרך: $ShortcutPath"
+    }
+    return $created
 }
 
 function Install-Shortcuts {
@@ -163,22 +188,22 @@ function Install-Shortcuts {
     $iconPath = Join-Path (Split-Path $TargetExe -Parent) 'icon.ico'
     if (-not (Test-Path $iconPath)) { $iconPath = '' }
 
-    # Start Menu folder
+    # Start Menu folder (English name — safe on every locale)
     $startMenuDir = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) $AppName
     New-Item -ItemType Directory -Force -Path $startMenuDir | Out-Null
 
     $startMenuLnk = Join-Path $startMenuDir "$AppNameHeb.lnk"
-    New-Shortcut -ShortcutPath $startMenuLnk -TargetPath $TargetExe `
+    $created = New-Shortcut -ShortcutPath $startMenuLnk -TargetPath $TargetExe `
         -Description $AppNameHeb -IconPath $iconPath
-    Write-Step "קיצור דרך בתפריט ההתחל: $startMenuDir"
+    if ($created) { Write-Step "קיצור דרך בתפריט ההתחל: $(Split-Path $created -Leaf)" }
 
     # Desktop shortcut (optional)
     if ($DesktopShortcut) {
         $desktopDir = [Environment]::GetFolderPath('CommonDesktopDirectory')
         $desktopLnk = Join-Path $desktopDir "$AppNameHeb.lnk"
-        New-Shortcut -ShortcutPath $desktopLnk -TargetPath $TargetExe `
+        $createdDesktop = New-Shortcut -ShortcutPath $desktopLnk -TargetPath $TargetExe `
             -Description $AppNameHeb -IconPath $iconPath
-        Write-Step "קיצור דרך על שולחן העבודה"
+        if ($createdDesktop) { Write-Step "קיצור דרך על שולחן העבודה" }
     }
 }
 
@@ -187,15 +212,15 @@ function Remove-Shortcuts {
     $startMenuDir = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) $AppName
     Safe-RemoveItem $startMenuDir
 
-    # Desktop
-    $desktopDir = [Environment]::GetFolderPath('CommonDesktopDirectory')
-    $desktopLnk = Join-Path $desktopDir "$AppNameHeb.lnk"
-    if (Test-Path $desktopLnk) { Remove-Item $desktopLnk -Force -ErrorAction SilentlyContinue }
+    # Desktop — Hebrew and English names (either may have been created)
+    foreach ($lnkName in @("$AppNameHeb.lnk", "$AppName.lnk")) {
+        $desktopLnk = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) $lnkName
+        if (Test-Path $desktopLnk) { Remove-Item $desktopLnk -Force -ErrorAction SilentlyContinue }
 
-    # Also check per-user desktop
-    $userDesktop = [Environment]::GetFolderPath('Desktop')
-    $userDesktopLnk = Join-Path $userDesktop "$AppNameHeb.lnk"
-    if (Test-Path $userDesktopLnk) { Remove-Item $userDesktopLnk -Force -ErrorAction SilentlyContinue }
+        $userDesktop = [Environment]::GetFolderPath('Desktop')
+        $userDesktopLnk = Join-Path $userDesktop $lnkName
+        if (Test-Path $userDesktopLnk) { Remove-Item $userDesktopLnk -Force -ErrorAction SilentlyContinue }
+    }
 }
 
 # =============================================================================
@@ -569,7 +594,12 @@ else {
 Write-Host '  יוצר קיצורי דרך (שולחן עבודה + תפריט התחל)...'
 $controlPanelExe = Join-Path $InstallRoot 'ControlPanel\ScreenTimeGuardian.ControlPanel.exe'
 if (Test-Path $controlPanelExe -PathType Leaf) {
-    Install-Shortcuts -TargetExe $controlPanelExe -DesktopShortcut
+    try {
+        Install-Shortcuts -TargetExe $controlPanelExe -DesktopShortcut
+    }
+    catch {
+        Write-Warn "יצירת קיצורי דרך נכשלה (לא קריטי): $($_.Exception.Message)"
+    }
 }
 else {
     Write-Warn 'ControlPanel.exe לא נמצא — קיצורי דרך לא נוצרו.'
