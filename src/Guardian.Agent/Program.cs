@@ -14,7 +14,6 @@ public static class Program
         }
 
         ToastNotifier.Show(message);
-        Environment.Exit(0);
     }
 
     private static string? ParseMessageArgument(string[] args)

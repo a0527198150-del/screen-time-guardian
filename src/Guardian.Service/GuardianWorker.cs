@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Win32;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ScreenTimeGuardian.Contracts;
