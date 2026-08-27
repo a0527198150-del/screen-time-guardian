@@ -57,6 +57,17 @@ public partial class RuleCard : UserControl
                 .Where(key => GoogleServices.Names.ContainsKey(key))
                 .Select(GoogleServices.Label)
                 .ToList();
+            var siteHosts = (account.Sites ?? new List<string>())
+                .Select(site =>
+                {
+                    try { return new Uri(site).Host; } catch { return site; }
+                })
+                .Where(host => !string.IsNullOrWhiteSpace(host))
+                .ToList();
+            if (siteHosts.Count > 0)
+            {
+                labels.Add(string.Join(" · ", siteHosts));
+            }
             if (labels.Count > 0)
             {
                 BlockScope.Text = "חסום: " + string.Join(" · ", labels);

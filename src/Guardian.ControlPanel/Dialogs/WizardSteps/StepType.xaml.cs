@@ -16,8 +16,10 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
         {
             RuleType.App => !string.IsNullOrWhiteSpace(SelectedValue),
             RuleType.Site => !string.IsNullOrWhiteSpace(TxtSiteUrl.Text.Trim()),
+            // An account rule blocks either Google services or third party sites that
+            // are reached through Sign in with Google. At least one of them is required.
             RuleType.Account => !string.IsNullOrWhiteSpace(TxtEmail.Text.Trim())
-                && GetSelectedServices().Count > 0,
+                && (GetSelectedServices().Count > 0 || GetSelectedSites().Count > 0),
             _ => false
         };
 
@@ -98,7 +100,7 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
                 RuleType.Site => "יש להזין כתובת אתר",
                 RuleType.Account => string.IsNullOrWhiteSpace(TxtEmail.Text.Trim())
                     ? "יש להזין כתובת אימייל"
-                    : "יש לבחור לפחות שירות אחד לחסימה",
+                    : "יש לסמן לפחות שירות אחד, או להוסיף לפחות אתר אחד לחסימה",
                 _ => "בחר סוג כלל"
             };
             ErrorBorder.Visibility = Visibility.Visible;
@@ -137,8 +139,8 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
         }
 
         /// <summary>
-        /// Prefill the step for editing an existing account rule: email, services
-        /// and the account card selection.
+        /// Prefill the step for editing an existing account rule: email, services,
+        /// third-party sites and the account card selection.
         /// </summary>
         public void LoadForEdit(GoogleAccountRule rule)
         {
@@ -150,7 +152,99 @@ namespace ScreenTimeGuardian.ControlPanel.Dialogs.WizardSteps
                     box.IsChecked = rule.Services.Contains(key, StringComparer.OrdinalIgnoreCase);
                 }
             }
+
+            _accountSites.Clear();
+            _accountSites.AddRange(rule.Sites ?? new List<string>());
+            RefreshAccountSitesList();
             SelectCard(CardAccount, RuleType.Account);
+        }
+
+        // ==================== Account third-party sites ====================
+
+        private readonly System.Collections.Generic.List<string> _accountSites = new();
+
+        /// <summary>
+        /// Third party site origins this account rule blocks. Values are stored as
+        /// full https origins so the browser extension can match and turn each one
+        /// into a blocking rule directly.
+        /// </summary>
+        public System.Collections.Generic.List<string> GetSelectedSites()
+        {
+            return _accountSites.ToList();
+        }
+
+        private void BtnAddAccountSite_Click(object sender, RoutedEventArgs e)
+            => AddAccountSiteFromInput();
+
+        private void TxtAccountSite_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                AddAccountSiteFromInput();
+                e.Handled = true;
+            }
+        }
+
+        private void BtnRemoveAccountSite_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = AccountSitesList.SelectedItems.Cast<string>().ToList();
+            foreach (var site in selected)
+            {
+                _accountSites.RemoveAll(existing =>
+                    string.Equals(existing, site, StringComparison.OrdinalIgnoreCase));
+            }
+            RefreshAccountSitesList();
+            ValidityChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void AddAccountSiteFromInput()
+        {
+            var normalized = NormalizeSiteOrigin(TxtAccountSite.Text);
+            if (normalized.Length == 0)
+            {
+                ErrorText.Text = "יש להזין כתובת אתר תקינה, למשל example.com";
+                ErrorBorder.Visibility = Visibility.Visible;
+                return;
+            }
+
+            if (!_accountSites.Any(existing =>
+                    string.Equals(existing, normalized, StringComparison.OrdinalIgnoreCase)))
+            {
+                _accountSites.Add(normalized);
+            }
+
+            TxtAccountSite.Clear();
+            RefreshAccountSitesList();
+            ValidityChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private static string NormalizeSiteOrigin(string input)
+        {
+            var trimmed = input.Trim();
+            if (trimmed.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            if (!trimmed.Contains("://", StringComparison.Ordinal))
+            {
+                trimmed = "https://" + trimmed;
+            }
+
+            if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+                || uri.HostNameType != UriHostNameType.Dns && uri.HostNameType != UriHostNameType.IPv4
+                || string.IsNullOrWhiteSpace(uri.Host))
+            {
+                return string.Empty;
+            }
+
+            return $"https://{uri.Host.ToLowerInvariant()}";
+        }
+
+        private void RefreshAccountSitesList()
+        {
+            AccountSitesList.ItemsSource = null;
+            AccountSitesList.ItemsSource = _accountSites.ToList();
         }
     }
 }

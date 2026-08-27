@@ -75,8 +75,12 @@ public partial class RuleWizard : Window
         };
         if (_stepType.SelectedType == StepType.RuleType.Account)
         {
-            var count = _stepType.GetSelectedServices().Count;
-            return $"כלל מסוג \"{typeName}\" (חסימת {count} שירותים) ייחסם ב{_stepSchedule.GetSummary()}";
+            var services = _stepType.GetSelectedServices().Count;
+            var sites = _stepType.GetSelectedSites().Count;
+            var detail = new List<string>();
+            if (services > 0) detail.Add($"{services} שירותים");
+            if (sites > 0) detail.Add($"{sites} אתרים");
+            return $"כלל מסוג \"{typeName}\" (חסימת {string.Join(" + ", detail)}) ייחסם ב{_stepSchedule.GetSummary()}";
         }
         return $"כלל מסוג \"{typeName}\" ייחסם ב{_stepSchedule.GetSummary()}";
     }
@@ -135,7 +139,8 @@ public partial class RuleWizard : Window
                 Enabled = true,
                 Windows = windows,
                 Email = value,
-                Services = _stepType.GetSelectedServices()
+                Services = _stepType.GetSelectedServices(),
+                Sites = _stepType.GetSelectedSites()
             },
             _ => null
         };
