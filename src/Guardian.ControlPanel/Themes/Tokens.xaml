@@ -147,6 +147,10 @@
     <DropShadowEffect x:Key="ShadowFloat" BlurRadius="32" ShadowDepth="8"
                       Direction="270" Opacity="0.14" Color="#141B2E" />
 
+    <!-- Strong easing curves for short, intentional UI motion. -->
+    <KeySpline x:Key="EaseOutStrong">0.23,1 0.32,1</KeySpline>
+    <KeySpline x:Key="EaseInOutStrong">0.77,0 0.175,1</KeySpline>
+
     <!-- ================================================================
          BASE WINDOW STYLE
          ================================================================ -->

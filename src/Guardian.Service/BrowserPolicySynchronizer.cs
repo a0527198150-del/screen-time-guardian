@@ -1,104 +1,115 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using ScreenTimeGuardian.Contracts;
 
 namespace ScreenTimeGuardian.Service;
 
-/// <summary>
-/// Toggles the private-browsing escape hatches in step with the schedule.
-///
-/// Incognito and guest mode both hide which Google account is signed in, which is the
-/// one thing the extension needs in order to decide anything. So while a block is
-/// running they have to be off - otherwise every account rule is one keystroke away
-/// from irrelevant.
-///
-/// But there is no reason to keep them off the rest of the time. When nothing is
-/// blocked, both go back to normal. The restriction is only as wide as the schedule.
-///
-/// Chrome and Edge watch their policy keys in the registry and reload within a minute
-/// or two of a change. Windows that are ALREADY OPEN are not closed by a policy change,
-/// so an incognito window opened before the block began survives until it is closed.
-/// </summary>
 public sealed class BrowserPolicySynchronizer
 {
     private const string ChromePolicyPath = @"SOFTWARE\Policies\Google\Chrome";
     private const string EdgePolicyPath = @"SOFTWARE\Policies\Microsoft\Edge";
-
-    // IncognitoModeAvailability: 0 = available, 1 = disabled, 2 = forced.
     private const int IncognitoAvailable = 0;
     private const int IncognitoDisabled = 1;
 
     private readonly ILogger<BrowserPolicySynchronizer> _logger;
     private bool? _lastPrivateBrowsingAllowed;
+    private HashSet<string>? _lastBlockedPatterns;
 
     public BrowserPolicySynchronizer(ILogger<BrowserPolicySynchronizer> logger)
     {
         _logger = logger;
     }
 
-    /// <summary>
-    /// Called on every policy cycle. <paramref name="anyBlockActive"/> is true whenever
-    /// any rule is currently in force, whatever kind it is.
-    /// </summary>
-    public void ApplyPrivateBrowsingPolicy(
-        bool anyBlockActive,
-        bool enforcementAllowed,
-        bool enforceForAdministrators)
+    public void ApplyPrivateBrowsingPolicy(bool anyBlockActive, bool enforcementAllowed, bool enforceForAdministrators)
     {
-        // When enforcement is off entirely (safe mode, grace period), leave the browsers
-        // fully open. A disabled service must not hold restrictions in place.
-        // These are machine-wide registry policies and cannot exclude administrators.
-        // Keep them open when administrators are excluded rather than applying a
-        // restriction to a user who was explicitly opted out.
         var allowPrivateBrowsing = !enforcementAllowed || !enforceForAdministrators || !anyBlockActive;
-
-        if (_lastPrivateBrowsingAllowed == allowPrivateBrowsing)
-        {
-            return;
-        }
+        if (_lastPrivateBrowsingAllowed == allowPrivateBrowsing) return;
 
         try
         {
-            foreach (var path in new[] { ChromePolicyPath, EdgePolicyPath })
+            foreach (var path in PolicyPaths)
             {
-                SetDword(path, "IncognitoModeAvailability",
-                    allowPrivateBrowsing ? IncognitoAvailable : IncognitoDisabled);
-                SetDword(path, "BrowserGuestModeEnabled",
-                    allowPrivateBrowsing ? 1 : 0);
+                SetDword(path, "IncognitoModeAvailability", allowPrivateBrowsing ? IncognitoAvailable : IncognitoDisabled);
+                SetDword(path, "BrowserGuestModeEnabled", allowPrivateBrowsing ? 1 : 0);
             }
-
             _lastPrivateBrowsingAllowed = allowPrivateBrowsing;
-
-            _logger.LogInformation(
-                allowPrivateBrowsing
-                    ? "No block is active: incognito and guest mode re-enabled"
-                    : "A block is active: incognito and guest mode disabled");
+            _logger.LogInformation(allowPrivateBrowsing
+                ? "No block is active: incognito and guest mode re-enabled"
+                : "A block is active: incognito and guest mode disabled");
         }
-        catch (Exception exception) when (exception is UnauthorizedAccessException
-                                              or System.Security.SecurityException
-                                              or InvalidOperationException)
+        catch (Exception exception) when (IsRegistryWriteFailure(exception))
         {
             _logger.LogError(exception, "Could not update browser private browsing policy");
         }
     }
 
-    /// <summary>Restores both browsers to their normal state. Used on clean shutdown.</summary>
+    /// <summary>Synchronizes the machine-wide URLBlocklist policy for Chrome and Edge.</summary>
+    public void ApplyUrlBlocklist(IReadOnlyCollection<string> domains, bool enabled)
+    {
+        var desired = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (enabled)
+        {
+            foreach (var domain in domains)
+            {
+                var pattern = PolicyEngine.NormalizeDomain(domain);
+                if (ConfigurationValidation.IsValidDomain(pattern)) desired.Add(pattern);
+            }
+        }
+
+        if (_lastBlockedPatterns is not null && _lastBlockedPatterns.SetEquals(desired)) return;
+
+        try
+        {
+            foreach (var path in PolicyPaths) WriteBlocklist(path, desired);
+            _lastBlockedPatterns = desired;
+            _logger.LogInformation("Browser URL blocklist updated: {Count} patterns (enabled={Enabled})", desired.Count, enabled);
+        }
+        catch (Exception exception) when (IsRegistryWriteFailure(exception))
+        {
+            // Do not cache failures as success; the next policy cycle retries.
+            _lastBlockedPatterns = null;
+            _logger.LogError(exception, "Could not update the browser URL blocklist policy");
+        }
+    }
+
     public void RestoreDefaults()
     {
         try
         {
-            foreach (var path in new[] { ChromePolicyPath, EdgePolicyPath })
+            foreach (var path in PolicyPaths)
             {
                 SetDword(path, "IncognitoModeAvailability", IncognitoAvailable);
                 SetDword(path, "BrowserGuestModeEnabled", 1);
+                WriteBlocklist(path, Array.Empty<string>());
             }
-
             _lastPrivateBrowsingAllowed = true;
+            _lastBlockedPatterns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
-        catch (Exception exception) when (exception is UnauthorizedAccessException
-                                              or System.Security.SecurityException
-                                              or InvalidOperationException)
+        catch (Exception exception) when (IsRegistryWriteFailure(exception))
         {
+            _lastPrivateBrowsingAllowed = null;
+            _lastBlockedPatterns = null;
             _logger.LogWarning(exception, "Could not restore browser policy defaults");
+        }
+    }
+
+    private static IReadOnlyList<string> PolicyPaths => new[] { ChromePolicyPath, EdgePolicyPath };
+
+    private static void WriteBlocklist(string policyPath, IReadOnlyCollection<string> patterns)
+    {
+        using var policyKey = Registry.LocalMachine.CreateSubKey(policyPath, writable: true)
+            ?? throw new InvalidOperationException($"Could not open registry policy path {policyPath}");
+        policyKey.DeleteSubKeyTree("URLBlocklist", throwOnMissingSubKey: false);
+        if (patterns.Count == 0) return;
+
+        using var listKey = policyKey.CreateSubKey("URLBlocklist", writable: true)
+            ?? throw new InvalidOperationException($"Could not open {policyPath}\\URLBlocklist");
+        var index = 1;
+        foreach (var pattern in patterns.OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
+        {
+            listKey.SetValue(index.ToString(CultureInfo.InvariantCulture), pattern, RegistryValueKind.String);
+            index++;
         }
     }
 
@@ -108,4 +119,7 @@ public sealed class BrowserPolicySynchronizer
             ?? throw new InvalidOperationException($"Could not open registry policy path {path}");
         key.SetValue(name, value, RegistryValueKind.DWord);
     }
+
+    private static bool IsRegistryWriteFailure(Exception exception) => exception is
+        UnauthorizedAccessException or System.Security.SecurityException or InvalidOperationException;
 }

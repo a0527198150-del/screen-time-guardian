@@ -344,6 +344,9 @@ public sealed class GuardianWorker : BackgroundService
             snapshot.IsAnyBlockActive,
             safety.EnforcementAllowed,
             configuration.EnforceForAdministrators);
+        _browserPolicies.ApplyUrlBlocklist(
+            snapshot.BlockedDomains,
+            safety.EnforcementAllowed && configuration.BlockUrlsInManagedBrowsers);
 
         _lastConfiguration = ConfigurationStore.Clone(configuration);
         _lastConfigurationJson = configurationJson;

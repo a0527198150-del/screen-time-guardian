@@ -101,6 +101,13 @@ function Safe-RemoveItem {
     }
 }
 
+function Ensure-EventLogSource {
+    $source = 'Screen Time Guardian'
+    if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+        New-EventLog -LogName Application -Source $source
+    }
+}
+
 function Set-DataDirectoryAcl {
     param([Parameter(Mandatory)][string]$Path)
 
@@ -327,15 +334,20 @@ function Invoke-Uninstall {
     }
 
     # 2. Remove firewall rules
-    Write-Host '  2/7 מסיר חוקי חומת אש...'
+    Write-Host '  2/8 מסיר חוקי חומת אש...'
     Get-NetFirewallRule -Name 'STG-App-*' -ErrorAction SilentlyContinue |
         Remove-NetFirewallRule -ErrorAction SilentlyContinue
     Get-NetFirewallRule -Name 'STG-Website-*' -ErrorAction SilentlyContinue |
         Remove-NetFirewallRule -ErrorAction SilentlyContinue
     Write-Step 'חוקי חומת האש הוסרו.'
 
+    # Remove browser URL policy created by Guardian.
+    foreach ($policyPath in @('HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist', 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\URLBlocklist')) {
+        Remove-Item -Path $policyPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     # 3. Remove IFEO entries
-    Write-Host '  3/7 מסיר חסימות הפעלה...'
+    Write-Host '  3/8 מסיר חסימות הפעלה...'
     $ifeoRoot = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options'
     if (Test-Path $ifeoRoot) {
         Get-ChildItem $ifeoRoot | ForEach-Object {
@@ -348,14 +360,14 @@ function Invoke-Uninstall {
     Write-Step 'חסימות ההפעלה הוסרו.'
 
     # 4. Remove agent autorun and scheduled notifications
-    Write-Host '  4/7 מסיר סוכן מהפעלה אוטומטית ומשימות התראות...'
+    Write-Host '  4/8 מסיר סוכן מהפעלה אוטומטית ומשימות התראות...'
     schtasks.exe /Delete /TN 'ScreenTimeGuardian Notify' /F 2>$null | Out-Null
     Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' `
         -Name 'ScreenTimeGuardianAgent' -ErrorAction SilentlyContinue
     Write-Step 'הסוכן הוסר מהפעלה אוטומטית.'
 
     # 5. Remove NativeHost registration
-    Write-Host '  5/7 מסיר רישום Native Host...'
+    Write-Host '  5/8 מסיר רישום Native Host...'
     Remove-Item -Path 'HKLM:\Software\Google\Chrome\NativeMessagingHosts\com.screentimeguardian.host' `
         -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path 'HKLM:\Software\Microsoft\Edge\NativeMessagingHosts\com.screentimeguardian.host' `
@@ -364,12 +376,12 @@ function Invoke-Uninstall {
     Write-Step 'רישום Native Host הוסר.'
 
     # 6. Remove shortcuts
-    Write-Host '  6/7 מסיר קיצורי דרך...'
+    Write-Host '  6/8 מסיר קיצורי דרך...'
     Remove-Shortcuts
     Write-Step 'קיצורי הדרך הוסרו.'
 
     # 7. Remove installation directory and data
-    Write-Host '  7/7 מוחק קבצים...'
+    Write-Host '  7/8 מוחק קבצים...'
     Safe-RemoveItem $InstallRoot
     Safe-RemoveItem $DataDir
     Write-Step 'קבצי ההתקנה וההגדרות נמחקו.'
@@ -389,10 +401,11 @@ if ($Uninstall) {
 
 # =============================================================================
 # INSTALL
-# =============================================================================
-Assert-Admin
+# =============================================================================Assert-Admin
+Ensure-EventLogSource
 
-# ---- Normalize package layout ------------------------------------------------
+# ---- Normalize package layout
+ ------------------------------------------------
 # החבילה מאורגנת בשמות מלאים (ScreenTimeGuardian.Service\ וכו'), אבל חלק מהחלקים
 # של המתקין משתמשים בשמות קצרים (Service\ וכו'). יוצר תיקיות קצרות אם חסרות.
 $componentFolders = @(

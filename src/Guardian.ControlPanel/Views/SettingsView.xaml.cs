@@ -62,6 +62,7 @@ public partial class SettingsView : UserControl
 
         WebsiteEnforcementBox.IsChecked = config.WebsiteEnforcement == WebsiteEnforcementMode.Enforced;
         AllowMachineWideBox.IsChecked = config.AllowMachineWideWebsiteBlocking;
+        BlockUrlsInManagedBrowsersBox.IsChecked = config.BlockUrlsInManagedBrowsers;
         EnforceForAdministratorsBox.IsChecked = config.EnforceForAdministrators;
 
         // Pending change
@@ -95,6 +96,7 @@ public partial class SettingsView : UserControl
             ? WebsiteEnforcementMode.Enforced
             : WebsiteEnforcementMode.AuditOnly;
         config.AllowMachineWideWebsiteBlocking = AllowMachineWideBox.IsChecked == true;
+        config.BlockUrlsInManagedBrowsers = BlockUrlsInManagedBrowsersBox.IsChecked == true;
         config.EnforceForAdministrators = EnforceForAdministratorsBox.IsChecked == true;
         config.BrowserLockdown.AllowApprovedBrowsersWithoutExtension = AllowApprovedBrowsersBox.IsChecked == true;
     }

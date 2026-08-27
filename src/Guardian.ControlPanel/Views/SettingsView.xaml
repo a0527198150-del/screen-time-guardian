@@ -262,8 +262,14 @@
                     <CheckBox x:Name="AllowMachineWideBox"
                               Style="{StaticResource Switch}"
                               Content="החל חסימת אתרים על כל חשבונות המחשב" Margin="0,0,0,8" />
+                    <CheckBox x:Name="BlockUrlsInManagedBrowsersBox"
+                              Style="{StaticResource Switch}"
+                              Content="חסום גם בתוך כרום ואדג׳ (מדיניות דפדפן)" Margin="0,0,0,8" />
                     <TextBlock Style="{StaticResource Hint}"
-                               Text="שני המתגים נדרשים כדי שכללי אתרים יחסמו בפועל. האכיפה מתבצעת דרך חוקי Firewall ל-FQDN של האתר."
+                               Text="הדפדפן מסרב לפתוח את הכתובת לפני החיבור, ולכן החסימה עובדת גם דרך מסנן תוכן. דומיין חוסם גם תת־דומיינים והמדיניות חלה על כל חשבונות המחשב."
+                               TextWrapping="Wrap" Margin="0,0,0,12" />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="חסימת Firewall ומדיניות הדפדפן הן מנגנונים נפרדים."
                                TextWrapping="Wrap" Margin="0,0,0,12" />
                     <CheckBox x:Name="EnforceForAdministratorsBox"
                               Style="{StaticResource Switch}"

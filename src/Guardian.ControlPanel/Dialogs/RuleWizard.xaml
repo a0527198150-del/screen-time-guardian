@@ -7,7 +7,29 @@
         ResizeMode="NoResize"
         FlowDirection="RightToLeft"
         Background="Transparent"
-        WindowStyle="None" AllowsTransparency="True">
+        WindowStyle="None" AllowsTransparency="True"
+        Opacity="0.95"
+        RenderTransformOrigin="0.5,0.5">
+
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.95" To="1" Duration="0:0:0.12" />
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)">
+                        <SplineDoubleKeyFrame KeyTime="0:0:0.12" Value="1" KeySpline="{StaticResource EaseOutStrong}" />
+                    </DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)">
+                        <SplineDoubleKeyFrame KeyTime="0:0:0.12" Value="1" KeySpline="{StaticResource EaseOutStrong}" />
+                    </DoubleAnimationUsingKeyFrames>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
+
+    <Window.RenderTransform>
+        <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+    </Window.RenderTransform>
 
     <Grid>
         <!-- Dark overlay -->

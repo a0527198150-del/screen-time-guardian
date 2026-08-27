@@ -4,6 +4,7 @@
   "blockUnknownGoogleSessionsDuringAccountSchedules": true,
   "guestModeAllowedWhenNoRelevantBlock": true,
   "enforceForAdministrators": false,
+  "blockUrlsInManagedBrowsers": false,
   "automaticUpdatesEnabled": false,
   "updateManifestUrl": "",
   "updatePublicKeyPem": "",

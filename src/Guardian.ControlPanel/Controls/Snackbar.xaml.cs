@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 namespace ScreenTimeGuardian.ControlPanel;
@@ -33,14 +32,9 @@ public partial class Snackbar : UserControl
         Opacity = 0;
 
         // Animate in
-        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150));
-        var slideIn = new DoubleAnimation(20, 0, TimeSpan.FromMilliseconds(150))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Bar.RenderTransform = new TranslateTransform(0, 0);
+        var reducedMotion = !SystemParameters.ClientAreaAnimation;
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(reducedMotion ? 80 : 100));
         BeginAnimation(OpacityProperty, fadeIn);
-        Bar.RenderTransform.BeginAnimation(TranslateTransform.YProperty, slideIn);
 
         // Start auto-hide timer
         _hideTimer = new System.Windows.Threading.DispatcherTimer
@@ -63,7 +57,7 @@ public partial class Snackbar : UserControl
 
     private void FadeOut()
     {
-        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200));
+        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(100));
         fadeOut.Completed += (_, _) =>
         {
             IsHitTestVisible = false;

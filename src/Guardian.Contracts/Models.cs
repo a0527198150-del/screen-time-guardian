@@ -276,6 +276,12 @@ public sealed class ConfigurationDocument
     /// </summary>
     public bool AllowMachineWideWebsiteBlocking { get; set; }
 
+    /// <summary>
+    /// Blocks scheduled domains in Chrome and Edge using their machine-wide enterprise
+    /// URLBlocklist policy, independently of DNS encryption or an upstream proxy.
+    /// </summary>
+    public bool BlockUrlsInManagedBrowsers { get; set; }
+
     /// <summary>Enables the signed update polling path. Disabled by default.</summary>
     public bool AutomaticUpdatesEnabled { get; set; }
     public string UpdateManifestUrl { get; set; } = string.Empty;

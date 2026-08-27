@@ -6,9 +6,21 @@
              HorizontalAlignment="Center"
              VerticalAlignment="Bottom"
              Margin="0,0,0,24"
-             Opacity="0">
+             Opacity="0"
+             RenderTransformOrigin="0.5,0.5">
+
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.10" />
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </UserControl.Triggers>
 
     <Border x:Name="Bar" Background="{StaticResource BrushInk}" CornerRadius="8"
+            RenderTransformOrigin="0.5,0.5"
             Padding="20,12" MinWidth="300"
             Effect="{StaticResource ShadowCard}">
         <StackPanel Orientation="Horizontal">

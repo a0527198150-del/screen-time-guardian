@@ -1,0 +1,39 @@
+name: package-full
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore
+        run: dotnet restore ScreenTimeGuardian.sln
+      - name: Publish projects
+        shell: pwsh
+        run: |
+          $projects = @(
+            'Guardian.Service', 'Guardian.ControlPanel', 'Guardian.NativeHost',
+            'Guardian.Agent', 'Guardian.LaunchBlocker', 'Guardian.Updater', 'Guardian.Contracts'
+          )
+          foreach ($project in $projects) {
+            dotnet publish "src/$project/$project.csproj" --configuration Release --self-contained true --runtime win-x64 --output "package/$project"
+          }
+      - name: Assemble package
+        shell: pwsh
+        run: |
+          Copy-Item installer package/installer -Recurse -Force
+          Copy-Item docs package/docs -Recurse -Force
+          Copy-Item extension package/extension -Recurse -Force
+          if (Test-Path policies) { Copy-Item policies package/policies -Recurse -Force }
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenTimeGuardian-full
+          path: package

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using ScreenTimeGuardian.Contracts;
 using ScreenTimeGuardian.Service;
@@ -8,6 +9,14 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWindowsService(options =>
 {
     options.ServiceName = "Screen Time Guardian";
+});
+
+// Pin the event log source name. Without this, .NET derives it from the assembly
+// name, so a rename can split diagnostics across two Application log sources.
+builder.Logging.AddEventLog(new EventLogSettings
+{
+    SourceName = "Screen Time Guardian",
+    LogName = "Application"
 });
 
 // Secure the shared directory before any hosted service can load configuration.

@@ -36,9 +36,10 @@
                             <Setter TargetName="Chrome" Property="Opacity" Value="0.88" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Chrome" Property="Opacity" Value="0.74" />
-                            <Setter TargetName="Body" Property="RenderTransform">
-                                <Setter.Value><TranslateTransform Y="1" /></Setter.Value>
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.9" />
+                            <Setter TargetName="Chrome" Property="RenderTransformOrigin" Value="0.5,0.5" />
+                            <Setter TargetName="Chrome" Property="RenderTransform">
+                                <Setter.Value><ScaleTransform ScaleX="0.97" ScaleY="0.97" /></Setter.Value>
                             </Setter>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
@@ -188,13 +189,11 @@
                             <Trigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="KnobShift"
-                                                         Storyboard.TargetProperty="X"
-                                                         To="20" Duration="0:0:0.16">
-                                            <DoubleAnimation.EasingFunction>
-                                                <CubicEase EasingMode="EaseOut" />
-                                            </DoubleAnimation.EasingFunction>
-                                        </DoubleAnimation>
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift"
+                                                                       Storyboard.TargetProperty="X">
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.16" Value="20"
+                                                                  KeySpline="{StaticResource EaseOutStrong}" />
+                                        </DoubleAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </BeginStoryboard>
                             </Trigger.EnterActions>

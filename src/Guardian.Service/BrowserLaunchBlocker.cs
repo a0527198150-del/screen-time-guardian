@@ -34,6 +34,7 @@ public sealed class BrowserLaunchBlocker
 
     private HashSet<string> _applied = new(StringComparer.OrdinalIgnoreCase);
     private bool _everApplied;
+    private bool _stubMissingReported;
 
     public BrowserLaunchBlocker(SafetyEnvelope safety, ILogger<BrowserLaunchBlocker> logger)
     {
@@ -61,16 +62,24 @@ public sealed class BrowserLaunchBlocker
         {
             if (!File.Exists(StubPath))
             {
-                _logger.LogError(
-                    "Launch blocking is enabled but the stub is missing at {Path}. " +
-                    "Removing owned IFEO entries instead of leaving dangling Debugger values.",
-                    StubPath);
-                RemoveOwnedEntries(except: new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-                _applied.Clear();
-                ActiveDenyCount = 0;
-                _everApplied = true;
+                if (!_stubMissingReported)
+                {
+                    _logger.LogError(
+                        "Launch blocking is enabled but the stub is missing at {Path}. " +
+                        "Launch blocking is disabled until the application is reinstalled. " +
+                        "Removing owned IFEO entries instead of leaving dangling Debugger values.",
+                        StubPath);
+                    _stubMissingReported = true;
+                    RemoveOwnedEntries(except: new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+                    _applied.Clear();
+                    ActiveDenyCount = 0;
+                    _everApplied = true;
+                }
                 return;
             }
+
+            // A repaired installation can be recognized on the next policy cycle.
+            _stubMissingReported = false;
 
             var approvedNames = settings.AllowApprovedBrowsersWithoutExtension
                 ? settings.ApprovedBrowserPaths
@@ -121,6 +130,7 @@ public sealed class BrowserLaunchBlocker
 
             _applied = desired;
             _everApplied = true;
+            _stubMissingReported = false;
             ActiveDenyCount = desired.Count;
 
             _logger.LogInformation("Launch blocking active for {Count} browser executables", desired.Count);
@@ -140,6 +150,7 @@ public sealed class BrowserLaunchBlocker
             _applied.Clear();
             ActiveDenyCount = 0;
             _everApplied = true;
+            _stubMissingReported = false;
         }
         catch (Exception exception) when (exception is UnauthorizedAccessException or System.Security.SecurityException)
         {
