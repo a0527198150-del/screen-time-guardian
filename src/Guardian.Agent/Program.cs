@@ -1,10 +1,7 @@
-using System.Windows;
-
 namespace ScreenTimeGuardian.Agent;
 
 public static class Program
 {
-    [STAThread]
     public static void Main(string[] args)
     {
         var message = ParseMessageArgument(args);

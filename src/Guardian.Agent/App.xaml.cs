@@ -17,4 +17,8 @@ public partial class App : Application
 {
     // The scheduler starts Program.Main directly. This legacy App remains only so
     // the existing WPF resources continue to compile; it has no startup polling.
+    public App()
+    {
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+    }
 }

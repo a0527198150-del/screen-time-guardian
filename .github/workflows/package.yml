@@ -51,11 +51,19 @@ jobs:
             throw "EXE seems too small ($size bytes) — publish may have failed"
           }
 
-      - name: Upload EXE artifact
+      - name: Create ZIP package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path artifacts\ScreenTimeGuardian.exe -DestinationPath artifacts\ScreenTimeGuardian.zip -Force
+          if (-not (Test-Path artifacts\ScreenTimeGuardian.zip)) { throw 'ZIP package was not created' }
+
+      - name: Upload full package artifact
         uses: actions/upload-artifact@v4
         with:
           name: ScreenTimeGuardian-${{ github.ref_name }}
-          path: artifacts/ScreenTimeGuardian.exe
+          path: |
+            artifacts/ScreenTimeGuardian.exe
+            artifacts/ScreenTimeGuardian.zip
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -80,6 +88,8 @@ jobs:
             - מתקין מקצועי בסגנון Google עם קיצורי דרך
             - ניווט מקלדת מלא בלוח הזמנים
             - תמיכה מלאה ב-RTL
-          files: artifacts/ScreenTimeGuardian.exe
+          files: |
+            artifacts/ScreenTimeGuardian.exe
+            artifacts/ScreenTimeGuardian.zip
           draft: false
           prerelease: false
