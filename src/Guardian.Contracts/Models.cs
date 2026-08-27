@@ -91,8 +91,8 @@ public sealed class ScheduleWindow
             var (effectiveStart, effectiveEnd) = OccurrenceFor(ruleDate, start, end, delay);
             if (effectiveStart < effectiveEnd)
             {
-                yield return new DateTimeOffset(effectiveStart);
-                yield return new DateTimeOffset(effectiveEnd);
+                yield return new DateTimeOffset(effectiveStart.LocalDateTime);
+                yield return new DateTimeOffset(effectiveEnd.LocalDateTime);
             }
         }
     }
@@ -112,7 +112,7 @@ public sealed class ScheduleWindow
     /// concrete day. Both Contains and GetEdgeInstants go through here, keeping
     /// enforcement and wake scheduling perfectly aligned.
     /// </summary>
-    private (DateTimeOffset EffectiveStart, DateTimeOffset EffectiveEnd) OccurrenceFor(
+    private (DateTime EffectiveStart, DateTime EffectiveEnd) OccurrenceFor(
         DateTime ruleDate, TimeOnly start, TimeOnly end, TimeSpan delay)
     {
         var effectiveStart = AllDay
@@ -131,7 +131,7 @@ public sealed class ScheduleWindow
             effectiveEnd = ruleDate.AddDays(1);
         }
 
-        return (new DateTimeOffset(effectiveStart), new DateTimeOffset(effectiveEnd));
+        return (effectiveStart, effectiveEnd);
     }
 
     public string Describe()
