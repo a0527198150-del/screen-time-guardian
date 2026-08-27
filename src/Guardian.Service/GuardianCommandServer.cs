@@ -28,6 +28,7 @@ public sealed class GuardianCommandServer : BackgroundService
     private readonly ServiceStatusHolder _status;
     private readonly ServiceLock _serviceLock;
     private readonly MaintenanceWindow _maintenance;
+    private readonly ServiceWakeSignal _wakeSignal;
     private readonly ILogger<GuardianCommandServer> _logger;
 
     private readonly object _authenticationSync = new();
@@ -42,6 +43,7 @@ public sealed class GuardianCommandServer : BackgroundService
         ServiceStatusHolder status,
         ServiceLock serviceLock,
         MaintenanceWindow maintenance,
+        ServiceWakeSignal wakeSignal,
         ILogger<GuardianCommandServer> logger)
     {
         _store = store;
@@ -50,6 +52,7 @@ public sealed class GuardianCommandServer : BackgroundService
         _status = status;
         _serviceLock = serviceLock;
         _maintenance = maintenance;
+        _wakeSignal = wakeSignal;
         _logger = logger;
     }
 
@@ -275,6 +278,7 @@ public sealed class GuardianCommandServer : BackgroundService
             // loosening waits out the cooling off delay if one is configured.
             var result = _changes.Submit(configuration, request.Configuration, DateTimeOffset.Now);
             var stored = _store.Load();
+            _wakeSignal.Request("configuration saved");
 
             var response = Success(stored);
             response.Notice = result.Message;

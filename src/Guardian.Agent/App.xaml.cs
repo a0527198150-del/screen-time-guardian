@@ -15,29 +15,6 @@ namespace ScreenTimeGuardian.Agent;
 /// </summary>
 public partial class App : Application
 {
-    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(30) };
-    private readonly UpcomingWatcher _watcher = new();
-
-    private void Application_Startup(object sender, StartupEventArgs e)
-    {
-        _timer.Tick += async (_, _) => await PollAsync();
-        _timer.Start();
-        _ = PollAsync();
-    }
-
-    private async Task PollAsync()
-    {
-        try
-        {
-            var warnings = await _watcher.CollectWarningsAsync();
-            foreach (var warning in warnings)
-            {
-                NotificationWindow.ShowWarning(warning);
-            }
-        }
-        catch (Exception)
-        {
-            // The agent must never crash a user session over a failed poll.
-        }
-    }
+    // The scheduler starts Program.Main directly. This legacy App remains only so
+    // the existing WPF resources continue to compile; it has no startup polling.
 }

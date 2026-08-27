@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.5.16'
+$script:Version     = '0.5.18'
 $script:AppName     = 'Screen Time Guardian'
 $script:AppNameHeb  = 'שומר זמן מסך'
 
@@ -347,8 +347,9 @@ function Invoke-Uninstall {
     }
     Write-Step 'חסימות ההפעלה הוסרו.'
 
-    # 4. Remove agent autorun
-    Write-Host '  4/7 מסיר סוכן מהפעלה אוטומטית...'
+    # 4. Remove agent autorun and scheduled notifications
+    Write-Host '  4/7 מסיר סוכן מהפעלה אוטומטית ומשימות התראות...'
+    schtasks.exe /Delete /TN 'ScreenTimeGuardian Notify' /F 2>$null | Out-Null
     Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' `
         -Name 'ScreenTimeGuardianAgent' -ErrorAction SilentlyContinue
     Write-Step 'הסוכן הוסר מהפעלה אוטומטית.'
@@ -630,12 +631,11 @@ else {
 Write-Host '  מתקין את סוכן ההתראות...'
 $agentExe = Join-Path $InstallRoot 'Agent\ScreenTimeGuardian.Agent.exe'
 if (Test-Path $agentExe -PathType Leaf) {
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' `
-        -Name 'ScreenTimeGuardianAgent' `
-        -Value "`"$agentExe`"" `
-        -PropertyType String `
-        -Force | Out-Null
-    Write-Step 'הסוכן הותקן בהפעלה האוטומטית.'
+    # Notifications are launched on demand by the Windows Task Scheduler.
+    # Remove the legacy resident autorun entry from older installations.
+    Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' `
+        -Name 'ScreenTimeGuardianAgent' -ErrorAction SilentlyContinue
+    Write-Step 'סוכן ההתראות הותקן להפעלה מתוזמנת.'
 }
 else {
     Write-Warn "הסוכן לא נמצא: $agentExe"

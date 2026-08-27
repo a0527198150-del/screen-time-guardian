@@ -237,6 +237,24 @@ namespace Microsoft.Win32
         public string FileName { get; set; } = string.Empty;
         public bool? ShowDialog() => false;
     }
+
+    // SystemEvents stand-in: signature mirror only, so service source that
+    // subscribes to power/clock/session broadcasts type-checks on Linux.
+    public enum PowerModes { Resume, StatusChange, Suspend }
+
+    public sealed class PowerModeChangedEventArgs
+    {
+        public PowerModes Mode { get; } = default;
+    }
+
+    public delegate void PowerModeChangedEventHandler(object sender, PowerModeChangedEventArgs e);
+
+    public static class SystemEvents
+    {
+        public static event PowerModeChangedEventHandler? PowerModeChanged { add { } remove { } }
+        public static event EventHandler? TimeChanged { add { } remove { } }
+        public static event EventHandler? SessionSwitch { add { } remove { } }
+    }
 }
 
 namespace System.Windows.Forms

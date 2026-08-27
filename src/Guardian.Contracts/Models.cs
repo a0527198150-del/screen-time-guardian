@@ -260,6 +260,8 @@ public sealed class SafetySettings
 
 public sealed class ConfigurationDocument
 {
+    /// <summary>Minutes before a scheduled block to show a notification. Zero disables notifications.</summary>
+    public int NotificationLeadMinutes { get; set; } = 10;
     public int SchemaVersion { get; set; } = 5;
     public WebsiteEnforcementMode WebsiteEnforcement { get; set; } = WebsiteEnforcementMode.AuditOnly;
     public bool BlockUnknownGoogleSessionsDuringAccountSchedules { get; set; } = true;
