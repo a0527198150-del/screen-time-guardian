@@ -1,15 +1,9 @@
 ﻿<#
     Screen Time Guardian - installer.
     Run once from an ELEVATED PowerShell window (Run as administrator).
-
-    Key differences from the previous installer:
-      * Delayed automatic start, so enforcement never begins during early boot.
-      * NO automatic restart on failure - this is what turned a single crash into a reboot loop.
-      * A runtime folder writable only by SYSTEM and Administrators.
 #>
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$ServiceExecutable,
+    [Parameter(Mandatory = $true)] [string]$ServiceExecutable,
     [string]$ServiceName = 'ScreenTimeGuardian',
     [string]$DisplayName = 'Screen Time Guardian',
     [string]$DataDirectory = 'C:\ProgramData\ScreenTimeGuardian',
@@ -27,49 +21,59 @@ if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Adm
 
 $resolvedExecutable = (Resolve-Path $ServiceExecutable).Path
 $runtimeDirectory = Join-Path $DataDirectory 'runtime'
+New-Item -ItemType Directory -Force -Path $DataDirectory, $runtimeDirectory | Out-Null
 
-New-Item -ItemType Directory -Force -Path $DataDirectory  | Out-Null
-New-Item -ItemType Directory -Force -Path $runtimeDirectory | Out-Null
+function Remove-ExistingService {
+    param([Parameter(Mandatory)] [string]$Name)
 
-# Config folder: users may read (the native host runs as a standard user), never write.
+    $existing = Get-Service -Name $Name -ErrorAction SilentlyContinue
+    if (-not $existing) { return }
+
+    Write-Host 'מסיר התקנה קודמת...'
+    if ($existing.Status -ne 'Stopped') {
+        Stop-Service -Name $Name -Force -ErrorAction Stop
+    }
+
+    for ($attempt = 1; $attempt -le 30; $attempt++) {
+        $state = Get-Service -Name $Name -ErrorAction SilentlyContinue
+        if (-not $state -or $state.Status -eq 'Stopped') { break }
+        Start-Sleep -Milliseconds 500
+    }
+
+    & sc.exe delete $Name | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "לא ניתן להסיר את השירות הקיים '$Name' (sc.exe exit code $LASTEXITCODE)."
+    }
+
+    for ($attempt = 1; $attempt -le 30; $attempt++) {
+        if (-not (Get-Service -Name $Name -ErrorAction SilentlyContinue)) { return }
+        Start-Sleep -Milliseconds 500
+    }
+
+    throw "השירות '$Name' עדיין קיים לאחר ניסיון ההסרה. ההתקנה נעצרה כדי למנוע התקנה חלקית."
+}
+
+# Config folder ACL
 $acl = Get-Acl $DataDirectory
 $acl.SetAccessRuleProtection($true, $false)
-foreach ($rule in @($acl.Access)) {
-    $acl.RemoveAccessRuleSpecific($rule) | Out-Null
-}
-$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
-    'SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
-    'Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
-    'Users', 'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-$administratorsSid = [Security.Principal.SecurityIdentifier]::new(
-    [Security.Principal.WellKnownSidType]::BuiltinAdministratorsSid, $null)
+foreach ($rule in @($acl.Access)) { $acl.RemoveAccessRuleSpecific($rule) | Out-Null }
+$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new('SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new('Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new('Users', 'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+$administratorsSid = [Security.Principal.SecurityIdentifier]::new([Security.Principal.WellKnownSidType]::BuiltinAdministratorsSid, $null)
 $acl.SetOwner($administratorsSid)
 Set-Acl -Path $DataDirectory -AclObject $acl
 
-# Runtime folder holds the crash marker and the safe mode flag. Users get no access at all.
+# Runtime ACL
 $runtimeAcl = Get-Acl $runtimeDirectory
 $runtimeAcl.SetAccessRuleProtection($true, $false)
-foreach ($rule in @($runtimeAcl.Access)) {
-    $runtimeAcl.RemoveAccessRuleSpecific($rule) | Out-Null
-}
-$runtimeAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
-    'SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-$runtimeAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
-    'Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+foreach ($rule in @($runtimeAcl.Access)) { $runtimeAcl.RemoveAccessRuleSpecific($rule) | Out-Null }
+$runtimeAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new('SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+$runtimeAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new('Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
 $runtimeAcl.SetOwner($administratorsSid)
 Set-Acl -Path $runtimeDirectory -AclObject $runtimeAcl
 
-$existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-if ($existing) {
-    Write-Host 'מסיר התקנה קודמת...'
-    if ($existing.Status -ne 'Stopped') {
-        Stop-Service -Name $ServiceName -Force
-    }
-    sc.exe delete $ServiceName | Out-Null
-    Start-Sleep -Seconds 3
-}
+Remove-ExistingService -Name $ServiceName
 
 New-Service -Name $ServiceName `
     -BinaryPathName ('"' + $resolvedExecutable + '"') `
@@ -77,11 +81,7 @@ New-Service -Name $ServiceName `
     -Description 'שירות מדיניות זמן מסך' `
     -StartupType Automatic | Out-Null
 
-# Delayed start: Windows finishes booting before this service does anything.
 sc.exe config $ServiceName start= delayed-auto | Out-Null
-
-# CRITICAL: no automatic restart. If the service dies, it stays down until a human
-# starts it. A service that revives itself after crashing the machine is a reboot loop.
 sc.exe failure $ServiceName reset= 0 actions= '' | Out-Null
 
 Write-Host ''

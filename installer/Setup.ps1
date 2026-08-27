@@ -325,8 +325,17 @@ function Invoke-Uninstall {
             Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 3
         }
-        sc.exe delete $ServiceName | Out-Null
-        Start-Sleep -Seconds 2
+        & sc.exe delete $ServiceName | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "לא ניתן להסיר את השירות הקיים '$ServiceName' (sc.exe exit code $LASTEXITCODE)."
+        }
+        for ($attempt = 1; $attempt -le 30; $attempt++) {
+            if (-not (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue)) { break }
+            Start-Sleep -Milliseconds 500
+        }
+        if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
+            throw "השירות '$ServiceName' עדיין קיים לאחר ניסיון ההסרה."
+        }
         Write-Step 'השירות הוסר.'
     }
     else {

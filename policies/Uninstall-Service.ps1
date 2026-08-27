@@ -26,10 +26,24 @@ Start-Sleep -Seconds 2
 $services = Get-Service -Name 'ScreenTimeGuardian*' -ErrorAction SilentlyContinue
 foreach ($svc in $services) {
     if ($svc.Status -ne 'Stopped') {
-        Stop-Service -Name $svc.Name -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 2
+        Stop-Service -Name $svc.Name -Force -ErrorAction Stop
     }
-    sc.exe delete $svc.Name | Out-Null
+    for ($attempt = 1; $attempt -le 30; $attempt++) {
+        $state = Get-Service -Name $svc.Name -ErrorAction SilentlyContinue
+        if (-not $state -or $state.Status -eq 'Stopped') { break }
+        Start-Sleep -Milliseconds 500
+    }
+    & sc.exe delete $svc.Name | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "מחיקת השירות $($svc.Name) נכשלה (קוד $LASTEXITCODE)."
+    }
+    for ($attempt = 1; $attempt -le 30; $attempt++) {
+        if (-not (Get-Service -Name $svc.Name -ErrorAction SilentlyContinue)) { break }
+        Start-Sleep -Milliseconds 500
+    }
+    if (Get-Service -Name $svc.Name -ErrorAction SilentlyContinue) {
+        throw "השירות $($svc.Name) עדיין קיים לאחר ניסיון המחיקה."
+    }
     Write-Host "השירות $($svc.Name) הוסר." -ForegroundColor Green
 }
 
