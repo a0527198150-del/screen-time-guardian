@@ -61,7 +61,7 @@ jobs:
             Copy-Item src/Guardian.ControlPanel/icon.ico package/ControlPanel/ -Force
           }
 
-      - name: Verify complete package
+      - name: Verify complete package and installer scripts
         shell: pwsh
         run: |
           $required = @(
@@ -73,15 +73,19 @@ jobs:
             'package/policies/Install-Service.ps1',
             'package/policies/Uninstall-Service.ps1',
             'package/extension/manifest.json',
+            'package/extension/background.js',
             'package/Setup.ps1'
           )
           foreach ($file in $required) {
             if (-not (Test-Path $file -PathType Leaf)) { throw "Missing required package file: $file" }
           }
-          if (-not (Get-ChildItem package/extension -File -Recurse | Where-Object Name -eq 'background.js')) {
-            throw 'Extension source files are missing from the package'
+          foreach ($psFile in (Get-ChildItem package -Recurse -Filter *.ps1)) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($psFile.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) { throw "PowerShell syntax error in $($psFile.FullName): $($errors[0].Message)" }
           }
-          Write-Host 'Complete package verified, including extension.'
+          Write-Host 'Complete package and PowerShell scripts verified.'
 
       - name: Create full ZIP package
         shell: pwsh
