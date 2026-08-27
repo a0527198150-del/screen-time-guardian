@@ -7,11 +7,12 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   package:
     runs-on: windows-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,46 +25,76 @@ jobs:
       - name: Restore
         run: dotnet restore ScreenTimeGuardian.sln --runtime win-x64
 
-      - name: Publish standalone application EXE
-        run: dotnet publish src/Guardian.ControlPanel/Guardian.ControlPanel.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts --no-restore /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
-
-      - name: Rename to final name
+      - name: Publish application components
         shell: pwsh
         run: |
-          $src = 'artifacts/ScreenTimeGuardian.ControlPanel.exe'
-          $dst = 'artifacts/ScreenTimeGuardian.exe'
-          if (Test-Path $src) {
-            Copy-Item $src $dst -Force
-            Remove-Item $src -Force
-          }
-          Write-Host "Output: $dst"
-
-      - name: Verify output
-        shell: pwsh
-        run: |
-          $exe = 'artifacts/ScreenTimeGuardian.exe'
-          if (-not (Test-Path $exe)) {
-            throw "Output EXE not found: $exe"
-          }
-          $size = (Get-Item $exe).Length
-          Write-Host "ScreenTimeGuardian.exe size: $([math]::Round($size / 1MB, 1)) MB"
-          if ($size -lt 1MB) {
-            throw "EXE seems too small ($size bytes) — publish may have failed"
+          $projects = @(
+            @{ Path = 'src/Guardian.Service/Guardian.Service.csproj'; Name = 'Service' },
+            @{ Path = 'src/Guardian.ControlPanel/Guardian.ControlPanel.csproj'; Name = 'ControlPanel' },
+            @{ Path = 'src/Guardian.Agent/Guardian.Agent.csproj'; Name = 'Agent' },
+            @{ Path = 'src/Guardian.NativeHost/Guardian.NativeHost.csproj'; Name = 'NativeHost' },
+            @{ Path = 'src/Guardian.LaunchBlocker/Guardian.LaunchBlocker.csproj'; Name = 'LaunchBlocker' },
+            @{ Path = 'src/Guardian.Updater/Guardian.Updater.csproj'; Name = 'Updater' }
+          )
+          foreach ($project in $projects) {
+            $output = "package/$($project.Name)"
+            dotnet publish $project.Path --configuration Release --runtime win-x64 --self-contained true --output $output --no-restore /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+            if ($LASTEXITCODE -ne 0) { throw "Publish failed for $($project.Path)" }
           }
 
-      - name: Create ZIP package
+      - name: Assemble complete package
         shell: pwsh
         run: |
-          Compress-Archive -Path artifacts\ScreenTimeGuardian.exe -DestinationPath artifacts\ScreenTimeGuardian.zip -Force
-          if (-not (Test-Path artifacts\ScreenTimeGuardian.zip)) { throw 'ZIP package was not created' }
+          Copy-Item installer package/installer -Recurse -Force
+          Copy-Item policies package/policies -Recurse -Force
+          Copy-Item docs package/docs -Recurse -Force
+          Copy-Item extension package/extension -Recurse -Force
+          Copy-Item installer/Install.cmd package/ -Force
+          Copy-Item installer/Uninstall.cmd package/ -Force
+          Copy-Item installer/Emergency-Stop.cmd package/ -Force
+          Copy-Item installer/Setup.ps1 package/ -Force
+
+          if (Test-Path src/Guardian.NativeHost/NativeHost.manifest.json) {
+            Copy-Item src/Guardian.NativeHost/NativeHost.manifest.json package/NativeHost/ -Force
+          }
+          if (Test-Path src/Guardian.ControlPanel/icon.ico) {
+            Copy-Item src/Guardian.ControlPanel/icon.ico package/ControlPanel/ -Force
+          }
+
+      - name: Verify complete package
+        shell: pwsh
+        run: |
+          $required = @(
+            'package/Service/ScreenTimeGuardian.Service.exe',
+            'package/ControlPanel/ScreenTimeGuardian.ControlPanel.exe',
+            'package/Agent/ScreenTimeGuardian.Agent.exe',
+            'package/NativeHost/ScreenTimeGuardian.NativeHost.exe',
+            'package/Updater/ScreenTimeGuardian.Updater.exe',
+            'package/policies/Install-Service.ps1',
+            'package/policies/Uninstall-Service.ps1',
+            'package/extension/manifest.json',
+            'package/Setup.ps1'
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path $file -PathType Leaf)) { throw "Missing required package file: $file" }
+          }
+          if (-not (Get-ChildItem package/extension -File -Recurse | Where-Object Name -eq 'background.js')) {
+            throw 'Extension source files are missing from the package'
+          }
+          Write-Host 'Complete package verified, including extension.'
+
+      - name: Create full ZIP package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path package/* -DestinationPath ScreenTimeGuardian-full-package.zip -Force
+          if (-not (Test-Path ScreenTimeGuardian-full-package.zip)) { throw 'Full ZIP was not created' }
+          Write-Host "ZIP size: $([math]::Round((Get-Item ScreenTimeGuardian-full-package.zip).Length / 1MB, 1)) MB"
 
       - name: Upload full package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ScreenTimeGuardian-${{ github.ref_name }}
-          path: |
-            artifacts/ScreenTimeGuardian.exe
-            artifacts/ScreenTimeGuardian.zip
+          name: ScreenTimeGuardian-full-package-${{ github.ref_name }}
+          path: ScreenTimeGuardian-full-package.zip
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -72,24 +103,6 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: "Screen Time Guardian ${{ github.ref_name }}"
-          body: |
-            ## Screen Time Guardian ${{ github.ref_name }}
-
-            ### התקנה
-            1. הורד את `ScreenTimeGuardian.exe`
-            2. לחץ לחיצה ימנית → **הפעל כמנהל**
-            3. בצע את שלבי ההתקנה
-            4. פתח את לוח הבקרה מהתפריט ההתחל
-
-            ### מה חדש בגרסה זו
-            - ממשק חדש לגמרי — 3 מסכים במקום 8 לשוניות
-            - אשף creation לכללים ב-3 שלבים
-            - תבניות פקד מותאמות אישית (אין Aero כחול בריחוף)
-            - מתקין מקצועי בסגנון Google עם קיצורי דרך
-            - ניווט מקלדת מלא בלוח הזמנים
-            - תמיכה מלאה ב-RTL
-          files: |
-            artifacts/ScreenTimeGuardian.exe
-            artifacts/ScreenTimeGuardian.zip
+          files: ScreenTimeGuardian-full-package.zip
           draft: false
           prerelease: false
