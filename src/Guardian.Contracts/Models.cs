@@ -91,8 +91,10 @@ public sealed class ScheduleWindow
             var (effectiveStart, effectiveEnd) = OccurrenceFor(ruleDate, start, end, delay);
             if (effectiveStart < effectiveEnd)
             {
-                yield return new DateTimeOffset(effectiveStart.LocalDateTime);
-                yield return new DateTimeOffset(effectiveEnd.LocalDateTime);
+                // The values are local wall-clock instants derived from the caller's
+                // local date, so the constructor resolves the local UTC offset.
+                yield return new DateTimeOffset(effectiveStart);
+                yield return new DateTimeOffset(effectiveEnd);
             }
         }
     }
