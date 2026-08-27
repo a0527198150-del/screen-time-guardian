@@ -80,7 +80,13 @@ public sealed class ScheduleWindow
 
         var localFrom = from.LocalDateTime;
         var delay = Delay;
-        for (var dayOffset = 0; dayOffset <= Math.Max(1, maxDayOffset); dayOffset++)
+
+        // Scanning starts at YESTERDAY, not today: a window that crosses midnight
+        // while active now opened on a previous calendar day, and without that day
+        // its close would be invisible - the service would sleep straight through
+        // the moment the block was supposed to lift. Same reasoning Contains uses
+        // when it looks back one day.
+        for (var dayOffset = -1; dayOffset <= Math.Max(1, maxDayOffset); dayOffset++)
         {
             var ruleDate = localFrom.Date.AddDays(dayOffset);
             if (!Days.Contains(ruleDate.DayOfWeek))
