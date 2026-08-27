@@ -9,15 +9,12 @@
              Opacity="0"
              RenderTransformOrigin="0.5,0.5">
 
-    <UserControl.Triggers>
-        <EventTrigger RoutedEvent="Loaded">
-            <BeginStoryboard>
-                <Storyboard>
-                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.10" />
-                </Storyboard>
-            </BeginStoryboard>
-        </EventTrigger>
-    </UserControl.Triggers>
+    <!--
+      No Loaded trigger here on purpose. The bar starts at Opacity 0 and is only
+      revealed by Snackbar.Show(...); FadeOut() returns it to 0. A previous version
+      animated Opacity to 1 on Loaded, which left an empty dark bar permanently
+      visible at the bottom of the window.
+    -->
 
     <Border x:Name="Bar" Background="{StaticResource BrushInk}" CornerRadius="8"
             RenderTransformOrigin="0.5,0.5"

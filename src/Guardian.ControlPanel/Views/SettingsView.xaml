@@ -47,7 +47,7 @@
                             Click="UnlockMaintenance_Click"
                             AutomationProperties.Name="פתח חלון תחזוקה" />
                     <TextBlock Style="{StaticResource Hint}"
-                               Text="פתיחה זמנית permiteistopping hoặc הסרת התוכנה למשך 15 דקות. הנעילה תחזור אוטומטית." Margin="0,0,0,12" />
+                               Text="פתיחה זמנית מאפשרת עצירה או הסרה של התוכנה למשך 15 דקות. הנעילה תחזור אוטומטית. היא דורשת את סיסמת הניהול." Margin="0,0,0,12" />
                     <TextBlock Style="{StaticResource Hint}"
                                Text="תקופות חסד, מצב בטוח, מגבלת פעולות." Margin="0,0,0,12" />
                     <Grid Margin="0,0,0,8">

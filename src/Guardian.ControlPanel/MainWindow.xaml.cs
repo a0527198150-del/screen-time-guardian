@@ -518,24 +518,22 @@ public partial class MainWindow : Window
                 ShowPassword = true
             };
 
+            // Focus the password field immediately so it is obvious where to type.
+            dialog.Loaded += (_, _) =>
+            {
+                var field = dialog.FindName("DialogPassword") as PasswordBox;
+                field?.Focus();
+            };
+
             if (dialog.ShowDialog() != true)
             {
                 return;
             }
 
             var password = dialog.EnteredPassword;
-            try
-            {
-                ApplicationPassword.Validate(password);
-            }
-            catch (ArgumentException exception)
-            {
-                SetHeaderStatus(exception.Message, true);
-                return;
-            }
             if (string.IsNullOrEmpty(password))
             {
-                dialog.PasswordErrorText = "יש להזין סיסמה.";
+                SetHeaderStatus("יש להזין סיסמה.", true);
                 return;
             }
 
@@ -557,8 +555,11 @@ public partial class MainWindow : Window
             SetHeaderStatus("פתוח לתחזוקה ל־15 דקות. הנעילה תחזור אוטומטית.", false);
             await RefreshStatusAsync();
         }
-        catch (Exception ex) when (IsExpected(ex))
+        catch (Exception ex)
         {
+            // Catch everything here. This handler runs as a fire-and-forget task, so
+            // any unhandled exception (including a dialog/XAML failure) used to be
+            // swallowed silently and the button appeared to do nothing.
             SetHeaderStatus(ex.Message, true);
         }
     }
