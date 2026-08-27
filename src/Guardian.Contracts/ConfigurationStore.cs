@@ -22,6 +22,9 @@ public static class ConfigPaths
 
     /// <summary>Manual panic switch. An administrator can create this file to disable all enforcement instantly.</summary>
     public static string ManualKillSwitchFile => Path.Combine(RootDirectory, "SAFEMODE");
+
+    /// <summary>Written by the service after password verification. When present and not expired, maintenance lock is open.</summary>
+    public static string UnlockFile => Path.Combine(RuntimeDirectory, "unlock.json");
 }
 
 public sealed class ConfigurationStore

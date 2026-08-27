@@ -18,6 +18,7 @@ public partial class SettingsView : UserControl
     public event EventHandler? SaveRequested;
     public event EventHandler? RefreshPendingRequested;
     public event EventHandler? CancelPendingRequested;
+    public event EventHandler? UnlockMaintenanceRequested;
 
     public Snackbar? Snackbar { get; set; }
 
@@ -238,6 +239,29 @@ public partial class SettingsView : UserControl
 
     private void CancelPending_Click(object sender, RoutedEventArgs e)
         => CancelPendingRequested?.Invoke(this, EventArgs.Empty);
+
+    // ==================== Maintenance ====================
+
+    public void ShowMaintenanceStatus(bool maintenanceOpen, string? untilUtc)
+    {
+        if (maintenanceOpen && !string.IsNullOrEmpty(untilUtc)
+            && DateTimeOffset.TryParse(untilUtc, null,
+                System.Globalization.DateTimeStyles.RoundtripKind, out var until))
+        {
+            var localTime = until.ToLocalTime().ToString("HH:mm");
+            MaintenanceBanner.Visibility = Visibility.Visible;
+            MaintenanceStatusText.Text = $"פתוח לתחזוקה עד {localTime}";
+            UnlockMaintenanceButton.IsEnabled = false;
+        }
+        else
+        {
+            MaintenanceBanner.Visibility = Visibility.Collapsed;
+            UnlockMaintenanceButton.IsEnabled = true;
+        }
+    }
+
+    private void UnlockMaintenance_Click(object sender, RoutedEventArgs e)
+        => UnlockMaintenanceRequested?.Invoke(this, EventArgs.Empty);
 
     // ==================== Save ====================
 

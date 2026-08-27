@@ -21,6 +21,8 @@ public sealed class GuardianWorker : BackgroundService
     private readonly ChangeCoordinator _changes;
     private readonly BrowserPolicySynchronizer _browserPolicies;
     private readonly ServiceStatusHolder _status;
+    private readonly ServiceLock _serviceLock;
+    private readonly MaintenanceWindow _maintenance;
     private readonly ILogger<GuardianWorker> _logger;
 
     private string _lastReason = string.Empty;
@@ -38,6 +40,8 @@ public sealed class GuardianWorker : BackgroundService
         ChangeCoordinator changes,
         BrowserPolicySynchronizer browserPolicies,
         ServiceStatusHolder status,
+        ServiceLock serviceLock,
+        MaintenanceWindow maintenance,
         ILogger<GuardianWorker> logger)
     {
         _store = store;
@@ -51,6 +55,8 @@ public sealed class GuardianWorker : BackgroundService
         _changes = changes;
         _browserPolicies = browserPolicies;
         _status = status;
+        _serviceLock = serviceLock;
+        _maintenance = maintenance;
         _logger = logger;
     }
 
@@ -100,6 +106,18 @@ public sealed class GuardianWorker : BackgroundService
         if (_changes.ApplyDueChange(configuration, DateTimeOffset.Now))
         {
             configuration = _store.Load();
+        }
+
+        // Enforce or release the service and folder locks every cycle.
+        var maintenanceOpen = _maintenance.IsOpen();
+        _serviceLock.Apply(locked: !maintenanceOpen);
+        if (maintenanceOpen)
+        {
+            _serviceLock.UnlockInstallFolder();
+        }
+        else
+        {
+            _serviceLock.LockInstallFolder();
         }
 
         var safety = _safety.Evaluate(configuration.Safety);
@@ -200,6 +218,18 @@ public sealed class GuardianWorker : BackgroundService
     {
         try
         {
+            // A cleanly stopped service must not leave locks in place.
+            _serviceLock.Apply(locked: false);
+            _serviceLock.UnlockInstallFolder();
+            _maintenance.Close();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "Could not release locks during shutdown");
+        }
+
+        try
+        {
             // A stopped service must not leave the machine cut off from the internet.
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             await _networkBlocker.RemoveAllAsync(timeout.Token);
@@ -249,7 +279,7 @@ public sealed class GuardianWorker : BackgroundService
 
 public sealed class ServiceStatusHolder
 {
-    public const string Version = "0.4.8";
+    public const string Version = "0.5.15";
 
     private GuardianStatus _status = new() { Version = Version };
 

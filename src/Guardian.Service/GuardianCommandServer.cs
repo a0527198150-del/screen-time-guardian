@@ -26,6 +26,8 @@ public sealed class GuardianCommandServer : BackgroundService
     private readonly SafetyEnvelope _safety;
     private readonly ChangeCoordinator _changes;
     private readonly ServiceStatusHolder _status;
+    private readonly ServiceLock _serviceLock;
+    private readonly MaintenanceWindow _maintenance;
     private readonly ILogger<GuardianCommandServer> _logger;
 
     private readonly object _authenticationSync = new();
@@ -38,12 +40,16 @@ public sealed class GuardianCommandServer : BackgroundService
         SafetyEnvelope safety,
         ChangeCoordinator changes,
         ServiceStatusHolder status,
+        ServiceLock serviceLock,
+        MaintenanceWindow maintenance,
         ILogger<GuardianCommandServer> logger)
     {
         _store = store;
         _safety = safety;
         _changes = changes;
         _status = status;
+        _serviceLock = serviceLock;
+        _maintenance = maintenance;
         _logger = logger;
     }
 
@@ -282,6 +288,17 @@ public sealed class GuardianCommandServer : BackgroundService
             // always permitted with no delay of its own.
             _changes.CancelPending(configuration);
             return Success(_store.Load());
+        }
+
+        if (string.Equals(request.Type, "unlockMaintenance", StringComparison.OrdinalIgnoreCase))
+        {
+            // The password was already verified by the gate above; reaching this point
+            // is the authorisation. The window is deliberately short: an unlock that
+            // outlives the maintenance it was opened for is an unlock that gets forgotten.
+            var until = DateTimeOffset.UtcNow.AddMinutes(15);
+            _serviceLock.OpenMaintenanceWindow(_maintenance, until);
+            _logger.LogWarning("Maintenance unlock granted until {Until:u}", until);
+            return Success(configuration);
         }
 
         if (string.Equals(request.Type, "changePassword", StringComparison.OrdinalIgnoreCase))

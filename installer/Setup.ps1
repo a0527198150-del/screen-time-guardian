@@ -23,7 +23,7 @@ $SourceFolder = $SourceFolder.TrimEnd('\')
 $script:InstallRoot = 'C:\Program Files\ScreenTimeGuardian'
 $script:DataDir     = 'C:\ProgramData\ScreenTimeGuardian'
 $script:ServiceName = 'ScreenTimeGuardian'
-$script:Version     = '0.5.14'
+$script:Version     = '0.5.15'
 $script:AppName     = 'Screen Time Guardian'
 $script:AppNameHeb  = 'שומר זמן מסך'
 
@@ -288,6 +288,28 @@ function Invoke-Uninstall {
 
     Write-Host ''
 
+    # Check maintenance unlock (same logic as install)
+    $unlockFile = Join-Path $DataDir 'runtime\unlock.json'
+    $svcRunning = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    if ($svcRunning -and $svcRunning.Status -ne 'Stopped') {
+        $maintenanceOpen = $false
+        if (Test-Path $unlockFile -PathType Leaf) {
+            try {
+                $unlockData = Get-Content -LiteralPath $unlockFile -Raw | ConvertFrom-Json
+                $untilUtc = [DateTimeOffset]::Parse($unlockData.unlockedUntilUtc)
+                if ([DateTimeOffset]::UtcNow -lt $untilUtc) {
+                    $maintenanceOpen = $true
+                }
+            } catch { }
+        }
+        if (-not $maintenanceOpen) {
+            Red '  התוכנה נעולה מפני הסרה'
+            Cyan '  פתח חלון תחזוקה מלוח הבקרה ונסה שוב.'
+            Read-Host '  לחץ Enter לסיום'
+            exit 0
+        }
+    }
+
     # 1. Stop and delete service
     Write-Host '  1/7 עוצר את השירות...'
     $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
@@ -435,6 +457,35 @@ Write-Step 'החבילה תקינה.'
 Set-DataDirectoryAcl -Path $DataDir
 Set-DataDirectoryAcl -Path (Join-Path $DataDir 'runtime')
 Write-Step 'תיקיית נתונים מאובטחת.'
+
+# ---- 3b. Check maintenance unlock window ----------------------------------
+$unlockFile = Join-Path $DataDir 'runtime\unlock.json'
+$serviceRunning = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+if ($serviceRunning -and $serviceRunning.Status -ne 'Stopped') {
+    $maintenanceOpen = $false
+    if (Test-Path $unlockFile -PathType Leaf) {
+        try {
+            $unlockData = Get-Content -LiteralPath $unlockFile -Raw | ConvertFrom-Json
+            $untilUtc = [DateTimeOffset]::Parse($unlockData.unlockedUntilUtc)
+            if ([DateTimeOffset]::UtcNow -lt $untilUtc) {
+                $maintenanceOpen = $true
+            }
+        } catch { }
+    }
+    if (-not $maintenanceOpen) {
+        Write-Host ''
+        Red '  התוכנה נעולה מפני הסרה'
+        Red ''
+        Red '  כדי להתקין גרסה חדשה:'
+        Cyan '  1. הפעל את לוח הבקרה (ScreenTimeGuardian.ControlPanel.exe)' 
+        Cyan '  2. במסך הגדרות ← בטיחות ← לחץ על "פתח לתחזוקה"'
+        Cyan '  3. הזן את סיסמת האפליקציה'
+        Cyan '  4. הרץ את ההתקנה שוב תוך 15 דקות'
+        Write-Host ''
+        Read-Host '  לחץ Enter לסיום'
+        exit 0
+    }
+}
 
 # ---- 4. Stop existing service ----------------------------------------------
 $existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue

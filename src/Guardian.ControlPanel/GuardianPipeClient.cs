@@ -106,6 +106,17 @@ public sealed class GuardianPipeClient
         }, cancellationToken);
     }
 
+    public async Task<GuardianCommandResponse> UnlockMaintenanceAsync(
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendAsync(new GuardianCommand
+        {
+            Type = "unlockMaintenance",
+            Password = password
+        }, cancellationToken);
+    }
+
     private static async Task<GuardianCommandResponse> SendAsync(
         GuardianCommand command,
         CancellationToken cancellationToken)

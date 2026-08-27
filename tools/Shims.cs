@@ -59,11 +59,61 @@ namespace System.Security.Principal
         public SecurityIdentifier? User => null;
         public void Dispose() { }
     }
+
+    public class WindowsPrincipal
+    {
+        public WindowsPrincipal(WindowsIdentity identity) { }
+        public bool IsInRole(WindowsBuiltInRole role) => false;
+    }
+
+    public enum WindowsBuiltInRole { Administrator }
+
+    public class PrivilegeNotHeldException : SystemException { }
 }
 
 namespace System.Security.AccessControl
 {
     public enum AccessControlType { Allow, Deny }
+
+    [Flags]
+    public enum FileSystemRights
+    {
+        ReadData = 1, ReadAndExecute = 32, Write = 274, FullControl = 2032127,
+        Delete = 65536, DeleteSubdirectoriesAndFiles = 256, ReadPermissions = 131072
+    }
+
+    [Flags]
+    public enum InheritanceFlags { None = 0, ContainerInherit = 1, ObjectInherit = 2 }
+
+    [Flags]
+    public enum PropagationFlags { None = 0, InheritOnly = 1, NoPropagateInherit = 2 }
+
+    public sealed class FileSystemAccessRule
+    {
+        public FileSystemAccessRule(IdentityReference identity, FileSystemRights rights,
+            InheritanceFlags inheritance, PropagationFlags propagation, AccessControlType type) { }
+        public IdentityReference IdentityReference => null!;
+        public FileSystemRights FileSystemRights => default;
+        public AccessControlType AccessControlType => default;
+    }
+
+    public abstract class ObjectSecurity
+    {
+        public void SetAccessRuleProtection(bool isProtected, bool preserveInheritance) { }
+        public AuthorizationRuleCollection GetAccessRules(bool includeExplicit, bool includeInherited, Type targetType) => new();
+        public void AddAccessRule(AccessRule rule) { }
+        public void RemoveAccessRuleSpecific(AccessRule rule) { }
+        public void SetOwner(IdentityReference identity) { }
+    }
+
+    public sealed class DirectorySecurity : ObjectSecurity { }
+
+    public sealed class AccessRule
+    {
+        public AccessRule(IdentityReference identity, FileSystemRights rights, InheritanceFlags inheritance, PropagationFlags propagation, AccessControlType type) { }
+    }
+
+    public sealed class AuthorizationRuleCollection : System.Collections.ArrayList { }
 }
 
 namespace System.IO.Pipes
@@ -90,6 +140,28 @@ namespace System.IO.Pipes
             string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
             PipeTransmissionMode transmissionMode, PipeOptions options,
             int inBufferSize, int outBufferSize, PipeSecurity? pipeSecurity) => null!;
+    }
+}
+
+namespace System.Diagnostics
+{
+    public sealed class ProcessStartInfo
+    {
+        public string FileName { get; set; } = string.Empty;
+        public string Arguments { get; set; } = string.Empty;
+        public bool UseShellExecute { get; set; }
+        public bool RedirectStandardOutput { get; set; }
+        public bool RedirectStandardError { get; set; }
+        public bool CreateNoWindow { get; set; }
+    }
+
+    public sealed class Process : IDisposable
+    {
+        public static Process? Start(ProcessStartInfo info) => null;
+        public void WaitForExit(int milliseconds) { }
+        public int ExitCode => 0;
+        public StreamReader StandardError => null!;
+        public void Dispose() { }
     }
 }
 

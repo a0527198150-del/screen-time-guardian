@@ -24,6 +24,10 @@
                 <TextBlock x:Name="DialogMessage" Style="{StaticResource TypeBody}"
                            Foreground="{StaticResource BrushInkMuted}"
                            TextWrapping="Wrap" Margin="0,0,0,20" />
+                <PasswordBox x:Name="DialogPassword" Visibility="Collapsed"
+                             FlowDirection="LeftToRight" Margin="0,0,0,12" />
+                <TextBlock x:Name="PasswordError" Foreground="{StaticResource BrushRose}"
+                           TextWrapping="Wrap" Margin="0,0,0,8" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Button x:Name="CancelButton" Content="ביטול"
                             Style="{StaticResource ButtonSecondary}"

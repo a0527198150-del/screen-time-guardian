@@ -29,6 +29,20 @@ public partial class ConfirmDialog : Window
         set => CancelButton.Content = value;
     }
 
+    public bool ShowPassword
+    {
+        get => DialogPassword.Visibility == Visibility.Visible;
+        set => DialogPassword.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public string EnteredPassword => DialogPassword.Password;
+
+    public string PasswordErrorText
+    {
+        get => PasswordError.Text;
+        set => PasswordError.Text = value;
+    }
+
     public ConfirmDialog()
     {
         InitializeComponent();

@@ -23,6 +23,8 @@ builder.Services.AddSingleton<BrowserLaunchBlocker>();
 builder.Services.AddSingleton<HiddenBrowserScanner>();
 builder.Services.AddSingleton<ChangeCoordinator>();
 builder.Services.AddSingleton<BrowserPolicySynchronizer>();
+builder.Services.AddSingleton<ServiceLock>();
+builder.Services.AddSingleton<MaintenanceWindow>();
 builder.Services.AddHostedService<GuardianWorker>();
 builder.Services.AddHostedService<UpdateCoordinator>();
 builder.Services.AddHostedService<GuardianCommandServer>();

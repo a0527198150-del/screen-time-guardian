@@ -26,6 +26,7 @@ public partial class MainWindow : Window
         ShellControl.Settings.SaveRequested += (_, _) => _ = SaveAsync();
         ShellControl.Settings.RefreshPendingRequested += (_, _) => _ = RefreshConfigurationAsync();
         ShellControl.Settings.CancelPendingRequested += (_, _) => _ = CancelPendingChangeAsync();
+        ShellControl.Settings.UnlockMaintenanceRequested += (_, _) => _ = UnlockMaintenanceAsync();
         ShellControl.Rules.NewRuleRequested += Rules_NewRuleRequested;
         ShellControl.Rules.EditAppRuleRequested += Rules_EditAppRuleRequested;
         ShellControl.Rules.EditSiteRuleRequested += Rules_EditSiteRuleRequested;
@@ -199,6 +200,35 @@ public partial class MainWindow : Window
         ShellControl.Home.Show(_configuration, null, Array.Empty<UpcomingEvent>());
         ShellControl.Rules.Show(_configuration);
         ShellControl.Settings.Show(_configuration);
+        RefreshMaintenanceBanner();
+    }
+
+    private void RefreshMaintenanceBanner()
+    {
+        try
+        {
+            var unlockPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "ScreenTimeGuardian", "runtime", "unlock.json");
+            if (File.Exists(unlockPath))
+            {
+                var json = File.ReadAllText(unlockPath);
+                var data = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                if (data != null && data.TryGetValue("unlockedUntilUtc", out var until)
+                    && DateTimeOffset.TryParse(until, null,
+                        System.Globalization.DateTimeStyles.RoundtripKind, out var untilDt)
+                    && DateTimeOffset.UtcNow < untilDt)
+                {
+                    ShellControl.Settings.ShowMaintenanceStatus(true, until);
+                    return;
+                }
+            }
+            ShellControl.Settings.ShowMaintenanceStatus(false, null);
+        }
+        catch
+        {
+            ShellControl.Settings.ShowMaintenanceStatus(false, null);
+        }
     }
 
     private async void SaveButton_OnClick(object sender, RoutedEventArgs e)
@@ -464,6 +494,51 @@ public partial class MainWindow : Window
             }
 
             SetHeaderStatus("האכיפה הופעלה מחדש.", false);
+            await RefreshStatusAsync();
+        }
+        catch (Exception ex) when (IsExpected(ex))
+        {
+            SetHeaderStatus(ex.Message, true);
+        }
+    }
+
+    private async Task UnlockMaintenanceAsync()
+    {
+        try
+        {
+            EnsureAuthenticated();
+
+            var dialog = new ConfirmDialog
+            {
+                Owner = this,
+                DialogTitleText = "פתח לתחזוקה",
+                Message = "פתיחה זמנית מאפשרת עצירה או הסרה של התוכנה למשך 15 דקות. " +
+                           "הזן את סיסמת האפליקציה לאישור.",
+                ConfirmText = "פתח",
+                ShowPassword = true
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var password = dialog.EnteredPassword;
+            if (string.IsNullOrEmpty(password))
+            {
+                dialog.PasswordErrorText = "יש להזין סיסמה.";
+                return;
+            }
+
+            var response = await _pipeClient.UnlockMaintenanceAsync(password);
+            if (!response.Ok)
+            {
+                SetHeaderStatus(response.Error, true);
+                return;
+            }
+
+            _configuration = response.Configuration ?? _configuration;
+            SetHeaderStatus("פתוח לתחזוקה ל־15 דקות. הנעילה תחזור אוטומטית.", false);
             await RefreshStatusAsync();
         }
         catch (Exception ex) when (IsExpected(ex))

@@ -33,6 +33,20 @@
                     </StackPanel>
                 </Border>
                 <StackPanel x:Name="SafetyContent" Visibility="Collapsed">
+                    <!-- Maintenance window status (visible only when open) -->
+                    <Border x:Name="MaintenanceBanner" Visibility="Collapsed"
+                            Background="{StaticResource BrushAmberSoft}" CornerRadius="8"
+                            Padding="16" Margin="0,0,0,12">
+                        <TextBlock x:Name="MaintenanceStatusText" Style="{StaticResource TypeBody}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+                    <Button x:Name="UnlockMaintenanceButton" Content="פתח לתחזוקה"
+                            Style="{StaticResource ButtonGhost}"
+                            Height="40" Padding="20,0" Margin="0,0,0,12"
+                            Click="UnlockMaintenance_Click"
+                            AutomationProperties.Name="פתח חלון תחזוקה" />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="פתיחה זמנית permiteistopping hoặc הסרת התוכנה למשך 15 דקות. הנעילה תחזור אוטומטית." Margin="0,0,0,12" />
                     <TextBlock Style="{StaticResource Hint}"
                                Text="תקופות חסד, מצב בטוח, מגבלת פעולות." Margin="0,0,0,12" />
                     <Grid Margin="0,0,0,8">
