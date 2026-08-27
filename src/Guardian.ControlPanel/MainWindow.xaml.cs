@@ -524,9 +524,24 @@ public partial class MainWindow : Window
             }
 
             var password = dialog.EnteredPassword;
+            try
+            {
+                ApplicationPassword.Validate(password);
+            }
+            catch (ArgumentException exception)
+            {
+                SetHeaderStatus(exception.Message, true);
+                return;
+            }
             if (string.IsNullOrEmpty(password))
             {
                 dialog.PasswordErrorText = "יש להזין סיסמה.";
+                return;
+            }
+
+            if (!ApplicationPassword.Verify(password, _configuration.Security))
+            {
+                SetHeaderStatus("הסיסמה אינה נכונה.", true);
                 return;
             }
 
@@ -538,6 +553,7 @@ public partial class MainWindow : Window
             }
 
             _configuration = response.Configuration ?? _configuration;
+            RefreshMaintenanceBanner();
             SetHeaderStatus("פתוח לתחזוקה ל־15 דקות. הנעילה תחזור אוטומטית.", false);
             await RefreshStatusAsync();
         }

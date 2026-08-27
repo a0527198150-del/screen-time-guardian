@@ -54,6 +54,13 @@ public partial class ConfirmDialog : Window
 
     private void Confirm_Click(object sender, RoutedEventArgs e)
     {
+        if (ShowPassword && string.IsNullOrWhiteSpace(EnteredPassword))
+        {
+            PasswordErrorText = "יש להזין סיסמה.";
+            DialogPassword.Focus();
+            return;
+        }
+
         DialogResult = true;
         Close();
     }
