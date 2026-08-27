@@ -279,7 +279,7 @@ public sealed class GuardianWorker : BackgroundService
 
 public sealed class ServiceStatusHolder
 {
-    public const string Version = "0.5.15";
+    public const string Version = "0.5.17";
 
     private GuardianStatus _status = new() { Version = Version };
 

@@ -32,15 +32,14 @@ public sealed class ScheduleWindow
         }
 
         var local = now.LocalDateTime;
-        var start = default(TimeOnly);
-        var end = default(TimeOnly);
-        if (!AllDay
-            && (!TimeOnly.TryParse(Start, out start) || !TimeOnly.TryParse(End, out end)))
+
+        // Same parsing gate as GetEdgeInstants - one source of truth.
+        if (!TryParseBounds(out var start, out var end))
         {
             return false;
         }
 
-        var delay = TimeSpan.FromSeconds(Math.Clamp(ActivationDelaySeconds, 0, 86_400));
+        var delay = Delay;
         for (var dayOffset = -1; dayOffset <= 0; dayOffset++)
         {
             var ruleDate = local.Date.AddDays(dayOffset);
@@ -49,26 +48,11 @@ public sealed class ScheduleWindow
                 continue;
             }
 
-            var effectiveStart = AllDay
-                ? ruleDate + delay
-                : ruleDate + start.ToTimeSpan() + delay;
-            var effectiveEnd = AllDay
-                ? ruleDate.AddDays(1)
-                : start < end
-                    ? ruleDate + end.ToTimeSpan()
-                    : ruleDate.AddDays(1) + end.ToTimeSpan();
+            var (effectiveStart, effectiveEnd) = OccurrenceFor(ruleDate, start, end, delay);
 
             // Delaying the start must never move the end of a cross-midnight window
             // backward past the delayed start. A one-second polling boundary is
             // intentionally not promised; the service samples every 15 seconds.
-
-            if (start == end && !AllDay)
-            {
-                // Keep the legacy meaning of equal start/end: the rule covers the day.
-                effectiveStart = ruleDate + delay;
-                effectiveEnd = ruleDate.AddDays(1);
-            }
-
             if (effectiveStart < effectiveEnd && local >= effectiveStart && local < effectiveEnd)
             {
                 return true;
@@ -76,6 +60,78 @@ public sealed class ScheduleWindow
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// The concrete instants at which this window begins and ends covering time,
+    /// enumerated across the days following <paramref name="from"/>.
+    ///
+    /// This reuses the EXACT day-matching and midnight-crossing arithmetic that
+    /// Contains applies - there is deliberately one implementation of window maths,
+    /// because a second drifting copy would eventually report "the block did not
+    /// open at seven" and be nearly impossible to trace.
+    /// </summary>
+    public IEnumerable<DateTimeOffset> GetEdgeInstants(DateTimeOffset from, int maxDayOffset = 8)
+    {
+        if (!Enabled || Days.Count == 0 || !TryParseBounds(out var start, out var end))
+        {
+            yield break;
+        }
+
+        var localFrom = from.LocalDateTime;
+        var delay = Delay;
+        for (var dayOffset = 0; dayOffset <= Math.Max(1, maxDayOffset); dayOffset++)
+        {
+            var ruleDate = localFrom.Date.AddDays(dayOffset);
+            if (!Days.Contains(ruleDate.DayOfWeek))
+            {
+                continue;
+            }
+
+            var (effectiveStart, effectiveEnd) = OccurrenceFor(ruleDate, start, end, delay);
+            if (effectiveStart < effectiveEnd)
+            {
+                yield return new DateTimeOffset(effectiveStart);
+                yield return new DateTimeOffset(effectiveEnd);
+            }
+        }
+    }
+
+    private TimeSpan Delay => TimeSpan.FromSeconds(Math.Clamp(ActivationDelaySeconds, 0, 86_400));
+
+    /// <summary>All-day windows do not carry times; regular windows parse theirs once.</summary>
+    private bool TryParseBounds(out TimeOnly start, out TimeOnly end)
+    {
+        start = default;
+        end = default;
+        return AllDay || (TimeOnly.TryParse(Start, out start) && TimeOnly.TryParse(End, out end));
+    }
+
+    /// <summary>
+    /// The single place where a window's start and end instants are derived for a
+    /// concrete day. Both Contains and GetEdgeInstants go through here, keeping
+    /// enforcement and wake scheduling perfectly aligned.
+    /// </summary>
+    private (DateTimeOffset EffectiveStart, DateTimeOffset EffectiveEnd) OccurrenceFor(
+        DateTime ruleDate, TimeOnly start, TimeOnly end, TimeSpan delay)
+    {
+        var effectiveStart = AllDay
+            ? ruleDate + delay
+            : ruleDate + start.ToTimeSpan() + delay;
+        var effectiveEnd = AllDay
+            ? ruleDate.AddDays(1)
+            : start < end
+                ? ruleDate + end.ToTimeSpan()
+                : ruleDate.AddDays(1) + end.ToTimeSpan();
+
+        if (start == end && !AllDay)
+        {
+            // Keep the legacy meaning of equal start/end: the rule covers the day.
+            effectiveStart = ruleDate + delay;
+            effectiveEnd = ruleDate.AddDays(1);
+        }
+
+        return (new DateTimeOffset(effectiveStart), new DateTimeOffset(effectiveEnd));
     }
 
     public string Describe()
